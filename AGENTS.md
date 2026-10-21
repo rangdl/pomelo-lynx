@@ -21,13 +21,17 @@
 
 ## 命令
 
-- `npm run dev` - 启动开发服务器
+本项目使用 **pnpm** 管理依赖(锁文件为 `pnpm-lock.yaml`,勿提交 npm 的 `package-lock.json`)。
 
-- `npm run build` - 构建生产版本
+- `pnpm dev` - 启动开发服务器
 
-- `npm run preview` - 本地预览生产构建
+- `pnpm build` - 构建生产版本
 
-- `npm run test` - 使用 Rstest 运行测试
+- `pnpm preview` - 本地预览生产构建
+
+- `pnpm test` - 使用 Rstest 运行测试
+
+- `pnpm add <pkg>` / `pnpm add -D <pkg>` - 安装依赖
 
 ## 相关文档
 

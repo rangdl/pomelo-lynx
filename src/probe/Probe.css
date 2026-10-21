@@ -1,0 +1,141 @@
+/* 对齐探针样式:全部使用固定 px,保证跨端几何可数值对比 */
+
+.ProbeRoot {
+  width: 750px;
+  height: 100%;
+  background-color: #f5f5f5;
+}
+
+.Section {
+  display: flex;
+  flex-direction: row;
+  margin: 20px;
+  padding: 10px;
+  background-color: #ffffff;
+}
+
+.RowBox {
+  width: 100px;
+  height: 60px;
+  background-color: #4a90d9;
+}
+
+.RowBox--tall {
+  height: 90px;
+  background-color: #7b68ee;
+}
+
+.Column {
+  display: flex;
+  flex-direction: column;
+  margin: 20px;
+  height: 200px;
+  background-color: #ffffff;
+}
+
+.ColBox {
+  width: 200px;
+  height: 50px;
+  background-color: #50c878;
+}
+
+.ColBox--grow {
+  flex-grow: 1;
+  background-color: #f4a460;
+}
+
+.TextLg {
+  font-size: 32px;
+  line-height: 48px;
+  color: #333333;
+  margin: 10px 20px;
+}
+
+.TextMd {
+  font-size: 24px;
+  line-height: 36px;
+  color: #666666;
+  margin: 10px 20px;
+}
+
+.TextInline {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+.PositionWrap {
+  position: relative;
+  margin: 20px;
+  height: 120px;
+  background-color: #ffffff;
+}
+
+.PosAbsolute {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 80px;
+  height: 80px;
+  background-color: rgba(231, 76, 60, 0.8);
+}
+
+.PosRelative {
+  position: relative;
+  top: 30px;
+  left: 120px;
+  width: 60px;
+  height: 60px;
+  background-color: #2c3e50;
+}
+
+.ProbeImage {
+  width: 120px;
+  height: 120px;
+  margin: 20px;
+  border-radius: 12px;
+}
+
+.BorderBox {
+  width: 150px;
+  height: 100px;
+  margin: 20px;
+  border-width: 4px;
+  border-color: #16a085;
+  border-radius: 16px;
+  background-color: #ecf0f1;
+}
+
+.Buttons {
+  display: flex;
+  flex-direction: row;
+  margin: 20px;
+}
+
+.Btn {
+  width: 120px;
+  height: 72px;
+  margin-right: 20px;
+  border-radius: 8px;
+  background-color: #3498db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.BtnText {
+  font-size: 28px;
+  color: #ffffff;
+}
+
+.Count {
+  font-size: 28px;
+  color: #333333;
+  margin: 10px 20px;
+}
+
+.ToggleBox {
+  width: 100px;
+  height: 100px;
+  margin: 20px;
+  background-color: #9b59b6;
+}

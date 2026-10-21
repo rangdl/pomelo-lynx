@@ -7,6 +7,9 @@
 node_modules
 dist/
 
+# 对齐采集结果(真机截图与快照,不入库)
+results/
+
 # IDE
 .vscode/*
 !.vscode/extensions.json

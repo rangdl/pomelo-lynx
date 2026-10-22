@@ -7,6 +7,10 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "references": [{ "path": "./tsconfig.node.json" }, { "path": "./src" }],
+  "references": [
+    { "path": "./tsconfig.node.json" },
+    { "path": "./src" },
+    { "path": "./e2e" }
+  ],
   "files": []
 }

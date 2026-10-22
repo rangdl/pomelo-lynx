@@ -48,15 +48,15 @@ importers:
       '@testing-library/jest-dom':
         specifier: ^7.0.0
         version: 7.0.1(@testing-library/dom@10.4.2)
+      '@types/node':
+        specifier: ^26.6.5
+        version: 26.6.5
       '@types/react':
         specifier: ^19.2.18
         version: 19.3.0
       agent-lynx:
         specifier: ^0.14.17
         version: 0.14.17
-      core-js:
-        specifier: ^3.51.0
-        version: 3.51.0
       jsdom:
         specifier: ^27.4.0
         version: 27.4.0
@@ -3240,7 +3240,8 @@ snapshots:
 
   connect-next@5.0.0: {}
 
-  core-js@3.51.0: {}
+  core-js@3.51.0:
+    optional: true
 
   css-declaration-sorter@7.4.0(postcss@8.5.31):
     dependencies:

@@ -3,12 +3,22 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "rspeedy build",
+    "build": "rspeedy build && node scripts/assert-bundle-fresh.mjs",
+    "build:lynx": "rspeedy build --environment lynx",
+    "build:web": "rspeedy build --environment web",
     "check": "biome check --write",
     "dev": "rspeedy dev",
+    "e2e": "rstest run -c rstest.e2e.config.ts",
+    "e2e:collect": "bash e2e/alignment/collect.sh",
+    "e2e:diff": "python3 e2e/alignment/diff.py",
+    "e2e:native": "E2E_PLATFORM=native pnpm run e2e",
+    "e2e:web": "E2E_PLATFORM=web pnpm run e2e",
     "format": "biome format --write",
     "preview": "rspeedy preview",
-    "test": "rstest run"
+    "test": "rstest run",
+    "typecheck": "tsc -b",
+    "verify:web": "pnpm run build && pnpm run e2e:web",
+    "web:dev": "rspeedy preview"
   },
   "dependencies": {
     "@lynx-js/react": "^0.128.0",
@@ -26,9 +36,9 @@
     "@rstest/core": "^0.12.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^7.0.0",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.2.18",
     "agent-lynx": "^0.14.17",
-    "core-js": "^3.51.0",
     "jsdom": "^27.4.0",
     "playwright-core": "^1.64.1",
     "typescript": "^6.0.3"

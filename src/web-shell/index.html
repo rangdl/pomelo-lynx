@@ -27,7 +27,14 @@
     <span id="status"></span>
   </div>
   <link rel="stylesheet" href="/web-core/client_prod/static/css/client.css">
-  <lynx-view id="view" url="/probe.web.bundle"></lynx-view>
+  <!--
+    The `url` attribute is intentionally NOT set here: it is assigned by the
+    module script below, so that `?bundle=…` selects exactly one bundle to
+    load. Setting it here as well would make the view load the default bundle
+    first and only then switch, which leaves the previous bundle's DOM alive
+    long enough for an automated check to read stale content.
+  -->
+  <lynx-view id="view"></lynx-view>
   <script type="importmap">
     {
       "imports": {
@@ -44,11 +51,22 @@
 
     const view = document.getElementById('view');
     const status = document.getElementById('status');
-    document.getElementById('bundle').addEventListener('change', (e) => {
+    const select = document.getElementById('bundle');
+
+    // `?bundle=probe.web.bundle` picks the bundle to load, so an automated
+    // run gets a fresh page with exactly the bundle it asked for.
+    const requested = new URLSearchParams(location.search).get('bundle');
+    const initial = requested ? `/${requested}` : select.value;
+    if (Array.from(select.options).some((option) => option.value === initial)) {
+      select.value = initial;
+    }
+    view.setAttribute('url', initial);
+
+    select.addEventListener('change', (e) => {
       view.setAttribute('url', e.target.value);
     });
-    view.addEventListener('url updated', () => { status.textContent = '加载中: ' + view.getAttribute('url'); });
-    window.addEventListener('error', (ev) => { status.textContent = '错误: ' + ev.message; });
+    view.addEventListener('url updated', () => { status.textContent = `加载中: ${view.getAttribute('url')}`; });
+    window.addEventListener('error', (ev) => { status.textContent = `错误: ${ev.message}`; });
   </script>
 </body>
 </html>

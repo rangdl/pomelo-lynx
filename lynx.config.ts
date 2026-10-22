@@ -1,10 +1,19 @@
 import { pluginQRCode } from '@lynx-js/qrcode-rsbuild-plugin';
 import { pluginReactLynx } from '@lynx-js/react-rsbuild-plugin';
-import { pluginWebPlatform } from '@lynx-js/web-platform-rsbuild-plugin';
 import { defineConfig } from '@lynx-js/rspeedy';
 import { pluginTypeCheck } from '@rsbuild/plugin-type-check';
 
 export default defineConfig({
+  // Lynx Web Platform's WASM engine needs `SharedArrayBuffer`, which the
+  // browser only exposes to cross-origin-isolated documents. Without these
+  // headers the engine silently falls back to a slower path. The setting
+  // applies to both the dev server and `rspeedy preview`.
+  server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
+  },
   source: {
     // main: 原有示例应用;probe: 对齐探针页面(专供 agent-lynx 采集)
     entry: {
@@ -40,7 +49,13 @@ export default defineConfig({
       // 注:rspeedy 全局 htmlPlugin:false;且 DefinesInjection 与 html-plugin
       // 组合在 web 环境有已知冲突(No entry named "main"),故不用 htmlPlugin,
       // 壳页面由顶层 server.publicDir 提供
-      plugins: [pluginReactLynx(), pluginWebPlatform({ polyfill: false })],
+      //
+      // 这里不挂 pluginWebPlatform:它在 `polyfill: false` 时既不改
+      // source.include 也不改 output.polyfill,未传 nativeModulesPath /
+      // napiModulesPath 时注册的 rule 也是空值,整体是 no-op。等真正需要
+      // 把原生模块映射到 Web 实现时再引入,并显式关闭 polyfill ——
+      // core-js 打进 Lynx 双线程 bundle 会让后台 worker 崩掉。
+      plugins: [pluginReactLynx()],
     },
   },
   output: {

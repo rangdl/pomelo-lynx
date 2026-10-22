@@ -1,0 +1,17 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+
+    // E2E code runs in Node, but the web driver also evaluates callbacks
+    // inside the browser, so the DOM lib is required by Playwright's types.
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["es2023", "DOM"],
+    "target": "es2022",
+    "types": ["node"],
+
+    "noEmit": true
+  },
+  "include": ["./**/*.ts", "./**/*.d.mts"]
+}

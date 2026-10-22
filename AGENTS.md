@@ -23,13 +23,23 @@
 
 本项目使用 **pnpm** 管理依赖(锁文件为 `pnpm-lock.yaml`,勿提交 npm 的 `package-lock.json`)。
 
-- `pnpm dev` - 启动开发服务器
+- `pnpm dev` - 启动开发服务器(终端出 QR 供 LynxExplorer 扫码;Web 预览在 `/__web_preview?casename=probe.web.bundle`)
 
-- `pnpm build` - 构建生产版本
+- `pnpm build` - 构建生产版本(原生 + Web 双环境,并校验产物完整性)
 
-- `pnpm preview` - 本地预览生产构建
+- `pnpm build:lynx` / `pnpm build:web` - 只构建单个环境
 
-- `pnpm test` - 使用 Rstest 运行测试
+- `pnpm web:dev` - 预览生产产物(`http://localhost:3000/index.html`)
+
+- `pnpm test` - 使用 Rstest 运行单元测试
+
+- `pnpm e2e:web` - 场景化 E2E(浏览器端,自动起静态服务伺服 `dist/`)
+
+- `pnpm e2e:native` - 场景化 E2E(真机端,需设备已连接且 Explorer 已打开页面)
+
+- `pnpm verify:web` - 一键回归:`build` + `e2e:web`
+
+- `pnpm typecheck` - `tsc -b` 全量类型检查
 
 - `pnpm add <pkg>` / `pnpm add -D <pkg>` - 安装依赖
 
@@ -39,9 +49,18 @@
 
 - Rspack: <https://rspack.rs/llms.txt>
 
+- 项目内: [Web 端调试](docs/web-debug.md)(症状 → 根因 → 解法) · [E2E 套件](e2e/README.md) · [跨端对齐](e2e/alignment/README.md)
+
 ## 工具
 
 ### Biome
 
 - 运行 `pnpm run check` 进行代码检查
 - 运行 `pnpm run format` 格式化代码
+- `biome.json` 已排除 `.agents/`(第三方技能文件,不可格式化)
+
+### 浏览器自动化
+
+- 交互式排查用 **Playwright MCP**(容器内已配好 `--no-sandbox`)
+- 回归与 CI 用 `e2e/web-check.mjs` 与 `e2e/`(自带
+  `chromiumSandbox: false`,不依赖 MCP)

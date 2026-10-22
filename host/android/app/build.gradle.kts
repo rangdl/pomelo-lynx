@@ -22,6 +22,12 @@ android {
         versionName = packageVersion
     }
 
+    // BuildConfig.DEBUG gates the DevTool service registration (debug builds
+    // only) — AGP 8 no longer generates BuildConfig by default.
+    buildFeatures {
+        buildConfig = true
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false

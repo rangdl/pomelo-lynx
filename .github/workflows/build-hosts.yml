@@ -96,11 +96,11 @@ jobs:
         run: pod _1.16.2_ install
       - name: Parse project
         working-directory: host/ios
-        run: xcodebuild -list -project PomeloLynx.xcodeproj
+        run: xcodebuild -list -workspace PomeloLynx.xcworkspace
       - name: Build (iOS Simulator, unsigned)
         working-directory: host/ios
         run: |
-          xcodebuild -project PomeloLynx.xcodeproj -scheme PomeloLynx \
+          xcodebuild -workspace PomeloLynx.xcworkspace -scheme PomeloLynx \
             -configuration Debug -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build/DerivedData \

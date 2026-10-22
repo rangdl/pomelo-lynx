@@ -26,6 +26,7 @@
 		AA0000000000000000000007 /* HostTemplateProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostTemplateProvider.swift; sourceTree = "<group>"; };
 		AA0000000000000000000009 /* BundleUpdateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundleUpdateStore.swift; sourceTree = "<group>"; };
 		AA000000000000000000000B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AC0000000000000000000001 /* PomeloLynx-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "PomeloLynx-Bridging-Header.h"; sourceTree = "<group>"; };
 		AA000000000000000000000D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AB0000000000000000000001 /* main.lynx.bundle */ = {isa = PBXFileReference; lastKnownFileType = file; path = main.lynx.bundle; sourceTree = "<group>"; };
 		AB0000000000000000000003 /* probe.lynx.bundle */ = {isa = PBXFileReference; lastKnownFileType = file; path = probe.lynx.bundle; sourceTree = "<group>"; };
@@ -56,6 +57,7 @@
 				AA0000000000000000000005 /* ViewController.swift */,
 				AA0000000000000000000007 /* HostTemplateProvider.swift */,
 				AA0000000000000000000009 /* BundleUpdateStore.swift */,
+				AC0000000000000000000001 /* PomeloLynx-Bridging-Header.h */,
 				AA000000000000000000000D /* Assets.xcassets */,
 				AA000000000000000000000B /* Info.plist */,
 				AB0000000000000000000021 /* Bundles (from pnpm build:host) */,
@@ -276,6 +278,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = org.pomelo.lynx;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "PomeloLynx/PomeloLynx-Bridging-Header.h";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -298,6 +301,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = org.pomelo.lynx;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "PomeloLynx/PomeloLynx-Bridging-Header.h";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;

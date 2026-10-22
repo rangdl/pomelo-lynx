@@ -29,7 +29,7 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
         callback(nil, error)
         return
       }
-      callback(LynxTemplateResource(data: data), nil)
+      callback(PomeloTemplateResourceFromData(data), nil)
     }
   }
 

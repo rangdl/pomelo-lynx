@@ -61,6 +61,11 @@ post_install do |installer|
       if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 15.0
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
       end
+      # The Lynx/Devtool pods emit deprecation warnings (keyWindow on iOS 13+)
+      # that the default Xcode 26 settings escalate to -Werror. Host code stays
+      # strict; third-party pods must not fail the build over SDK churn.
+      config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+      config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
     end
   end
 end

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pomelo-lynx Web 预览</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    #bar {
+      display: flex; gap: 8px; align-items: center;
+      padding: 8px 12px; background: #1a1d25; color: #eee;
+      font-size: 14px;
+    }
+    #bar select { flex: 0 0 auto; }
+    #bar span { opacity: .6; }
+    lynx-view { width: 100vw; height: calc(100vh - 37px); }
+  </style>
+</head>
+<body>
+  <div id="bar">
+    <label>Bundle:
+      <select id="bundle">
+        <option value="/main.web.bundle">main(示例应用)</option>
+        <option value="/probe.web.bundle" selected>probe(对齐探针)</option>
+      </select>
+    </label>
+    <span id="status"></span>
+  </div>
+  <link rel="stylesheet" href="/web-core/client_prod/static/css/client.css">
+  <lynx-view id="view" url="/probe.web.bundle"></lynx-view>
+  <script type="importmap">
+    {
+      "imports": {
+        "@lynx-js/web-core/client": "/web-core/client_prod/static/js/client.js",
+        "@lynx-js/web-elements": "/web-core/node_modules/@lynx-js/web-elements/dist/elements/index.js",
+        "@lynx-js/web-elements/all": "/web-core/node_modules/@lynx-js/web-elements/dist/elements/all.js",
+        "@lynx-js/web-worker-rpc": "/web-core/node_modules/@lynx-js/web-worker-rpc/dist/index.js",
+        "@lynx-js/animax": "/web-core/node_modules/@lynx-js/animax/dist/index.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import '@lynx-js/web-core/client';
+
+    const view = document.getElementById('view');
+    const status = document.getElementById('status');
+    document.getElementById('bundle').addEventListener('change', (e) => {
+      view.setAttribute('url', e.target.value);
+    });
+    view.addEventListener('url updated', () => { status.textContent = '加载中: ' + view.getAttribute('url'); });
+    window.addEventListener('error', (ev) => { status.textContent = '错误: ' + ev.message; });
+  </script>
+</body>
+</html>

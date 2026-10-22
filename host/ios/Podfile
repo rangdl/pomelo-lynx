@@ -6,6 +6,9 @@ source 'https://cdn.cocoapods.org/'
 # benefit to pretending to support iOS 14. Mirrors songloft-player-lynx.
 platform :ios, '15.0'
 
+project 'PomeloLynx.xcodeproj'
+workspace 'PomeloLynx'
+
 # ---- Lynx SDK --------------------------------------------------------------
 # Versions copied from songloft-player-lynx's pods.rb.
 #

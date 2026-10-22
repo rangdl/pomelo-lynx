@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "rspeedy build && node scripts/assert-bundle-fresh.mjs",
+    "build:host": "pnpm run build && node scripts/gen-native-host.mjs && node scripts/copy-bundle-android.mjs && node scripts/copy-bundle-ios.mjs",
     "build:lynx": "rspeedy build --environment lynx",
     "build:web": "rspeedy build --environment web",
     "check": "biome check --write",

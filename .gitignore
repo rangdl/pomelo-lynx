@@ -2,10 +2,29 @@
 .DS_Store
 *.local
 *.log*
+# Crash dumps (调试过程产生的 core dump)
+core
+core.*
 
 # Dist
 node_modules
 dist/
+.build/
+
+# 宿主 app 的 bundle 资源(构建产物,由 copy-bundle-* 脚本从 dist/ 拷入)
+host/android/app/src/main/assets/*.bundle
+host/android/app/src/main/assets/native-host.json
+host/ios/PomeloLynx/*.bundle
+host/ios/PomeloLynx/native-host.json
+
+# 宿主工具链生成物
+host/android/.gradle/
+host/android/build/
+host/android/app/build/
+host/android/local.properties
+host/ios/Pods/
+host/ios/*.xcworkspace
+host/ios/build/
 
 # 对齐采集结果(真机截图与快照,不入库)
 results/

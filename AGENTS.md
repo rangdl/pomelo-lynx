@@ -27,6 +27,8 @@
 
 - `pnpm build` - 构建生产版本(原生 + Web 双环境,并校验产物完整性)
 
+- `pnpm build:host` - 构建 JS 产物并拷入宿主 app(`host/android` assets 与 `host/ios/PomeloLynx`),同时生成 `.build/native-host.json`
+
 - `pnpm build:lynx` / `pnpm build:web` - 只构建单个环境
 
 - `pnpm web:dev` - 预览生产产物(`http://localhost:3000/index.html`)

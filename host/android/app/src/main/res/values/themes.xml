@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Split by `night` so the launch background matches the system theme from
+         the very first frame — the LynxView covers the whole screen and there is
+         no window-level flash (same reasoning as songloft's Theme.SongloftLynx). -->
+    <style name="Theme.PomeloLynx" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+</resources>

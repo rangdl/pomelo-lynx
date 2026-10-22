@@ -2,7 +2,7 @@
 # 对齐探针采集脚本:在已连接的设备上采集 probe 页面的结构化数据
 #
 # 前置条件:
-#   1. 手机上已打开 Lynx Explorer 并加载 probe.lynx.bundle(扫码或本地加载)
+#   1. 手机上已打开自建宿主(--ez bundle_probe true)或 Lynx Explorer 并加载 probe.lynx.bundle
 #   2. adb 已连接(USB 或无线),或 ADB_SERVER_HOST 指向宿主机 adb server
 #
 # 用法:

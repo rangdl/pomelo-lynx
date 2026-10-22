@@ -16,7 +16,7 @@
 ```bash
 pnpm build        # 先出产物,E2E 跑的是 dist/ 里的真实文件
 pnpm e2e:web      # 浏览器端
-pnpm e2e:native   # 真机端(需设备已连接且 Explorer 已打开页面)
+pnpm e2e:native   # 真机端(需设备已连接,且自建宿主或 LynxExplorer 已打开页面)
 ```
 
 `e2e:web` 会自动起一个静态服务伺服 `dist/`,不需要另开 `rspeedy preview`。

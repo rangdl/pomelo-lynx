@@ -17,7 +17,7 @@ macOS 上渲染是否一致」。
 ## 流程
 
 1. 构建:`pnpm build:lynx`(产物 `dist/probe.lynx.bundle`)
-2. 手机 Explorer 加载 probe bundle(扫码或本地)
+2. 手机上用自建宿主(`--ez bundle_probe true` / `--bundle probe`)或 LynxExplorer 加载 probe bundle
 3. 采集(每端各跑一次,不同 label):
    ```bash
    pnpm e2e:collect android-nova7
@@ -34,7 +34,7 @@ macOS 上渲染是否一致」。
 ## 前置条件
 
 - adb 可用;容器内远程 adb:`ADB_SERVER_HOST=<宿主机IP> pnpm e2e:collect ...`
-- `agent-lynx` 已安装(npm devDependency),手机已打开 Explorer 并加载页面
+- `agent-lynx` 已安装(npm devDependency),手机已打开自建宿主或 Explorer 并加载页面
 
 ## 已知注意
 

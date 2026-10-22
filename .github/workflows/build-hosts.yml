@@ -1,0 +1,114 @@
+name: Build Hosts
+
+on:
+  push:
+    branches: [main, master]
+    paths-ignore: ["**.md", "LICENSE"]
+  pull_request:
+    branches: [main, master]
+    paths-ignore: ["**.md", "LICENSE"]
+  workflow_dispatch:
+
+concurrency:
+  group: host-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: JS build and bundles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
+      - run: pnpm run check
+      - run: pnpm test
+      # build:host = build + gen-native-host + copy into both host projects
+      - run: pnpm run build:host
+      - name: Share bundles and host metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: js-bundles
+          path: |
+            .build/native-host.json
+            host/android/app/src/main/assets/
+            host/ios/PomeloLynx/*.bundle
+            host/ios/PomeloLynx/native-host.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
+  android:
+    name: Android APK (debug)
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: js-bundles
+          path: .
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools platforms;android-34 build-tools;34.0.0
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build debug APK
+        working-directory: host/android
+        run: ./gradlew --no-daemon assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pomelo-lynx-android-debug
+          path: host/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  ios:
+    name: iOS app (unsigned simulator)
+    needs: prepare
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: js-bundles
+          path: .
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+      - name: Install CocoaPods
+        run: gem install cocoapods -v 1.16.2 --no-document
+      - name: pod install
+        working-directory: host/ios
+        run: pod _1.16.2_ install
+      - name: Parse project
+        working-directory: host/ios
+        run: xcodebuild -list -project PomeloLynx.xcodeproj
+      - name: Build (iOS Simulator, unsigned)
+        working-directory: host/ios
+        run: |
+          xcodebuild -project PomeloLynx.xcodeproj -scheme PomeloLynx \
+            -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
+            build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pomelo-lynx-ios-simulator
+          path: host/ios/build/DerivedData/Build/Products/Debug-iphonesimulator/PomeloLynx.app
+          if-no-files-found: error
+          retention-days: 7

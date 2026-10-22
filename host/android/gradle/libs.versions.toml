@@ -1,0 +1,15 @@
+[versions]
+# AGP 8.5.0 + Gradle 8.7 + Kotlin 1.9.0 — the JDK-17-compatible combination
+# proven by songloft-player-lynx (itself copied from the official
+# integrating-lynx-demo-projects KotlinEmptyProject). No Compose: this host is
+# a single plain LynxView Activity.
+agp = "8.5.0"
+kotlin = "1.9.0"
+coreKtx = "1.13.1"
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

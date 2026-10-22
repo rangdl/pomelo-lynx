@@ -18,6 +18,7 @@
 |---|---|
 | `pnpm dev` | 开发服务器:终端打印 QR 码供 LynxExplorer 扫码;Web 预览在 `/__web_preview?casename=probe.web.bundle` |
 | `pnpm build` | 生产构建(原生 + Web 双环境),并校验产物完整性 |
+| `pnpm build:host` | 构建 JS 产物并拷入宿主 app(Android assets / iOS resources),生成 `native-host.json` |
 | `pnpm build:lynx` | 只构建原生端 `*.lynx.bundle` |
 | `pnpm build:web` | 只构建 Web 端 `*.web.bundle` + 壳页面 |
 | `pnpm web:dev` | 预览生产产物:http://localhost:3000/index.html |
@@ -41,10 +42,31 @@ src/
   useFlappy.ts       对应的 React Hook
   probe/             跨端对齐探针页(节点带 data-testid)
   web-shell/         Web 端壳页面(import map + bundle 切换)
+host/               自有宿主 app(SDK 集成,参考 songloft-player-lynx)
+  android/          Gradle + Kotlin:minSdk 21,内嵌双 bundle,DevTool 服务供 agent-lynx 驱动
+  ios/              Xcode + CocoaPods:Lynx 4.0.1 家族,构建需 macOS
 e2e/                场景化 E2E、跨端对齐与 Web 端诊断
 scripts/            构建期脚本(assert-bundle-fresh:校验产物完整性)
 docs/web-debug.md   Web 端调试:症状 → 根因 → 解法
 ```
+
+## 自有宿主 app
+
+`host/` 是极简 Lynx 宿主壳(不依赖 LynxExplorer):`HostApplication` /
+`AppDelegate` 注册 Image/Log/Http 服务,Debug 构建额外注册 DevTool 服务 ——
+`agent-lynx` 与 e2e/对齐工具链因此可以直接驱动它,和驱动 Explorer 一样。
+
+- **双 bundle**:`main.lynx.bundle`(示例)与 `probe.lynx.bundle`(对齐探针)都内嵌进 app。
+  Android 用 `adb shell am start -n org.pomelo.lynx/.MainActivity --ez bundle_probe true` 选 probe;
+  iOS 用 `PomeloLynx --bundle probe` 启动参数。
+- **构建**:`pnpm build:host` 生成 JS 产物并拷入两端宿主;APK 用
+  `cd host/android && ./gradlew assembleDebug`(需 JDK 17 + Android SDK);
+  iOS 需 macOS:`cd host/ios && pod install && xcodebuild ...`(可走
+  `.github/workflows/build-hosts.yml` 的 CI 产物)。
+- **热更新预留**:两端的 `BundleUpdateStore` 已实现 trial/confirm/rollback
+  状态机与 `install()` 接缝(签名验证与网络下载属阶段 4b/4c,未实现);
+  `scripts/gen-native-host.mjs` 生成宿主元数据(`.build/native-host.json`),
+  `POMELO_UPDATE_PUBLIC_KEY` 环境变量配置签名公钥(未配置则 `trusted_keys` 为空)。
 
 ## 两个 entry
 
@@ -58,6 +80,7 @@ docs/web-debug.md   Web 端调试:症状 → 根因 → 解法
 - [Web 端调试](docs/web-debug.md)—— 常见故障与工具链约束
 - [E2E 测试套件](e2e/README.md)—— driver 抽象与场景编写
 - [跨端对齐](e2e/alignment/README.md)—— 真机采集与几何比对
+- 宿主端参考实现:[songloft-player-lynx](https://github.com/songloft-org/songloft-player-lynx)
 
 ---
 

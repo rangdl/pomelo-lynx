@@ -12,7 +12,6 @@
 		AA0000000000000000000006 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000005 /* ViewController.swift */; };
 		AA0000000000000000000008 /* HostTemplateProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000007 /* HostTemplateProvider.swift */; };
 		AA000000000000000000000A /* BundleUpdateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000009 /* BundleUpdateStore.swift */; };
-		AA000000000000000000000C /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000000B /* Info.plist */; };
 		AA000000000000000000000E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000000D /* Assets.xcassets */; };
 		AB0000000000000000000002 /* main.lynx.bundle in Resources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000001 /* main.lynx.bundle */; };
 		AB0000000000000000000004 /* probe.lynx.bundle in Resources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000003 /* probe.lynx.bundle */; };
@@ -34,6 +33,7 @@
 		D3E9A174D02DA94EF6B01346 /* libPods-PomeloLynx.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-PomeloLynx.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F6CF18F52AA4E9A635199544 /* Pods-PomeloLynx.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PomeloLynx.debug.xcconfig"; path = "Pods/Target Support Files/Pods-PomeloLynx/Pods-PomeloLynx.debug.xcconfig"; sourceTree = "<group>"; };
 		0DB3DFE43924D58FBFD6E648 /* Pods-PomeloLynx.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PomeloLynx.release.xcconfig"; path = "Pods/Target Support Files/Pods-PomeloLynx/Pods-PomeloLynx.release.xcconfig"; sourceTree = "<group>"; };
+		AA0000000000000000000053 /* PomeloLynx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PomeloLynx.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -147,7 +147,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA000000000000000000000C /* Info.plist in Resources */,
 				AA000000000000000000000E /* Assets.xcassets in Resources */,
 				AB0000000000000000000002 /* main.lynx.bundle in Resources */,
 				AB0000000000000000000004 /* probe.lynx.bundle in Resources */,

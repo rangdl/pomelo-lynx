@@ -7,6 +7,7 @@ import com.lynx.tasm.LynxError
 import com.lynx.tasm.LynxLoadMeta
 import com.lynx.tasm.LynxView
 import com.lynx.tasm.LynxViewBuilder
+import com.lynx.tasm.LynxViewClient
 import com.lynx.tasm.TemplateData
 import org.pomelo.lynx.updater.BundleUpdates
 

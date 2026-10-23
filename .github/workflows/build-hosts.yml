@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   prepare:
@@ -132,3 +132,16 @@ jobs:
           path: pomelo-lynx-ios-nosign.ipa
           if-no-files-found: error
           retention-days: 7
+      - name: Publish to release (rolling ipa-dev tag)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=ipa-dev
+          # 滚动 tag:每个 push 覆盖同一个 release,直链永远指向最新构建
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --title "iOS 未签名 IPA (dev)" \
+            --notes "真机 arm64 未签名 ipa,对应 run ${{ github.run_id }} (${{ github.sha }})。安装前需 TrollStore 或自行重签(iOS 15+)。"
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber pomelo-lynx-ios-nosign.ipa

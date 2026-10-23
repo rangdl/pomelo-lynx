@@ -108,9 +108,8 @@ jobs:
             -quiet \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
             CODE_SIGN_ENTITLEMENTS='' CODE_SIGN_STYLE=Manual AD_HOC_CODE_SIGNING_ALLOWED=NO \
-            build 2>&1 | tee /tmp/xcodebuild-device.log | grep -vE '\-Werror|API_DEPRECATED|deprecated' | tail -50
-          # 失败时的真实错误仍会出现在这里(xcodebuild 的 error: 行不含 -Werror flag 文本)
-          grep -E "^(/|ld: |error:)|BUILD (FAILED|SUCCEEDED)" /tmp/xcodebuild-device.log | grep -vE '\-Werror' | tail -100 >> build-errors.txt || true
+            build 2>&1 | tee /tmp/xcodebuild-device.log | tail -50
+          grep -E "error:|BUILD" /tmp/xcodebuild-device.log | tail -100 >> build-errors.txt || true
       - name: Package unsigned device IPA
         run: |
           set -euo pipefail

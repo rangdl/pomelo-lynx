@@ -97,23 +97,18 @@ final class ViewController: UIViewController {
   }
 
   /**
-   * The `LynxConfig` for our single LynxView. This host registers no custom
-   * native modules yet — the provider is the only app-owned piece. When the
-   * PomeloUpdate module lands (stage 4c) it registers here.
+   * The `LynxConfig` for our single LynxView: the template provider plus the
+   * PomeloUpdate native module (`NativeModules.PomeloUpdate` in JS, global
+   * event `PomeloUpdate.progress` for download progress).
    */
   private static func buildConfig(provider: HostTemplateProvider) -> LynxConfig {
-    LynxConfig(provider: provider)
+    let config = LynxConfig(provider: provider)
+    config.register(PomeloUpdateModule.self)
+    return config
   }
 }
 
 extension ViewController: LynxViewLifecycle {
-  func lynxViewDidFirstScreen(_ view: LynxView) {
-    // First screen reached: a trial update has proven itself.
-    if bundleURL == HostTemplateProvider.mainBundle {
-      BundleUpdateStore.shared?.confirmLaunch()
-    }
-  }
-
   func lynxView(_ view: LynxView, didRecieveError error: NSError) {
     guard (error as? LynxError)?.isFatal == true else { return }
     DispatchQueue.global(qos: .utility).async {

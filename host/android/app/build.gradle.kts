@@ -101,6 +101,10 @@ dependencies {
     implementation("org.lynxsdk.lynx:lynx-service-devtool:4.0.0")
     implementation("org.lynxsdk.lynx:debug-router:0.0.20")
 
+    // JVM unit tests for the updater state machine (BundleUpdateStoreTest).
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20180813")
+
     // XElement family. The probe page uses plain view/text/image/scroller, but
     // `<svg>`/`<input>` are cheap to include so the app page can grow without
     // an APK change.

@@ -10,6 +10,7 @@ import com.lynx.service.image.LynxImageService
 import com.lynx.service.log.LynxLogService
 import com.lynx.tasm.LynxEnv
 import com.lynx.tasm.service.LynxServiceCenter
+import org.pomelo.lynx.updater.PomeloUpdateModule
 
 /**
  * Application entry: initialises the Lynx runtime once, before any LynxView is
@@ -48,5 +49,8 @@ class HostApplication : Application() {
         LynxEnv.inst().init(this, null, null, null)
         LynxEnv.inst().enableDevtool(BuildConfig.DEBUG)
         LynxEnv.inst().enableLynxDebug(BuildConfig.DEBUG)
+        // Hot-update module: JS calls `NativeModules.PomeloUpdate.*` and listens
+        // for `PomeloUpdate.progress` global events (see src/core/updater/).
+        LynxEnv.inst().registerModule("PomeloUpdate", PomeloUpdateModule::class.java)
     }
 }

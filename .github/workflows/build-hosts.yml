@@ -97,7 +97,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
       - name: Build debug APK
         working-directory: host/android
-        run: ./gradlew --no-daemon assembleRelease
+        run: ./gradlew --no-daemon assembleRelease :app:testDebugUnitTest
       - uses: actions/upload-artifact@v7
         with:
           name: pomelo-lynx-android-release
@@ -169,6 +169,12 @@ jobs:
           path: host/ios/release/Podfile.lock
           if-no-files-found: error
           retention-days: 7
+      # 热更新验签/状态机:真实 Security+CryptoKit+disk,无需 pods(纯 Foundation)。
+      - name: Verify updater with Apple Security and real disk state
+        run: |
+          set -euo pipefail
+          swiftc -swift-version 5 host/ios/PomeloLynx/BundleUpdateStore.swift host/ios/PomeloLynx/BundleUpdateTransfer.swift scripts/verify-ios-updater.swift -o "$RUNNER_TEMP/verify-ios-updater"
+          "$RUNNER_TEMP/verify-ios-updater" updates/fixtures/signature-v1.json
       - name: Parse project
         working-directory: host/ios
         run: xcodebuild -list -workspace PomeloLynx.xcworkspace

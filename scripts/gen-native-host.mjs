@@ -3,14 +3,19 @@
  *
  * The file is embedded into both platform hosts (Android assets / iOS
  * resources) and records who built the app, which engine versions it embeds and
- * which update signing keys it trusts. The hot-update pipeline (stage 4b/4c,
- * not yet implemented) will read it to decide whether a downloaded update
- * manifest is compatible with the running host.
+ * which update signing keys it trusts. The hot-update pipeline reads it at
+ * launch to verify a downloaded update manifest is compatible with the
+ * running host (signature + channel + engine + bridge/schema + capabilities).
+ *
+ * Field semantics mirror songloft-player-lynx's `createBuildMetadata` +
+ * `createNativeHostMetadata` (scripts/update-release-lib.mjs), trimmed to the
+ * two platforms this repo ships (android/ios).
  *
  * Engine versions are parsed from the host projects themselves (Gradle
- * dependency line / Podfile.lock), mirroring songloft-player-lynx's
- * `loadNativeContract` — a single source of truth instead of a hand-maintained
- * contract file that drifts from the real dependencies.
+ * dependency line / Podfile.lock / pods.rb) — a single source of truth instead
+ * of a hand-maintained contract file that drifts from the real dependencies.
+ * `updates/native-contract.json` carries the protocol/bridge/schema/capability
+ * contract.
  *
  * Usage: `node scripts/gen-native-host.mjs` (run after `pnpm build`, before the
  * copy-bundle scripts). Output: `.build/native-host.json`.
@@ -25,8 +30,11 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const packageJson = JSON.parse(
   readFileSync(join(root, 'package.json'), 'utf8'),
 );
+const contract = JSON.parse(
+  readFileSync(join(root, 'updates/native-contract.json'), 'utf8'),
+);
 
-// ---- version / build metadata --------------------------------------------
+// ---- version / build metadata (mirrors songloft createBuildMetadata) ------
 
 function gitCommit() {
   try {
@@ -42,11 +50,38 @@ function gitCommit() {
   }
 }
 
-function buildNumber() {
-  // CI: GitHub Actions run number; local: unix day so it increases over time.
+function buildNumber(now) {
+  // CI: GitHub Actions run number; local: seconds since a fixed epoch so it
+  // increases monotonically. songloft uses (now - BUILD_EPOCH)/1000; we keep
+  // the same scale by anchoring at 2026-01-01.
   const fromCi = process.env.GITHUB_RUN_NUMBER;
   if (fromCi && /^\d+$/.test(fromCi)) return Number(fromCi);
-  return Math.floor(Date.now() / 86_400_000);
+  return Math.floor((now.getTime() - Date.UTC(2026, 0, 1)) / 1000);
+}
+
+/**
+ * version/channel/release_tag: a tag build (`GITHUB_REF=refs/tags/vX.Y.Z`) is
+ * the stable channel; anything else is dev. `POMELO_UPDATE_CHANNEL` may force
+ * the channel for local experiments but never changes version semantics.
+ */
+function buildMetadata() {
+  const now = new Date();
+  const ref = process.env.GITHUB_REF ?? '';
+  const tag = ref.startsWith('refs/tags/') ? ref.slice('refs/tags/'.length) : '';
+  const packageVersion = packageJson.version;
+  if (tag && tag !== `v${packageVersion}`) {
+    throw new Error(`Tag ${tag} 与 package.json v${packageVersion} 不一致`);
+  }
+  return {
+    version: tag ? packageVersion : 'dev',
+    package_version: packageVersion,
+    native_version: packageVersion.split('-')[0],
+    build_number: buildNumber(now),
+    git_commit: process.env.GITHUB_SHA ?? gitCommit(),
+    build_time: now.toISOString(),
+    channel: process.env.POMELO_UPDATE_CHANNEL || (tag ? 'stable' : 'dev'),
+    release_tag: tag || 'dev',
+  };
 }
 
 // ---- engine versions (parsed from the host projects) ----------------------
@@ -83,12 +118,26 @@ function iosEngine() {
   return version;
 }
 
-// ---- trusted signing keys (hot update, stage 4b) ---------------------------
+// The contract file declares the engines the update manifests are checked
+// against; refuse to produce a snapshot that disagrees with the real deps.
+function contractEngines() {
+  const actual = { android: androidEngine(), ios: iosEngine() };
+  for (const platform of ['android', 'ios']) {
+    if (contract.engines?.[platform] !== actual[platform]) {
+      throw new Error(
+        `updates/native-contract.json 的 engines.${platform} (${contract.engines?.[platform]}) 与宿主依赖 (${actual[platform]}) 不一致`,
+      );
+    }
+  }
+  return actual;
+}
+
+// ---- trusted signing keys ---------------------------------------------------
 
 /**
  * `POMELO_UPDATE_PUBLIC_KEY` (SPKI PEM) is provided by CI when the update
- * signing key is configured. Empty locally / before 4b → empty trusted_keys,
- * which the (future) host updater treats as "no signed updates accepted".
+ * signing key is configured. Empty locally → empty trusted_keys, which the
+ * host updater treats as "no signed updates accepted".
  */
 function trustedKeys() {
   const pem = process.env.POMELO_UPDATE_PUBLIC_KEY?.trim();
@@ -121,14 +170,12 @@ function trustedKeys() {
 // ---- assemble --------------------------------------------------------------
 
 const host = {
-  channel: process.env.POMELO_UPDATE_CHANNEL || 'dev',
-  version: packageJson.version,
-  build_number: buildNumber(),
-  git_commit: process.env.GITHUB_SHA ?? gitCommit(),
-  engines: {
-    android: androidEngine(),
-    ios: iosEngine(),
-  },
+  ...buildMetadata(),
+  update_protocol: contract.protocol,
+  bridge_version: contract.bridge_version,
+  local_schema: contract.local_schema,
+  capabilities: [...contract.required_capabilities],
+  engines: contractEngines(),
   trusted_keys: trustedKeys(),
 };
 

@@ -78,10 +78,16 @@ docs/web-debug.md   Web 端调试:症状 → 根因 → 解法
   在构建时从 `package.json` 推导),并生成 `vX.Y.Z` 提交与本地 tag。
   确认后 `git push --follow-tags`:CI 校验 tag 与 `package.json` 一致,构建两端产物
   并发布到同名 Release;日常 push 不触发构建,临时构建用 `workflow_dispatch`。
-- **热更新预留**:两端的 `BundleUpdateStore` 已实现 trial/confirm/rollback
-  状态机与 `install()` 接缝(签名验证与网络下载属阶段 4b/4c,未实现);
-  `scripts/gen-native-host.mjs` 生成宿主元数据(`.build/native-host.json`),
-  `POMELO_UPDATE_PUBLIC_KEY` 环境变量配置签名公钥(未配置则 `trusted_keys` 为空)。
+- **热更新(原生核心已就位,JS 侧待接入)**:两端 `BundleUpdateStore` 移植自
+  songloft-player-lynx,含 RSA PKCS#1 v1.5+SHA-256 验签、兼容契约校验、流式下载、
+  trial/confirm/rollback 状态机(每进程一次 beginLaunch、bundleId+120s 确认窗口、
+  host 变更检测);原生模块 `PomeloUpdate`(getInfo/getState/fetchMetadata/
+  inspectManifest/download/cancel/confirmStartup/reportStartupFailure/restoreBuiltin)
+  已注册。JS 侧 `src/core/updater/`、设置/关于页 UI 与发布脚本属后续阶段,未实现。
+  `scripts/gen-native-host.mjs` 生成宿主元数据(`.build/native-host.json`,字段与
+  `updates/native-contract.json` 契约一致),`POMELO_UPDATE_PUBLIC_KEY` 环境变量配置
+  签名公钥(未配置则 `trusted_keys` 为空,拒绝一切热更新);`updates/fixtures/
+  signature-v1.json` 为验签测试向量(临时私钥已丢弃)。
 
 ## 两个 entry
 

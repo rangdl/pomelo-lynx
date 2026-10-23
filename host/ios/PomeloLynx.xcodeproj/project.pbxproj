@@ -12,6 +12,8 @@
 		AA0000000000000000000006 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000005 /* ViewController.swift */; };
 		AA0000000000000000000008 /* HostTemplateProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000007 /* HostTemplateProvider.swift */; };
 		AA000000000000000000000A /* BundleUpdateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000009 /* BundleUpdateStore.swift */; };
+		AA0000000000000000000015 /* BundleUpdateTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000014 /* BundleUpdateTransfer.swift */; };
+		AA0000000000000000000017 /* PomeloUpdateModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000016 /* PomeloUpdateModule.swift */; };
 		AA000000000000000000000E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000000D /* Assets.xcassets */; };
 		AB0000000000000000000002 /* main.lynx.bundle in Resources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000001 /* main.lynx.bundle */; };
 		AB0000000000000000000004 /* probe.lynx.bundle in Resources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000003 /* probe.lynx.bundle */; };
@@ -25,6 +27,8 @@
 		AA0000000000000000000005 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		AA0000000000000000000007 /* HostTemplateProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostTemplateProvider.swift; sourceTree = "<group>"; };
 		AA0000000000000000000009 /* BundleUpdateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundleUpdateStore.swift; sourceTree = "<group>"; };
+		AA0000000000000000000014 /* BundleUpdateTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundleUpdateTransfer.swift; sourceTree = "<group>"; };
+		AA0000000000000000000016 /* PomeloUpdateModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomeloUpdateModule.swift; sourceTree = "<group>"; };
 		AA000000000000000000000B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AC0000000000000000000001 /* PomeloLynx-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "PomeloLynx-Bridging-Header.h"; sourceTree = "<group>"; };
 		AA000000000000000000000D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -57,6 +61,8 @@
 				AA0000000000000000000005 /* ViewController.swift */,
 				AA0000000000000000000007 /* HostTemplateProvider.swift */,
 				AA0000000000000000000009 /* BundleUpdateStore.swift */,
+				AA0000000000000000000014 /* BundleUpdateTransfer.swift */,
+				AA0000000000000000000016 /* PomeloUpdateModule.swift */,
 				AC0000000000000000000001 /* PomeloLynx-Bridging-Header.h */,
 				AA000000000000000000000D /* Assets.xcassets */,
 				AA000000000000000000000B /* Info.plist */,
@@ -170,6 +176,8 @@
 				AA0000000000000000000006 /* ViewController.swift in Sources */,
 				AA0000000000000000000008 /* HostTemplateProvider.swift in Sources */,
 				AA000000000000000000000A /* BundleUpdateStore.swift in Sources */,
+				AA0000000000000000000015 /* BundleUpdateTransfer.swift in Sources */,
+				AA0000000000000000000017 /* PomeloUpdateModule.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

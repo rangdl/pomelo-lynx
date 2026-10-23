@@ -65,7 +65,7 @@ jobs:
       # build:host = build + gen-native-host + copy into both host projects
       - run: pnpm run build:host
       - name: Share bundles and host metadata
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: js-bundles
           path: |
@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           name: js-bundles
           path: .
@@ -98,7 +98,7 @@ jobs:
       - name: Build debug APK
         working-directory: host/android
         run: ./gradlew --no-daemon assembleRelease
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: pomelo-lynx-android-release
           path: host/android/app/build/outputs/apk/release/app-release.apk
@@ -111,7 +111,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           name: js-bundles
           path: .
@@ -137,7 +137,7 @@ jobs:
       # 命令为键,工程设置变化不会误命中旧对象。
       - name: Restore iOS compilation and CocoaPods caches
         id: ios-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             .build/ios-compilation-cache
@@ -163,7 +163,7 @@ jobs:
           fi
       - name: Share generated Podfile.lock (first run only)
         if: steps.pods.outputs.lock_committed == 'false'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: ios-release-Podfile.lock
           path: host/ios/release/Podfile.lock
@@ -190,7 +190,7 @@ jobs:
             build
       - name: Save iOS compilation and CocoaPods caches
         if: github.event_name != 'pull_request'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: |
             .build/ios-compilation-cache
@@ -206,7 +206,7 @@ jobs:
           cp -R "$APP" Payload/
           zip -qry pomelo-lynx-ios-nosign.ipa Payload
           rm -rf Payload
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: pomelo-lynx-ios-nosign
           path: pomelo-lynx-ios-nosign.ipa
@@ -221,11 +221,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           name: pomelo-lynx-ios-nosign
           path: .
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           name: pomelo-lynx-android-release
           path: .

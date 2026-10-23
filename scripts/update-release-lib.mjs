@@ -240,14 +240,16 @@ export function finalizeRelease({
       );
     if (!bundleSource || !statSync(bundleSource).isFile())
       throw new Error('Missing native update bundle');
-    // dist/ 里除 main.lynx.bundle(probe 的对齐探针)与 web(Web 产物子目录)
-    // 外不允许其他原生拆包资源——有的话先并入受签名的资源协议。
+    // bundle 源目录(Android assets 布局)除 main/probe bundle、宿主快照与
+    // web(Web 产物子目录)外不允许其他原生拆包资源——有的话先并入受签名
+    // 的资源协议。
     const files = readdirSync(dirname(resolve(bundleSource)));
     if (
       files.some(
         (name) =>
           name !== 'main.lynx.bundle' &&
           name !== 'probe.lynx.bundle' &&
+          name !== 'native-host.json' &&
           name !== 'web',
       )
     )

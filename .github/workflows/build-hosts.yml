@@ -70,6 +70,7 @@ jobs:
           name: js-bundles
           path: |
             .build/native-host.json
+            .build/version.json
             host/android/app/src/main/assets/
             host/ios/PomeloLynx/*.bundle
             host/ios/PomeloLynx/native-host.json
@@ -227,6 +228,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v5
       - uses: actions/download-artifact@v8
         with:
           name: pomelo-lynx-ios-nosign
@@ -235,12 +237,34 @@ jobs:
         with:
           name: pomelo-lynx-android-release
           path: .
-      - name: Rename artifacts with version
+      - uses: actions/download-artifact@v8
+        with:
+          name: js-bundles
+          path: js-bundles
+      - name: Assemble release directory and sign update manifest
+        env:
+          # 未配置(默认)时只出完整包,bundle_update 为 null,不发布热更新资产。
+          POMELO_UPDATE_PUBLIC_KEY: ${{ vars.POMELO_UPDATE_PUBLIC_KEY }}
+          POMELO_UPDATE_PRIVATE_KEY: ${{ secrets.POMELO_UPDATE_PRIVATE_KEY }}
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
-          mv pomelo-lynx-ios-nosign.ipa "pomelo-lynx-ios-${VERSION}-nosign.ipa"
-          mv app-release.apk "pomelo-lynx-android-${VERSION}-release.apk"
+          mkdir -p release-files
+          mv app-release.apk release-files/pomelo-lynx-android.apk
+          mv pomelo-lynx-ios-nosign.ipa release-files/pomelo-lynx-ios-nosign.ipa
+          # version.json:与 js job 同源的构建身份(gen-native-host 同一时刻生成,
+          # 保证 native-host.json 与 release 元数据完全一致——finalize 会逐字段对拍)
+          cp js-bundles/.build/version.json release-files/version.json
+          if [ -n "${POMELO_UPDATE_PRIVATE_KEY:-}" ]; then
+            node scripts/finalize-release.mjs release-files \
+              js-bundles/host/android/app/src/main/assets/main.lynx.bundle \
+              js-bundles/.build/native-host.json
+          else
+            node scripts/finalize-release.mjs release-files
+          fi
+          # 上传名带版本号;热更新资产(bundle/签名/manifest/checksums)保持固定名
+          cp release-files/pomelo-lynx-android.apk "pomelo-lynx-android-${VERSION}-release.apk"
+          cp release-files/pomelo-lynx-ios-nosign.ipa "pomelo-lynx-ios-${VERSION}-nosign.ipa"
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -248,6 +272,11 @@ jobs:
           set -euo pipefail
           gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
             --title "pomelo-lynx ${GITHUB_REF_NAME}" \
-            --notes "iOS:真机 arm64 未签名 IPA(TrollStore 或自行重签,iOS 15+,不含 Inspector)。Android:release APK(debug keystore 签名,可直接侧载,非商店签名)。"
+            --notes "iOS:真机 arm64 未签名 IPA(TrollStore 或自行重签,iOS 15+,不含 Inspector)。Android:release APK(debug keystore 签名,可直接侧载,非商店签名)。热更新:配置签名密钥后附带 signed bundle(version.json/version.json.sig/pomelo-lynx-main.lynx.bundle/checksums.txt),dev 通道装 dev 包可热更。"
           gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
-            pomelo-lynx-ios-*.ipa pomelo-lynx-android-*.apk
+            pomelo-lynx-ios-*.ipa pomelo-lynx-android-*.apk \
+            release-files/version.json release-files/checksums.txt || true
+          if [ -f release-files/version.json.sig ]; then
+            gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+              release-files/version.json.sig release-files/pomelo-lynx-main.lynx.bundle
+          fi

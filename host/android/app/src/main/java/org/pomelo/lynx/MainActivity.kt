@@ -108,6 +108,15 @@ class MainActivity : Activity() {
         view.loadTemplate(meta.build())
     }
 
+    override fun onResume() {
+        super.onResume()
+        // 前台恢复通知页面:JS 侧 automatic-update 靠该事件补查到期任务
+        // (src/native/app-lifecycle.ts 的 subscribeAppResumed)。
+        val params = com.lynx.react.bridge.JavaOnlyArray()
+        params.pushMap(com.lynx.react.bridge.JavaOnlyMap.from(emptyMap<String, Any>()))
+        lynxView?.sendGlobalEvent(EVENT_APP_RESUMED, params)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         lynxView?.destroy()
@@ -116,5 +125,6 @@ class MainActivity : Activity() {
 
     companion object {
         const val EXTRA_BUNDLE_PROBE = "bundle_probe"
+        const val EVENT_APP_RESUMED = "PomeloLifecycle.resumed"
     }
 }

@@ -110,6 +110,13 @@ final class ViewController: UIViewController {
 }
 
 extension ViewController: LynxViewLifecycle {
+  /// 前台恢复(SceneDelegate sceneDidBecomeActive):推 JS 全局事件,
+  /// 页面的自动更新调度靠它补查到期任务。
+  func notifyAppResumed() {
+    let params = [["state": "resumed"]]
+    lynxView?.sendGlobalEvent("PomeloLifecycle.resumed", withParams: params)
+  }
+
   func lynxView(_ view: LynxView, didRecieveError error: NSError) {
     guard (error as? LynxError)?.isFatal == true else { return }
     DispatchQueue.global(qos: .utility).async {

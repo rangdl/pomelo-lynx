@@ -174,8 +174,9 @@ function trustedKeys() {
 
 // ---- assemble --------------------------------------------------------------
 
+const metadata = buildMetadata();
 const host = {
-  ...buildMetadata(),
+  ...metadata,
   update_protocol: contract.protocol,
   bridge_version: contract.bridge_version,
   local_schema: contract.local_schema,
@@ -187,5 +188,11 @@ const host = {
 mkdirSync(join(root, '.build'), { recursive: true });
 const out = join(root, '.build/native-host.json');
 writeFileSync(out, `${JSON.stringify(host, null, 2)}\n`);
+// .build/version.json:与 native-host 同一对象的构建身份,发版 job 用它作
+// release 元数据(保证 finalize-release 的逐字段对拍通过)。
+writeFileSync(
+  join(root, '.build/version.json'),
+  JSON.stringify(metadata, null, 2) + '\n',
+);
 console.log(`[gen-native-host] ${out}`);
 console.log(JSON.stringify(host, null, 2));

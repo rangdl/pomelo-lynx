@@ -63,6 +63,9 @@ docs/web-debug.md   Web 端调试:症状 → 根因 → 解法
   `cd host/android && ./gradlew assembleDebug`(需 JDK 17 + Android SDK);
   iOS 需 macOS:`cd host/ios && pod install && xcodebuild ...`(可走
   `.github/workflows/build-hosts.yml` 的 CI 产物)。
+- **发版**:`package.json` 的 `version` 改成目标版本并提交,然后打同名 tag
+  (如 `v1.0.0`)推送,CI 校验 tag 与 `package.json` 一致后构建两端产物,
+  并发布到同名 Release;日常 push 不触发构建,临时构建用 `workflow_dispatch`。
 - **热更新预留**:两端的 `BundleUpdateStore` 已实现 trial/confirm/rollback
   状态机与 `install()` 接缝(签名验证与网络下载属阶段 4b/4c,未实现);
   `scripts/gen-native-host.mjs` 生成宿主元数据(`.build/native-host.json`),

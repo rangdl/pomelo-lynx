@@ -15,10 +15,11 @@ on:
 
 concurrency:
   group: host-build-${{ github.ref }}
-  cancel-in-progress: true
+  # 发版 tag 不允许被后一次构建取消;其他触发才取消旧构建。
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   prepare:
@@ -107,6 +108,30 @@ jobs:
           ruby-version: "3.3"
       - name: Install CocoaPods
         run: gem install cocoapods -v 1.16.2 --no-document
+      - name: Select Xcode and compute cache id
+        id: xcode
+        run: |
+          set -euo pipefail
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          TOOLCHAIN=$(xcodebuild -version)
+          SDK=$(xcrun --sdk iphoneos --show-sdk-build-version)
+          OS_BUILD=$(sw_vers -buildVersion)
+          printf '%s\n' "$TOOLCHAIN" "iPhoneOS SDK build: $SDK" "macOS build: $OS_BUILD"
+          CACHE_ID=$(printf '%s\n' "$TOOLCHAIN" "$SDK" "$OS_BUILD" | shasum -a 256 | cut -d ' ' -f1)
+          echo "cache_id=$CACHE_ID" >> "$GITHUB_OUTPUT"
+      # Xcode 的内容寻址编译缓存可以跨全新 checkout 复用;只缓存 DerivedData
+      # 会因文件 mtime 变化而失效。这是 iOS job 耗时从十几分钟降到几分钟的关键。
+      - name: Restore iOS compilation and CocoaPods caches
+        id: ios-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .build/ios-compilation-cache
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods/repos
+          key: ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/Podfile', 'host/ios/PomeloLynx.xcodeproj/project.pbxproj') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/Podfile', 'host/ios/PomeloLynx.xcodeproj/project.pbxproj') }}-
       - name: pod install
         working-directory: host/ios
         run: pod _1.16.2_ install
@@ -117,24 +142,27 @@ jobs:
         working-directory: host/ios
         run: |
           set -o pipefail
-          # 完整输出进日志(不裁剪、不静音);日志过大导致页面渲染困难时,
-          # GitHub 会自动截断,但 API 仍可取全量,失败排查用 artifacts 里的
-          # 原始 xcodebuild 日志,而不是在构建命令上做手脚。
+          # 完整输出直接进日志:不静音、不裁剪、不做摘要过滤。
           xcodebuild -workspace PomeloLynx.xcworkspace -scheme PomeloLynx \
             -configuration Debug -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             -derivedDataPath build/DerivedData-device \
+            -showBuildTimingSummary \
+            COMPILATION_CACHE_ENABLE_CACHING=YES \
+            COMPILATION_CACHE_ENABLE_DIAGNOSTIC_REMARKS=YES \
+            COMPILATION_CACHE_CAS_PATH="$GITHUB_WORKSPACE/.build/ios-compilation-cache" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
             CODE_SIGN_ENTITLEMENTS='' CODE_SIGN_STYLE=Manual AD_HOC_CODE_SIGNING_ALLOWED=NO \
-            build 2>&1 | tee /tmp/xcodebuild-device.log
-      - name: Upload raw build log
-        if: always()
-        uses: actions/upload-artifact@v5
+            build
+      - name: Save iOS compilation and CocoaPods caches
+        if: github.event_name != 'pull_request'
+        uses: actions/cache/save@v4
         with:
-          name: ios-xcodebuild-log
-          path: /tmp/xcodebuild-device.log
-          if-no-files-found: ignore
-          retention-days: 7
+          path: |
+            .build/ios-compilation-cache
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods/repos
+          key: ${{ steps.ios-cache.outputs.cache-primary-key }}
       - name: Package unsigned device IPA
         run: |
           set -euo pipefail
@@ -156,6 +184,8 @@ jobs:
     needs: [android, ios]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/download-artifact@v5
         with:

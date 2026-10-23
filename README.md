@@ -78,16 +78,28 @@ docs/web-debug.md   Web 端调试:症状 → 根因 → 解法
   在构建时从 `package.json` 推导),并生成 `vX.Y.Z` 提交与本地 tag。
   确认后 `git push --follow-tags`:CI 校验 tag 与 `package.json` 一致,构建两端产物
   并发布到同名 Release;日常 push 不触发构建,临时构建用 `workflow_dispatch`。
-- **热更新(原生核心已就位,JS 侧待接入)**:两端 `BundleUpdateStore` 移植自
-  songloft-player-lynx,含 RSA PKCS#1 v1.5+SHA-256 验签、兼容契约校验、流式下载、
-  trial/confirm/rollback 状态机(每进程一次 beginLaunch、bundleId+120s 确认窗口、
-  host 变更检测);原生模块 `PomeloUpdate`(getInfo/getState/fetchMetadata/
-  inspectManifest/download/cancel/confirmStartup/reportStartupFailure/restoreBuiltin)
-  已注册。JS 侧 `src/core/updater/`、设置/关于页 UI 与发布脚本属后续阶段,未实现。
-  `scripts/gen-native-host.mjs` 生成宿主元数据(`.build/native-host.json`,字段与
-  `updates/native-contract.json` 契约一致),`POMELO_UPDATE_PUBLIC_KEY` 环境变量配置
-  签名公钥(未配置则 `trusted_keys` 为空,拒绝一切热更新);`updates/fixtures/
-  signature-v1.json` 为验签测试向量(临时私钥已丢弃)。
+- **热更新**:完整链路已实现(移植自 songloft-player-lynx):
+  - **原生**(`host/*/updater/`):`BundleUpdateStore` 含 RSA PKCS#1 v1.5+SHA-256
+    验签、兼容契约校验(channel/engine/bridge/schema/能力)、独立系统 TLS 流式
+    下载(32 MiB 上限、剩余空间检查、原子提交 pending)、trial/confirm/rollback
+    状态机(每进程一次 beginLaunch、bundleId+120s 确认窗口、host 变更检测);
+    原生模块 `PomeloUpdate`(九方法)与 `PomeloStorage`(持久偏好,自动更新开关)
+    已注册。
+  - **JS**(`src/core/updater/`):检查(GitHub Releases,dev=tags/dev、正式=latest)、
+    下载会话(taskId 进度隔离/取消)、自动更新策略(默认关;开启立即检查、
+    冷启动异步检查、10 分钟最小间隔、6 小时周期、30m/2h/6h 退避、恢复内置自动
+    关开关);`UpdateStartup` 在路由挂载 1.5s 后按 bundleId 确认启动,渲染边界
+    错误上报回滚。
+  - **UI**:底部导航(首页/设置),设置 → 关于 → 客户端更新区(检查/下载/取消/
+    待生效提示/恢复内置二次确认);Web 端只提示"随部署更新"。
+  - **发布**(`scripts/update-release-lib.mjs`):CI Release job 组装
+    version.json+签名+bundle;配 `POMELO_UPDATE_PRIVATE_KEY`(secrets)与
+    `POMELO_UPDATE_PUBLIC_KEY`(vars)后附带签名热更新资产,未配钥只出完整包。
+    契约在 `updates/native-contract.json`;`updates/fixtures/signature-v1.json`
+    为三端共用验签向量(临时私钥已丢弃)。
+  - **验证状态**:JS 侧测试/构建/e2e:web 与 node 签名回归本地全绿;Android/iOS
+    编译与 `testDebugUnitTest`/`verify-ios-updater` 走 CI;Android/iOS 真机
+    端到端(下载→冷启动生效→回退)尚未实测。
 
 ## 两个 entry
 

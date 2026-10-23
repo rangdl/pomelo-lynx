@@ -110,6 +110,28 @@ jobs:
             build 2>&1 | tee /tmp/xcodebuild.log | tail -50
           # Keep a bounded, error-focused excerpt for debugging failures
           grep -E "error:|warning: .*PomeloLynx|BUILD" /tmp/xcodebuild.log | tail -100 > build-errors.txt || true
+      - name: Build (iPhoneOS device, unsigned)
+        working-directory: host/ios
+        run: |
+          set -o pipefail
+          xcodebuild -workspace PomeloLynx.xcworkspace -scheme PomeloLynx \
+            -configuration Debug -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData-device \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
+            CODE_SIGN_ENTITLEMENTS='' CODE_SIGN_STYLE=Manual AD_HOC_CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee /tmp/xcodebuild-device.log | tail -50
+          grep -E "error:|BUILD" /tmp/xcodebuild-device.log | tail -100 >> build-errors.txt || true
+      - name: Package unsigned device IPA
+        run: |
+          set -euo pipefail
+          APP=host/ios/build/DerivedData-device/Build/Products/Debug-iphoneos/PomeloLynx.app
+          test -d "$APP"
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry pomelo-lynx-ios-nosign.ipa Payload
+          rm -rf Payload
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -121,5 +143,11 @@ jobs:
         with:
           name: pomelo-lynx-ios-simulator
           path: host/ios/build/DerivedData/Build/Products/Debug-iphonesimulator/PomeloLynx.app
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pomelo-lynx-ios-nosign
+          path: pomelo-lynx-ios-nosign.ipa
           if-no-files-found: error
           retention-days: 7

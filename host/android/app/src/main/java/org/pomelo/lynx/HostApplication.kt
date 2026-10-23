@@ -10,6 +10,7 @@ import com.lynx.service.image.LynxImageService
 import com.lynx.service.log.LynxLogService
 import com.lynx.tasm.LynxEnv
 import com.lynx.tasm.service.LynxServiceCenter
+import org.pomelo.lynx.storage.PomeloStorageModule
 import org.pomelo.lynx.updater.PomeloUpdateModule
 
 /**
@@ -52,5 +53,9 @@ class HostApplication : Application() {
         // Hot-update module: JS calls `NativeModules.PomeloUpdate.*` and listens
         // for `PomeloUpdate.progress` global events (see src/core/updater/).
         LynxEnv.inst().registerModule("PomeloUpdate", PomeloUpdateModule::class.java)
+        // Persistent key/value storage (SharedPreferences), exposed as
+        // `NativeModules.PomeloStorage`; the update on/off preference survives
+        // process restarts (see src/core/storage/).
+        LynxEnv.inst().registerModule("PomeloStorage", PomeloStorageModule::class.java)
     }
 }

@@ -1,7 +1,13 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "files": {
-    "includes": ["**", "!**/skills-lock.json", "!.agents"]
+    "includes": [
+      "**",
+      "!**/skills-lock.json",
+      "!.agents",
+      "!updates/fixtures",
+      "!host/ios/PomeloLynx/Assets.xcassets"
+    ]
   },
   "assist": {
     "actions": {

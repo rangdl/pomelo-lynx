@@ -67,7 +67,9 @@ function buildNumber(now) {
 function buildMetadata() {
   const now = new Date();
   const ref = process.env.GITHUB_REF ?? '';
-  const tag = ref.startsWith('refs/tags/') ? ref.slice('refs/tags/'.length) : '';
+  const tag = ref.startsWith('refs/tags/')
+    ? ref.slice('refs/tags/'.length)
+    : '';
   const packageVersion = packageJson.version;
   if (tag && tag !== `v${packageVersion}`) {
     throw new Error(`Tag ${tag} 与 package.json v${packageVersion} 不一致`);
@@ -103,7 +105,10 @@ function iosEngine() {
   // Podfile.lock only exists after `pod install` (CI or a Mac). Prefer the CI
   // release lockfile, then the dev one; fall back to the version pinned in
   // pods.rb so local Linux runs still produce a file.
-  for (const rel of ['host/ios/release/Podfile.lock', 'host/ios/Podfile.lock']) {
+  for (const rel of [
+    'host/ios/release/Podfile.lock',
+    'host/ios/Podfile.lock',
+  ]) {
     try {
       const lock = readFileSync(join(root, rel), 'utf8');
       const version = lock.match(/^ {2}- Lynx \(([^)]+)\):/m)?.[1];

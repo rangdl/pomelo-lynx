@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from '@lynx-js/react';
 
-import './App.css';
-import arrow from './assets/arrow.png';
-import lynxLogo from './assets/lynx-logo.png';
-import reactLynxLogo from './assets/react-logo.png';
-import { useFlappy } from './useFlappy.js';
+import arrow from '../../assets/arrow.png';
+import lynxLogo from '../../assets/lynx-logo.png';
+import reactLynxLogo from '../../assets/react-logo.png';
+import { useFlappy } from '../../useFlappy.js';
+import './HomePage.css';
 
-export function App() {
+/** 首页:create-lynx 自带的 flappy 示例,从原 src/App.tsx 迁入。 */
+export function HomePage() {
   const [alterLogo, setAlterLogo] = useState(false);
   const [logoY, jump] = useFlappy();
 
@@ -41,13 +42,7 @@ export function App() {
         <view className="Content">
           <image src={arrow} className="Arrow" />
           <text className="Description">Tap the logo and have fun!</text>
-          <text className="Hint">
-            Edit
-            <text className="Hint-file">{' src/App.tsx '}</text>
-            to see updates!
-          </text>
         </view>
-        <view className="Spacer" />
       </view>
     </view>
   );

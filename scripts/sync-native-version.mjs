@@ -36,7 +36,9 @@ if (
   !/MARKETING_VERSION = [^;]+;/.test(project) ||
   !/CURRENT_PROJECT_VERSION = [^;]+;/.test(project)
 ) {
-  throw new Error('no MARKETING_VERSION / CURRENT_PROJECT_VERSION found in project.pbxproj');
+  throw new Error(
+    'no MARKETING_VERSION / CURRENT_PROJECT_VERSION found in project.pbxproj',
+  );
 }
 const updated = project
   .replace(/(MARKETING_VERSION = )[^;]+;/g, `$1${version};`)

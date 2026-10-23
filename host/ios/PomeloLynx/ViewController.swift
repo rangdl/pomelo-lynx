@@ -104,6 +104,7 @@ final class ViewController: UIViewController {
   private static func buildConfig(provider: HostTemplateProvider) -> LynxConfig {
     let config = LynxConfig(provider: provider)
     config.register(PomeloUpdateModule.self)
+    config.register(PomeloStorageModule.self)
     return config
   }
 }

@@ -301,7 +301,7 @@ class VerifyVector { public static void main(String[] args) throws Exception {
     envelope.signature,
   ]);
   const corrupt = join(options.directory, 'corrupt.json');
-  wf(
+  writeFileSync(
     corrupt,
     Buffer.concat([
       readFileSync(join(options.directory, 'version.json')),

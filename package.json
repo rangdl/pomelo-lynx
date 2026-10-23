@@ -1,6 +1,6 @@
 {
   "name": "pomelo-lynx",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "build": "rspeedy build && node scripts/assert-bundle-fresh.mjs",
@@ -16,9 +16,13 @@
     "e2e:web": "E2E_PLATFORM=web pnpm run e2e",
     "format": "biome format --write",
     "preview": "rspeedy preview",
+    "release:major": "pnpm version major",
+    "release:minor": "pnpm version minor",
+    "release:patch": "pnpm version patch",
     "test": "rstest run",
     "typecheck": "tsc -b",
     "verify:web": "pnpm run build && pnpm run e2e:web",
+    "version": "node scripts/sync-native-version.mjs && git add host/ios/PomeloLynx.xcodeproj/project.pbxproj",
     "web:dev": "rspeedy preview"
   },
   "dependencies": {

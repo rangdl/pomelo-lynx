@@ -10,6 +10,16 @@ plugins {
 val packageVersion =
     (JsonSlurper().parse(rootProject.file("../../package.json")) as Map<*, *>)["version"].toString()
 
+// versionCode must increase monotonically across releases; derive it from the
+// same semver so bumping package.json (pnpm release:patch/minor/major) is the
+// only manual step. 1.2.3 → 10203.
+val packageVersionCode =
+    packageVersion
+        .split(".")
+        .map { it.takeWhile { ch -> ch.isDigit() }.toIntOrNull() ?: 0 }
+        .let { (it + listOf(0, 0, 0)).take(3) }
+        .let { (major, minor, patch) -> major * 10000 + minor * 100 + patch }
+
 android {
     namespace = "org.pomelo.lynx"
     compileSdk = 34
@@ -18,7 +28,7 @@ android {
         applicationId = "org.pomelo.lynx"
         minSdk = 21
         targetSdk = 34
-        versionCode = 1
+        versionCode = packageVersionCode
         versionName = packageVersion
     }
 
@@ -29,8 +39,16 @@ android {
     }
 
     buildTypes {
+        debug {
+            // 本地调试包与 CI 发版包共存:org.pomelo.lynx.debug vs org.pomelo.lynx
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             isMinifyEnabled = false
+            // CI 没有正式 keystore;用 debug keystore 签名,产物可直接侧载。
+            // 这只用于内部测试,不能用于应用商店发布。
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {

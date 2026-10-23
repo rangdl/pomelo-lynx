@@ -3,8 +3,8 @@ name: Build Hosts
 # 发版即构建:打 vX.Y.Z tag 触发(tag 必须与 package.json 的 version 一致),
 # 产物发布到同名 Release。日常 push 不再触发构建。
 #
-#   pnpm version patch   # bump package.json + 自动打 vX.Y.Z tag
-#   git push --follow-tags
+#   pnpm release:patch   # bump package.json + 同步原生版本字段 + 本地 commit/tag
+#   git push --follow-tags   # 批准后再推送,才会触发构建
 #
 # 临时手动构建用 workflow_dispatch(产物仅进 artifacts,不发 Release)。
 
@@ -39,6 +39,18 @@ jobs:
             exit 1
           fi
           echo "version=$PKG_VERSION ok"
+      # iOS 的 MARKETING_VERSION 由 `pnpm release:*` 的 version 钩子同步;
+      # 手工改 package.json 时这里会拦住漂移。
+      - name: Verify iOS MARKETING_VERSION matches package.json
+        run: |
+          set -euo pipefail
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          PBX_VERSION=$(grep -m1 'MARKETING_VERSION = ' host/ios/PomeloLynx.xcodeproj/project.pbxproj | sed -E 's/.*MARKETING_VERSION = ([^;]+);/\1/')
+          if [ "$PKG_VERSION" != "$PBX_VERSION" ]; then
+            echo "::error::package.json version $PKG_VERSION != pbxproj MARKETING_VERSION $PBX_VERSION;请用 pnpm release:patch|minor|major 升版本"
+            exit 1
+          fi
+          echo "native version=$PKG_VERSION ok"
       - uses: pnpm/action-setup@v5
         with:
           version: 10
@@ -66,7 +78,7 @@ jobs:
           retention-days: 7
 
   android:
-    name: Android APK (debug)
+    name: Android APK (release)
     needs: prepare
     runs-on: ubuntu-latest
     steps:
@@ -85,11 +97,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
       - name: Build debug APK
         working-directory: host/android
-        run: ./gradlew --no-daemon assembleDebug
+        run: ./gradlew --no-daemon assembleRelease
       - uses: actions/upload-artifact@v5
         with:
-          name: pomelo-lynx-android-debug
-          path: host/android/app/build/outputs/apk/debug/app-debug.apk
+          name: pomelo-lynx-android-release
+          path: host/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 7
 
@@ -164,15 +176,13 @@ jobs:
           set -o pipefail
           # 完整输出直接进日志:不静音、不裁剪、不做摘要过滤。
           xcodebuild -workspace PomeloLynx.xcworkspace -scheme PomeloLynx \
-            -configuration Debug -sdk iphoneos \
+            -configuration Release -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             -derivedDataPath build/DerivedData-device \
             -showBuildTimingSummary \
             COMPILATION_CACHE_ENABLE_CACHING=YES \
             COMPILATION_CACHE_ENABLE_DIAGNOSTIC_REMARKS=YES \
             COMPILATION_CACHE_CAS_PATH="$GITHUB_WORKSPACE/.build/ios-compilation-cache" \
-            PRODUCT_BUNDLE_IDENTIFIER=org.pomelo.lynx.ci \
-            POMELO_DISPLAY_NAME='Pomelo Lynx CI' \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
             CODE_SIGN_ENTITLEMENTS='' CODE_SIGN_STYLE=Manual AD_HOC_CODE_SIGNING_ALLOWED=NO \
             build
@@ -188,7 +198,7 @@ jobs:
       - name: Package unsigned device IPA
         run: |
           set -euo pipefail
-          APP=host/ios/build/DerivedData-device/Build/Products/Debug-iphoneos/PomeloLynx.app
+          APP=host/ios/build/DerivedData-device/Build/Products/Release-iphoneos/PomeloLynx.app
           test -d "$APP"
           mkdir Payload
           cp -R "$APP" Payload/
@@ -215,14 +225,14 @@ jobs:
           path: .
       - uses: actions/download-artifact@v5
         with:
-          name: pomelo-lynx-android-debug
+          name: pomelo-lynx-android-release
           path: .
       - name: Rename artifacts with version
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
           mv pomelo-lynx-ios-nosign.ipa "pomelo-lynx-ios-${VERSION}-nosign.ipa"
-          mv app-debug.apk "pomelo-lynx-android-${VERSION}-debug.apk"
+          mv app-release.apk "pomelo-lynx-android-${VERSION}-release.apk"
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -230,6 +240,6 @@ jobs:
           set -euo pipefail
           gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
             --title "pomelo-lynx ${GITHUB_REF_NAME}" \
-            --notes "真机 arm64 未签名 IPA(TrollStore 或自行重签,iOS 15+)与 Android debug APK。"
+            --notes "iOS:真机 arm64 未签名 IPA(TrollStore 或自行重签,iOS 15+,不含 Inspector)。Android:release APK(debug keystore 签名,可直接侧载,非商店签名)。"
           gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
             pomelo-lynx-ios-*.ipa pomelo-lynx-android-*.apk

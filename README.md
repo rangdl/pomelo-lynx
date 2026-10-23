@@ -57,19 +57,26 @@ docs/web-debug.md   Web 端调试:症状 → 根因 → 解法
 `agent-lynx` 与 e2e/对齐工具链因此可以直接驱动它,和驱动 Explorer 一样。
 
 - **双 bundle**:`main.lynx.bundle`(示例)与 `probe.lynx.bundle`(对齐探针)都内嵌进 app。
-  Android 用 `adb shell am start -n org.pomelo.lynx/.MainActivity --ez bundle_probe true` 选 probe;
+  Android 本地调试包用
+  `adb shell am start -n org.pomelo.lynx.debug/org.pomelo.lynx.MainActivity --ez bundle_probe true` 选 probe;
   iOS 用 `PomeloLynx --bundle probe` 启动参数。
 - **iOS 两套依赖图**:`host/ios/Podfile` 是本地开发版(带 `LynxService/Devtool`,
-  bundle id `org.pomelo.lynx`,显示名 `Pomelo Lynx`);`host/ios/release/Podfile`
-  是 CI 发版版(不含 Devtool,构建时覆盖为 `org.pomelo.lynx.ci` / `Pomelo Lynx CI`)。
-  两者 bundle id 不同,可同时安装在一台设备上;CI 版没有 Inspector,
-  `agent-lynx`/`e2e:native` 请用本地开发版。
+  Debug 配置,bundle id `org.pomelo.lynx.debug`,显示名 `Pomelo Lynx Dev`);
+  `host/ios/release/Podfile` 是 CI 发版版(不含 Devtool,Release 配置,
+  bundle id `org.pomelo.lynx`,显示名 `Pomelo Lynx`)。两者 bundle id 不同,
+  可同时安装;CI 版没有 Inspector,`agent-lynx`/`e2e:native` 用本地开发版。
+- **Android 两套构建**:本地 debug 用 `assembleDebug`(applicationId `org.pomelo.lynx.debug`,
+  显示名 `Pomelo Lynx Dev`);CI 用 `assembleRelease`(applicationId `org.pomelo.lynx`,
+  用 debug keystore 签名以便直接侧载,不能用于应用商店发布)。
 - **构建**:`pnpm build:host` 生成 JS 产物并拷入两端宿主;APK 用
   `cd host/android && ./gradlew assembleDebug`(需 JDK 17 + Android SDK);
   iOS 需 macOS:`cd host/ios && pod install && xcodebuild ...`(可走
   `.github/workflows/build-hosts.yml` 的 CI 产物)。
-- **发版**:`package.json` 的 `version` 改成目标版本并提交,然后打同名 tag
-  (如 `v1.0.0`)推送,CI 校验 tag 与 `package.json` 一致后构建两端产物,
+- **发版**:`pnpm release:patch`(或 `release:minor` / `release:major`)用内置的
+  `pnpm version` 提升 `package.json` 版本,`version` 钩子同步 Xcode 的
+  `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`(Android 的 versionName/versionCode
+  在构建时从 `package.json` 推导),并生成 `vX.Y.Z` 提交与本地 tag。
+  确认后 `git push --follow-tags`:CI 校验 tag 与 `package.json` 一致,构建两端产物
   并发布到同名 Release;日常 push 不触发构建,临时构建用 `workflow_dispatch`。
 - **热更新预留**:两端的 `BundleUpdateStore` 已实现 trial/confirm/rollback
   状态机与 `install()` 接缝(签名验证与网络下载属阶段 4b/4c,未实现);

@@ -15,8 +15,9 @@ import org.pomelo.lynx.updater.BundleUpdates
  * Single full-screen host Activity: builds one LynxView, wires a
  * [HostTemplateProvider] that reads the embedded bundle from assets (with the
  * hot-update selection hook), and renders `main.lynx.bundle` by default or
- * `probe.lynx.bundle` when launched with `--ez bundle probe`
- * (`adb shell am start -n org.pomelo.lynx/.MainActivity --ez bundle probe`).
+ * `probe.lynx.bundle` when launched with `--ez bundle_probe true`
+ * (`adb shell am start -n org.pomelo.lynx.debug/org.pomelo.lynx.MainActivity
+ * --ez bundle_probe true` on the locally built debug package).
  * No dev server / no Explorer — fully offline.
  *
  * `android:configChanges` (see manifest) keeps this Activity from being

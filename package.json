@@ -19,7 +19,7 @@
     "release:major": "pnpm version major",
     "release:minor": "pnpm version minor",
     "release:patch": "pnpm version patch",
-    "test": "rstest run",
+    "test": "rstest run && node --test scripts/__tests__/*.node-test.mjs",
     "typecheck": "tsc -b",
     "verify:web": "pnpm run build && pnpm run e2e:web",
     "version": "node scripts/sync-native-version.mjs && git add host/ios/PomeloLynx.xcodeproj/project.pbxproj",

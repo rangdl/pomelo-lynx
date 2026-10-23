@@ -1,15 +1,14 @@
 import { useNavigate } from '@tanstack/react-router';
 
+import { clientBuild } from '../../core/config/constants.js';
 import { readLynxGlobal } from '../../native/native-modules.js';
 import { isWebPlatform } from '../../native/web-platform.js';
+import { ClientUpdateSection } from './ClientUpdateSection.js';
 import './settings.css';
 
 /**
  * 关于页:壳身份信息 + 客户端更新区。
- *
- * 阶段 1 范围:更新区只是占位(结构对齐 songloft 的 UpgradeSection),
- * 检查/下载/恢复内置在阶段 3 接入 `src/core/updater/`。Web 端不显示更新
- * 交互,只提示"随部署更新"。
+ * 更新区在 Web 端只提示"随部署更新";原生端为完整热更新交互。
  */
 export function AboutPage() {
   const navigate = useNavigate();
@@ -37,15 +36,18 @@ export function AboutPage() {
         <text className="settings-row__label">宿主</text>
         <text className="settings-row__value">{hostName}</text>
       </view>
+      <view className="settings-row">
+        <text className="settings-row__label">Bundle 版本</text>
+        <text className="settings-row__value">{clientBuild.version}</text>
+      </view>
       {hostVersion ? (
         <view className="settings-row">
-          <text className="settings-row__label">版本</text>
+          <text className="settings-row__label">宿主版本</text>
           <text className="settings-row__value">{hostVersion}</text>
         </view>
       ) : null}
 
       <view className="settings__section">
-        <text className="settings__section-title">客户端更新</text>
         {web ? (
           <view className="settings-row">
             <text className="settings-row__label">
@@ -53,10 +55,7 @@ export function AboutPage() {
             </text>
           </view>
         ) : (
-          <view className="settings-row" data-testid="upgrade-section">
-            <text className="settings-row__label">检查更新</text>
-            <text className="settings-row__value">即将上线</text>
-          </view>
+          <ClientUpdateSection />
         )}
       </view>
     </view>

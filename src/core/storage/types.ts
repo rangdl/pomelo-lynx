@@ -11,26 +11,26 @@
  * the web implementation is synchronous underneath.
  */
 export interface PomeloPrefs {
-  get(key: string): Promise<string | null>
-  set(key: string, value: string): Promise<void>
-  remove(key: string): Promise<void>
-  keys(): Promise<string[]>
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string): Promise<void>;
+  remove(key: string): Promise<void>;
+  keys(): Promise<string[]>;
 }
 
 export interface PomeloSecure {
-  get(key: string): Promise<string | null>
-  set(key: string, value: string): Promise<void>
-  remove(key: string): Promise<void>
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string): Promise<void>;
+  remove(key: string): Promise<void>;
 }
 
 export interface PomeloPaths {
-  appData(): Promise<string>
-  cache(): Promise<string>
-  documents(): Promise<string>
+  appData(): Promise<string>;
+  cache(): Promise<string>;
+  documents(): Promise<string>;
 }
 
 export interface PomeloStorage {
-  prefs: PomeloPrefs
-  secure: PomeloSecure
-  paths: PomeloPaths
+  prefs: PomeloPrefs;
+  secure: PomeloSecure;
+  paths: PomeloPaths;
 }

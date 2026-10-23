@@ -1,18 +1,18 @@
 {
   "description": "Public verification fixture only; ephemeral private key was discarded.",
-  "raw_manifest": "{\n  \"version\": \"dev\",\n  \"package_version\": \"0.1.0\",\n  \"native_version\": \"0.1.0\",\n  \"build_number\": 213408000,\n  \"git_commit\": \"abcdef0\",\n  \"build_time\": \"2026-10-06T00:00:00.000Z\",\n  \"channel\": \"dev\",\n  \"release_tag\": \"dev\",\n  \"assets\": [\n    {\n      \"name\": \"pomelo-lynx-main.lynx.bundle\",\n      \"size\": 19,\n      \"sha256\": \"7a93690ee02934566b517cf410088e0f1ed4ff0c7d0c81c9a00a21f1528a609f\"\n    }\n  ],\n  \"bundle_update\": {\n    \"protocol\": 1,\n    \"bundle_id\": \"dev-213408000-abcdef0\",\n    \"asset\": \"pomelo-lynx-main.lynx.bundle\",\n    \"size\": 19,\n    \"sha256\": \"7a93690ee02934566b517cf410088e0f1ed4ff0c7d0c81c9a00a21f1528a609f\",\n    \"local_schema\": 1,\n    \"targets\": [\n      {\n        \"platform\": \"android\",\n        \"engine\": \"4.0.0\",\n        \"minimum_host_version\": \"0.1.0\",\n        \"minimum_bridge\": 1,\n        \"maximum_bridge\": 1,\n        \"required_capabilities\": [\n          \"audio.sourceLoad.v1\",\n          \"updater.v1\"\n        ]\n      },\n      {\n        \"platform\": \"ios\",\n        \"engine\": \"4.0.1\",\n        \"minimum_host_version\": \"0.1.0\",\n        \"minimum_bridge\": 1,\n        \"maximum_bridge\": 1,\n        \"required_capabilities\": [\n          \"audio.sourceLoad.v1\",\n          \"updater.v1\"\n        ]\n      },\n      {\n        \"platform\": \"harmony\",\n        \"engine\": \"4.0.1\",\n        \"minimum_host_version\": \"0.1.0\",\n        \"minimum_bridge\": 1,\n        \"maximum_bridge\": 1,\n        \"required_capabilities\": [\n          \"audio.sourceLoad.v1\",\n          \"updater.v1\"\n        ]\n      }\n    ]\n  }\n}\n",
+  "raw_manifest": "{\n  \"version\": \"dev\",\n  \"package_version\": \"0.1.0\",\n  \"native_version\": \"0.1.0\",\n  \"build_number\": 213408000,\n  \"git_commit\": \"abcdef0\",\n  \"build_time\": \"2026-10-06T00:00:00.000Z\",\n  \"channel\": \"dev\",\n  \"release_tag\": \"dev\",\n  \"assets\": [\n    {\n      \"name\": \"pomelo-lynx-main.lynx.bundle\",\n      \"size\": 19,\n      \"sha256\": \"7a93690ee02934566b517cf410088e0f1ed4ff0c7d0c81c9a00a21f1528a609f\"\n    }\n  ],\n  \"bundle_update\": {\n    \"protocol\": 1,\n    \"bundle_id\": \"dev-213408000-abcdef0\",\n    \"asset\": \"pomelo-lynx-main.lynx.bundle\",\n    \"size\": 19,\n    \"sha256\": \"7a93690ee02934566b517cf410088e0f1ed4ff0c7d0c81c9a00a21f1528a609f\",\n    \"local_schema\": 1,\n    \"targets\": [\n      {\n        \"platform\": \"android\",\n        \"engine\": \"4.0.0\",\n        \"minimum_host_version\": \"0.1.0\",\n        \"minimum_bridge\": 1,\n        \"maximum_bridge\": 1,\n        \"required_capabilities\": [\n          \"updater.v1\"\n        ]\n      },\n      {\n        \"platform\": \"ios\",\n        \"engine\": \"4.0.1\",\n        \"minimum_host_version\": \"0.1.0\",\n        \"minimum_bridge\": 1,\n        \"maximum_bridge\": 1,\n        \"required_capabilities\": [\n          \"updater.v1\"\n        ]\n      }\n    ]\n  }\n}\n",
   "envelope": {
     "protocol": 1,
-    "key_id": "551771ac1ac55762",
+    "key_id": "b8dd6e43b4a2c451",
     "algorithm": "rsa-pkcs1v15-sha256",
-    "signature": "bQi4di6ju+OhieViEogZxQkbIwBhwCAWZ70Xl7q9fjkLH5yBpyvB7TFyL84Ser4vRnzBV+wP5E3PY7/P2u+L3y1CU39hYINH26oMrWU+1TtSHSpYdVrq0YZDKJNJlAxU/C/+7EYIRgcHljeuiOZ8jZ6m5rZSbSD0Q3FWJ5WSsBdvn2NTwjXeFN99VnSnVhkHPF5U7Az+CFaakngcfQ8ENSG9a8B+F0OLGrlMh7iKxCNHrU5y7Zjknc5VevSNJ6w9q/I+KvMLPU9l8ODG9x58sFV/SYk9g6M9gWEcOQ0lyVsJbVmNt8mZArn09RQZ+fvlziKuktKeo3GwWAT4NYgYrw=="
+    "signature": "G6HQkG17cVhiMJNowfOods+AiW6itx8CwS5T1ToyAE8fmvhAjPmOXE3k7G4gx6Eq+J3eS1EUHG7AndDqPQv1kui+THdWpOVBa9CIzHyRG9aIfKAuDGckhmm+ipI1qyMyEfwUpbnWAW3LwnJoIC/boYKaltb3fxrNDwyfbZ/TMeNX5TCG1PJMZ4ExDheoHPLBWVbB6HkXfePDH89KRyJGezUvzZrKNRWdz7oW7zAESwMVS9vMuigRzvUrC5JTcn76cHySEwkenoEG5P/6lM8RdAe3cUpmeqhK3WBagkyEY76s5Lbkb2BBYa3cKdSDmB3VnuOoMUaioggT1BB38VNPpA=="
   },
   "trusted_key": {
     "key_bits": 2048,
-    "key_id": "551771ac1ac55762",
+    "key_id": "b8dd6e43b4a2c451",
     "algorithm": "rsa-pkcs1v15-sha256",
-    "spki_base64": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAi5ZGLrPEKwp7IIfMkOjChxXydcYE7YrcelAsgxPeV80/cGVOiU/i1Qtj1p4KBDI0s2LGrBthLvYVWfGuI84iqqVg5qV7Kkrz9UUacrTRQZiegQaBJYRpPYSUUxjEQuLngrFNYYqwpm2Zk8sLYSzLzBGeKxR8WkQxy6Gc37RiDbpvOBByqeUFsdD2l7QsnWjAvtdFC7Q3ap93mv4b1Xqn96+oIgDsMLj9YmTqA2TrK2h1esjDEIUIEzdSQc4+Zgal/EzqS9R5x14kr4CjqX4SGkrPpOesymlxvvxk8x/dItzdMIM/KN2cpE/ayyrg4zcO1z4qW83AjBhxrWS9XhAQSwIDAQAB",
-    "pkcs1_base64": "MIIBCgKCAQEAi5ZGLrPEKwp7IIfMkOjChxXydcYE7YrcelAsgxPeV80/cGVOiU/i1Qtj1p4KBDI0s2LGrBthLvYVWfGuI84iqqVg5qV7Kkrz9UUacrTRQZiegQaBJYRpPYSUUxjEQuLngrFNYYqwpm2Zk8sLYSzLzBGeKxR8WkQxy6Gc37RiDbpvOBByqeUFsdD2l7QsnWjAvtdFC7Q3ap93mv4b1Xqn96+oIgDsMLj9YmTqA2TrK2h1esjDEIUIEzdSQc4+Zgal/EzqS9R5x14kr4CjqX4SGkrPpOesymlxvvxk8x/dItzdMIM/KN2cpE/ayyrg4zcO1z4qW83AjBhxrWS9XhAQSwIDAQAB"
+    "spki_base64": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwacAXSISQ84adlr9B7/nMFqh1nS7zZ7oRH1cN0AcBNi3jblR8qoynJHuVPBeC6BHYGcQbC5vaO4A8TyVrRf09KqFT174FoHeqOqMbEbZe8Ux++hj02uwaI47VrRECqVHkeyRPPJ5KuGG3EOcXpPu2a9pnji9wmBowWyqzpfLPmWcvrU0ASLpZ3X2vbrk6uNjI4cuZ6PbGNQxmUVRU5lXjDZqKAOGQkz/jj1lSJD/Q4149jrWwNITERzprbbYJ5OdvxBwyO4QQbFgJEH6JQQGz3Giux9XWsqUEcO8BpHpAHjKBgg5FBQSl6yW7eR6udrcGOEaZPG4qQFbVDTmfW15WQIDAQAB",
+    "pkcs1_base64": "MIIBCgKCAQEAwacAXSISQ84adlr9B7/nMFqh1nS7zZ7oRH1cN0AcBNi3jblR8qoynJHuVPBeC6BHYGcQbC5vaO4A8TyVrRf09KqFT174FoHeqOqMbEbZe8Ux++hj02uwaI47VrRECqVHkeyRPPJ5KuGG3EOcXpPu2a9pnji9wmBowWyqzpfLPmWcvrU0ASLpZ3X2vbrk6uNjI4cuZ6PbGNQxmUVRU5lXjDZqKAOGQkz/jj1lSJD/Q4149jrWwNITERzprbbYJ5OdvxBwyO4QQbFgJEH6JQQGz3Giux9XWsqUEcO8BpHpAHjKBgg5FBQSl6yW7eR6udrcGOEaZPG4qQFbVDTmfW15WQIDAQAB"
   },
   "bundle_base64": "5Y2P6K6u5rWL6K+VIGJ1bmRsZQ==",
   "native_host": {
@@ -28,21 +28,20 @@
     "bridge_version": 1,
     "local_schema": 1,
     "capabilities": [
-      "audio.sourceLoad.v1",
-      "updater.v1"
+      "updater.v1",
+      "updater.metadata.v1"
     ],
     "engines": {
       "android": "4.0.0",
-      "ios": "4.0.1",
-      "harmony": "4.0.1"
+      "ios": "4.0.1"
     },
     "trusted_keys": [
       {
         "key_bits": 2048,
-        "key_id": "551771ac1ac55762",
+        "key_id": "b8dd6e43b4a2c451",
         "algorithm": "rsa-pkcs1v15-sha256",
-        "spki_base64": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAi5ZGLrPEKwp7IIfMkOjChxXydcYE7YrcelAsgxPeV80/cGVOiU/i1Qtj1p4KBDI0s2LGrBthLvYVWfGuI84iqqVg5qV7Kkrz9UUacrTRQZiegQaBJYRpPYSUUxjEQuLngrFNYYqwpm2Zk8sLYSzLzBGeKxR8WkQxy6Gc37RiDbpvOBByqeUFsdD2l7QsnWjAvtdFC7Q3ap93mv4b1Xqn96+oIgDsMLj9YmTqA2TrK2h1esjDEIUIEzdSQc4+Zgal/EzqS9R5x14kr4CjqX4SGkrPpOesymlxvvxk8x/dItzdMIM/KN2cpE/ayyrg4zcO1z4qW83AjBhxrWS9XhAQSwIDAQAB",
-        "pkcs1_base64": "MIIBCgKCAQEAi5ZGLrPEKwp7IIfMkOjChxXydcYE7YrcelAsgxPeV80/cGVOiU/i1Qtj1p4KBDI0s2LGrBthLvYVWfGuI84iqqVg5qV7Kkrz9UUacrTRQZiegQaBJYRpPYSUUxjEQuLngrFNYYqwpm2Zk8sLYSzLzBGeKxR8WkQxy6Gc37RiDbpvOBByqeUFsdD2l7QsnWjAvtdFC7Q3ap93mv4b1Xqn96+oIgDsMLj9YmTqA2TrK2h1esjDEIUIEzdSQc4+Zgal/EzqS9R5x14kr4CjqX4SGkrPpOesymlxvvxk8x/dItzdMIM/KN2cpE/ayyrg4zcO1z4qW83AjBhxrWS9XhAQSwIDAQAB"
+        "spki_base64": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwacAXSISQ84adlr9B7/nMFqh1nS7zZ7oRH1cN0AcBNi3jblR8qoynJHuVPBeC6BHYGcQbC5vaO4A8TyVrRf09KqFT174FoHeqOqMbEbZe8Ux++hj02uwaI47VrRECqVHkeyRPPJ5KuGG3EOcXpPu2a9pnji9wmBowWyqzpfLPmWcvrU0ASLpZ3X2vbrk6uNjI4cuZ6PbGNQxmUVRU5lXjDZqKAOGQkz/jj1lSJD/Q4149jrWwNITERzprbbYJ5OdvxBwyO4QQbFgJEH6JQQGz3Giux9XWsqUEcO8BpHpAHjKBgg5FBQSl6yW7eR6udrcGOEaZPG4qQFbVDTmfW15WQIDAQAB",
+        "pkcs1_base64": "MIIBCgKCAQEAwacAXSISQ84adlr9B7/nMFqh1nS7zZ7oRH1cN0AcBNi3jblR8qoynJHuVPBeC6BHYGcQbC5vaO4A8TyVrRf09KqFT174FoHeqOqMbEbZe8Ux++hj02uwaI47VrRECqVHkeyRPPJ5KuGG3EOcXpPu2a9pnji9wmBowWyqzpfLPmWcvrU0ASLpZ3X2vbrk6uNjI4cuZ6PbGNQxmUVRU5lXjDZqKAOGQkz/jj1lSJD/Q4149jrWwNITERzprbbYJ5OdvxBwyO4QQbFgJEH6JQQGz3Giux9XWsqUEcO8BpHpAHjKBgg5FBQSl6yW7eR6udrcGOEaZPG4qQFbVDTmfW15WQIDAQAB"
       }
     ]
   }

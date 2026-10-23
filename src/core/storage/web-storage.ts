@@ -1,4 +1,4 @@
-import type { PomeloStorage } from './types.js'
+import type { PomeloStorage } from './types.js';
 
 /**
  * Web `PomeloStorage`: `prefs` and `secure` both persist to `localStorage`
@@ -9,37 +9,38 @@ import type { PomeloStorage } from './types.js'
  * behaviour (SharedPreferences → localStorage).
  */
 
-const PREFS_PREFIX = 'pomelo.prefs.'
-const SECURE_PREFIX = 'pomelo.secure.'
+const PREFS_PREFIX = 'pomelo.prefs.';
+const SECURE_PREFIX = 'pomelo.secure.';
 
 interface WebLocalStorage {
-  getItem(key: string): string | null
-  setItem(key: string, value: string): void
-  removeItem(key: string): void
-  readonly length: number
-  key(index: number): string | null
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+  readonly length: number;
+  key(index: number): string | null;
 }
 
 function namespace(store: WebLocalStorage, prefix: string) {
   return {
     async get(key: string): Promise<string | null> {
-      return store.getItem(prefix + key)
+      return store.getItem(prefix + key);
     },
     async set(key: string, value: string): Promise<void> {
-      store.setItem(prefix + key, value)
+      store.setItem(prefix + key, value);
     },
     async remove(key: string): Promise<void> {
-      store.removeItem(prefix + key)
+      store.removeItem(prefix + key);
     },
     async keys(): Promise<string[]> {
-      const out: string[] = []
+      const out: string[] = [];
       for (let i = 0; i < store.length; i++) {
-        const raw = store.key(i)
-        if (raw != null && raw.startsWith(prefix)) out.push(raw.slice(prefix.length))
+        const raw = store.key(i);
+        if (raw != null && raw.startsWith(prefix))
+          out.push(raw.slice(prefix.length));
       }
-      return out
+      return out;
     },
-  }
+  };
 }
 
 /**
@@ -47,32 +48,34 @@ function namespace(store: WebLocalStorage, prefix: string) {
  * for tests), or over `globalThis.localStorage`. Throws a clear error if none
  * is available — this impl must only be selected in a web-like realm.
  */
-export function createWebStorage(localStorageLike?: WebLocalStorage): PomeloStorage {
+export function createWebStorage(
+  localStorageLike?: WebLocalStorage,
+): PomeloStorage {
   const store =
     localStorageLike ??
-    (globalThis as { localStorage?: WebLocalStorage }).localStorage
+    (globalThis as { localStorage?: WebLocalStorage }).localStorage;
   if (!store) {
     throw new Error(
       '[PomeloStorage] web storage selected but no localStorage is available',
-    )
+    );
   }
 
-  const prefs = namespace(store, PREFS_PREFIX)
-  const secure = namespace(store, SECURE_PREFIX)
+  const prefs = namespace(store, PREFS_PREFIX);
+  const secure = namespace(store, SECURE_PREFIX);
 
   return {
     prefs,
     secure: { get: secure.get, set: secure.set, remove: secure.remove },
     paths: {
       async appData() {
-        return '/pomelo/app-data'
+        return '/pomelo/app-data';
       },
       async cache() {
-        return '/pomelo/cache'
+        return '/pomelo/cache';
       },
       async documents() {
-        return '/pomelo/documents'
+        return '/pomelo/documents';
       },
     },
-  }
+  };
 }

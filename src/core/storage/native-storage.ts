@@ -1,4 +1,4 @@
-import type { PomeloStorage } from './types.js'
+import type { PomeloStorage } from './types.js';
 
 /**
  * Native `PomeloStorage` binding.
@@ -22,20 +22,29 @@ import type { PomeloStorage } from './types.js'
  * `PomeloStorageModule` `area` switch** (`prefs` → app prefs file, `secure` →
  * secure prefs file).
  */
-export type StorageArea = 'prefs' | 'secure'
+export type StorageArea = 'prefs' | 'secure';
 
 /** The native module surface on `NativeModules.PomeloStorage`. */
 export interface PomeloStorageNativeModule {
-  getItem(area: StorageArea, key: string, callback: (value: string | null) => void): void
-  setItem(area: StorageArea, key: string, value: string): void
-  removeItem(area: StorageArea, key: string): void
-  getKeys(area: StorageArea, callback: (keys: string[]) => void): void
+  getItem(
+    area: StorageArea,
+    key: string,
+    callback: (value: string | null) => void,
+  ): void;
+  setItem(area: StorageArea, key: string, value: string): void;
+  removeItem(area: StorageArea, key: string): void;
+  getKeys(area: StorageArea, callback: (keys: string[]) => void): void;
   /** Optional: native app directory paths. Absent → virtual fallback paths. */
-  getPath?(name: string, callback: (path: string) => void): void
+  getPath?(name: string, callback: (path: string) => void): void;
 }
 
 /** Read/write/remove/keys methods required for the native binding to be usable. */
-const REQUIRED_METHODS = ['getItem', 'setItem', 'removeItem', 'getKeys'] as const
+const REQUIRED_METHODS = [
+  'getItem',
+  'setItem',
+  'removeItem',
+  'getKeys',
+] as const;
 
 /**
  * Probe: is a usable native storage module present? Pure — the caller injects
@@ -44,9 +53,11 @@ const REQUIRED_METHODS = ['getItem', 'setItem', 'removeItem', 'getKeys'] as cons
 export function isNativeStorageAvailable(
   nativeModules: { PomeloStorage?: unknown } | undefined | null,
 ): boolean {
-  const mod = nativeModules?.PomeloStorage as Record<string, unknown> | undefined
-  if (!mod) return false
-  return REQUIRED_METHODS.every((name) => typeof mod[name] === 'function')
+  const mod = nativeModules?.PomeloStorage as
+    | Record<string, unknown>
+    | undefined;
+  if (!mod) return false;
+  return REQUIRED_METHODS.every((name) => typeof mod[name] === 'function');
 }
 
 /**
@@ -54,55 +65,57 @@ export function isNativeStorageAvailable(
  * in Promises; write failures are swallowed (best-effort persistence must never
  * break the caller). Accepts an injected module so it is unit-testable.
  */
-export function createNativeStorage(mod: PomeloStorageNativeModule): PomeloStorage {
+export function createNativeStorage(
+  mod: PomeloStorageNativeModule,
+): PomeloStorage {
   const get = (area: StorageArea, key: string): Promise<string | null> =>
     new Promise((resolve) => {
       try {
-        mod.getItem(area, key, (value) => resolve(value ?? null))
+        mod.getItem(area, key, (value) => resolve(value ?? null));
       } catch {
-        resolve(null)
+        resolve(null);
       }
-    })
+    });
 
   const set = (area: StorageArea, key: string, value: string): Promise<void> =>
     new Promise((resolve) => {
       try {
-        mod.setItem(area, key, value)
+        mod.setItem(area, key, value);
       } finally {
-        resolve()
+        resolve();
       }
-    })
+    });
 
   const remove = (area: StorageArea, key: string): Promise<void> =>
     new Promise((resolve) => {
       try {
-        mod.removeItem(area, key)
+        mod.removeItem(area, key);
       } finally {
-        resolve()
+        resolve();
       }
-    })
+    });
 
   const listKeys = (area: StorageArea): Promise<string[]> =>
     new Promise((resolve) => {
       try {
-        mod.getKeys(area, (keys) => resolve(Array.isArray(keys) ? keys : []))
+        mod.getKeys(area, (keys) => resolve(Array.isArray(keys) ? keys : []));
       } catch {
-        resolve([])
+        resolve([]);
       }
-    })
+    });
 
   const pathFor = (name: string): Promise<string> =>
     new Promise((resolve) => {
       if (typeof mod.getPath !== 'function') {
-        resolve(`/pomelo/${name}`)
-        return
+        resolve(`/pomelo/${name}`);
+        return;
       }
       try {
-        mod.getPath(name, (path) => resolve(path || `/pomelo/${name}`))
+        mod.getPath(name, (path) => resolve(path || `/pomelo/${name}`));
       } catch {
-        resolve(`/pomelo/${name}`)
+        resolve(`/pomelo/${name}`);
       }
-    })
+    });
 
   return {
     prefs: {
@@ -121,5 +134,5 @@ export function createNativeStorage(mod: PomeloStorageNativeModule): PomeloStora
       cache: () => pathFor('cache'),
       documents: () => pathFor('documents'),
     },
-  }
+  };
 }

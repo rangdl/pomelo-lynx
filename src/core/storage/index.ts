@@ -1,30 +1,30 @@
-import { readNativeModules } from '../../native/native-modules.js'
-import { createMemoryStorage } from './memory-storage.js'
+import { readNativeModules } from '../../native/native-modules.js';
+import { createIndexedDBStorage, isIndexedDBAvailable } from './idb-storage.js';
+import { createMemoryStorage } from './memory-storage.js';
 import {
   createNativeStorage,
   isNativeStorageAvailable,
   type PomeloStorageNativeModule,
-} from './native-storage.js'
-import { createWebStorage } from './web-storage.js'
-import { createIndexedDBStorage, isIndexedDBAvailable } from './idb-storage.js'
-import type { PomeloStorage } from './types.js'
+} from './native-storage.js';
+import type { PomeloStorage } from './types.js';
+import { createWebStorage } from './web-storage.js';
 
-export type {
-  PomeloStorage,
-  PomeloPrefs,
-  PomeloSecure,
-  PomeloPaths,
-} from './types.js'
-export { createMemoryStorage } from './memory-storage.js'
-export { createWebStorage } from './web-storage.js'
-export { createIndexedDBStorage, isIndexedDBAvailable } from './idb-storage.js'
+export { createIndexedDBStorage, isIndexedDBAvailable } from './idb-storage.js';
+export { createMemoryStorage } from './memory-storage.js';
 export {
   createNativeStorage,
   isNativeStorageAvailable,
   type PomeloStorageNativeModule,
-} from './native-storage.js'
+} from './native-storage.js';
+export type {
+  PomeloPaths,
+  PomeloPrefs,
+  PomeloSecure,
+  PomeloStorage,
+} from './types.js';
+export { createWebStorage } from './web-storage.js';
 
-let warnedInterimStorage = false
+let warnedInterimStorage = false;
 
 /**
  * Pick a `PomeloStorage` implementation by capability probe:
@@ -55,40 +55,42 @@ let warnedInterimStorage = false
  * Pass an explicit `impl` to bypass detection (tests inject `createMemoryStorage()`).
  */
 export function createPomeloStorage(impl?: PomeloStorage): PomeloStorage {
-  if (impl) return impl
-  const nativeModules = readNativeModules()
+  if (impl) return impl;
+  const nativeModules = readNativeModules();
   if (isNativeStorageAvailable(nativeModules)) {
     try {
-      const mod = (nativeModules as { PomeloStorage: PomeloStorageNativeModule })
-        .PomeloStorage
-      return createNativeStorage(mod)
+      const mod = (
+        nativeModules as { PomeloStorage: PomeloStorageNativeModule }
+      ).PomeloStorage;
+      return createNativeStorage(mod);
     } catch {
       // fall through to web / memory
     }
   }
-  if (isIndexedDBAvailable()) return createIndexedDBStorage()
+  if (isIndexedDBAvailable()) return createIndexedDBStorage();
   const hasLocalStorage =
-    typeof (globalThis as { localStorage?: unknown }).localStorage !== 'undefined'
-  if (hasLocalStorage) return createWebStorage()
+    typeof (globalThis as { localStorage?: unknown }).localStorage !==
+    'undefined';
+  if (hasLocalStorage) return createWebStorage();
   if (!warnedInterimStorage) {
-    warnedInterimStorage = true
+    warnedInterimStorage = true;
     console.warn(
       '[PomeloStorage] no NativeModules.PomeloStorage, no indexedDB and no ' +
         'localStorage; using in-memory storage (non-persistent) — sessions do ' +
         'not survive app restart',
-    )
+    );
   }
-  return createMemoryStorage()
+  return createMemoryStorage();
 }
 
-let singleton: PomeloStorage | null = null
+let singleton: PomeloStorage | null = null;
 
 /** Process-wide storage facade. `setPomeloStorage` overrides it (tests / DI). */
 export function getPomeloStorage(): PomeloStorage {
-  if (!singleton) singleton = createPomeloStorage()
-  return singleton
+  if (!singleton) singleton = createPomeloStorage();
+  return singleton;
 }
 
 export function setPomeloStorage(storage: PomeloStorage): void {
-  singleton = storage
+  singleton = storage;
 }

@@ -7,7 +7,8 @@ import {
   Outlet,
   RouterProvider,
 } from '@tanstack/react-router';
-
+import { reportUpdateStartupFailure } from './core/updater/native-updater.js';
+import { UpdateStartup } from './core/updater/UpdateStartup.js';
 import { HomePage } from './features/home/HomePage.js';
 import { AboutPage } from './features/settings/AboutPage.js';
 import { SettingsPage } from './features/settings/SettingsPage.js';
@@ -16,10 +17,8 @@ import { ensureRouterEnv } from './shims/router-env.js';
 
 /**
  * Catches render errors in the route tree so the whole app does not go blank.
- *
- * 阶段 2/3 接线点:songloft 在 componentDidCatch 里调
- * `reportUpdateStartupFailure()`(core/updater/native-updater),让未确认的
- * trial bundle 在下次冷启动回滚。JS updater 落地后接这里。
+ * A render failure during a trial bundle's first launch reports the failure so
+ * the next cold start rolls back (mirrors songloft-player-lynx).
  */
 class RouteErrorBoundary extends Component<
   { children: ReactNode },
@@ -32,6 +31,7 @@ class RouteErrorBoundary extends Component<
   }
 
   componentDidCatch(error: unknown) {
+    reportUpdateStartupFailure();
     // eslint-disable-next-line no-console
     console.error('[RouteErrorBoundary]', error);
   }
@@ -101,6 +101,8 @@ export function createAppRouter() {
 export function App() {
   return (
     <RouteErrorBoundary>
+      {/* 真实路由挂载后 1.5s 按 bundleId 确认 trial 启动,并启动自动更新调度 */}
+      <UpdateStartup />
       <RouterProvider router={createAppRouter()} />
     </RouteErrorBoundary>
   );

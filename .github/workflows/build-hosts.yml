@@ -133,6 +133,8 @@ jobs:
           echo "cache_id=$CACHE_ID" >> "$GITHUB_OUTPUT"
       # Xcode 的内容寻址编译缓存可以跨全新 checkout 复用;只缓存 DerivedData
       # 会因文件 mtime 变化而失效。这是 iOS job 耗时从十几分钟降到几分钟的关键。
+      # 键里刻意不含 project.pbxproj:发版会改 MARKETING_VERSION,而 CAS 以编译
+      # 命令为键,工程设置变化不会误命中旧对象。
       - name: Restore iOS compilation and CocoaPods caches
         id: ios-cache
         uses: actions/cache/restore@v4
@@ -141,9 +143,9 @@ jobs:
             .build/ios-compilation-cache
             ~/Library/Caches/CocoaPods
             ~/.cocoapods/repos
-          key: ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/pods.rb', 'host/ios/Podfile', 'host/ios/release/Podfile', 'host/ios/release/Podfile.lock', 'host/ios/PomeloLynx.xcodeproj/project.pbxproj') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/pods.rb', 'host/ios/Podfile', 'host/ios/release/Podfile', 'host/ios/release/Podfile.lock') }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/pods.rb', 'host/ios/Podfile', 'host/ios/release/Podfile', 'host/ios/release/Podfile.lock', 'host/ios/PomeloLynx.xcodeproj/project.pbxproj') }}-
+            ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/pods.rb', 'host/ios/Podfile', 'host/ios/release/Podfile', 'host/ios/release/Podfile.lock') }}-
       # CI 使用 host/ios/release/Podfile:不含 LynxService/Devtool,编译更快、
       # 体积更小。产物用独立 bundle id,可与本地开发版同时安装。
       - name: pod install (CI graph, without Devtool)

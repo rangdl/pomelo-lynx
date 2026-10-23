@@ -65,17 +65,19 @@ function androidEngine() {
 }
 
 function iosEngine() {
-  // Podfile.lock only exists after `pod install` (CI or a Mac). Fall back to
-  // the version pinned in pods.rb so local Linux runs still produce a file.
-  const lockPath = join(root, 'host/ios/Podfile.lock');
-  try {
-    const lock = readFileSync(lockPath, 'utf8');
-    const version = lock.match(/^ {2}- Lynx \(([^)]+)\):/m)?.[1];
-    if (version) return version;
-  } catch {
-    // no lockfile yet
+  // Podfile.lock only exists after `pod install` (CI or a Mac). Prefer the CI
+  // release lockfile, then the dev one; fall back to the version pinned in
+  // pods.rb so local Linux runs still produce a file.
+  for (const rel of ['host/ios/release/Podfile.lock', 'host/ios/Podfile.lock']) {
+    try {
+      const lock = readFileSync(join(root, rel), 'utf8');
+      const version = lock.match(/^ {2}- Lynx \(([^)]+)\):/m)?.[1];
+      if (version) return version;
+    } catch {
+      // no lockfile yet
+    }
   }
-  const pods = readFileSync(join(root, 'host/ios/Podfile'), 'utf8');
+  const pods = readFileSync(join(root, 'host/ios/pods.rb'), 'utf8');
   const version = pods.match(/pod 'Lynx', '([^']+)'/)?.[1];
   if (!version) throw new Error('无法从 host/ios/pods.rb 解析 Lynx 版本');
   return version;

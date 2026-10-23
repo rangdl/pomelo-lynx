@@ -129,12 +129,32 @@ jobs:
             .build/ios-compilation-cache
             ~/Library/Caches/CocoaPods
             ~/.cocoapods/repos
-          key: ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/Podfile', 'host/ios/PomeloLynx.xcodeproj/project.pbxproj') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/pods.rb', 'host/ios/Podfile', 'host/ios/release/Podfile', 'host/ios/release/Podfile.lock', 'host/ios/PomeloLynx.xcodeproj/project.pbxproj') }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/Podfile', 'host/ios/PomeloLynx.xcodeproj/project.pbxproj') }}-
-      - name: pod install
-        working-directory: host/ios
-        run: pod _1.16.2_ install
+            ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/pods.rb', 'host/ios/Podfile', 'host/ios/release/Podfile', 'host/ios/release/Podfile.lock', 'host/ios/PomeloLynx.xcodeproj/project.pbxproj') }}-
+      # CI 使用 host/ios/release/Podfile:不含 LynxService/Devtool,编译更快、
+      # 体积更小。产物用独立 bundle id,可与本地开发版同时安装。
+      - name: pod install (CI graph, without Devtool)
+        id: pods
+        working-directory: host/ios/release
+        run: |
+          set -euo pipefail
+          if [ -f Podfile.lock ]; then
+            echo "lock_committed=true" >> "$GITHUB_OUTPUT"
+            pod _1.16.2_ install --deployment
+          else
+            echo "lock_committed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::host/ios/release/Podfile.lock 尚未提交;本次按常规解析安装,并把生成的 lockfile 作为 artifact 上传,提交后自动启用 --deployment"
+            pod _1.16.2_ install
+          fi
+      - name: Share generated Podfile.lock (first run only)
+        if: steps.pods.outputs.lock_committed == 'false'
+        uses: actions/upload-artifact@v5
+        with:
+          name: ios-release-Podfile.lock
+          path: host/ios/release/Podfile.lock
+          if-no-files-found: error
+          retention-days: 7
       - name: Parse project
         working-directory: host/ios
         run: xcodebuild -list -workspace PomeloLynx.xcworkspace
@@ -151,6 +171,8 @@ jobs:
             COMPILATION_CACHE_ENABLE_CACHING=YES \
             COMPILATION_CACHE_ENABLE_DIAGNOSTIC_REMARKS=YES \
             COMPILATION_CACHE_CAS_PATH="$GITHUB_WORKSPACE/.build/ios-compilation-cache" \
+            PRODUCT_BUNDLE_IDENTIFIER=org.pomelo.lynx.ci \
+            POMELO_DISPLAY_NAME='Pomelo Lynx CI' \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
             CODE_SIGN_ENTITLEMENTS='' CODE_SIGN_STYLE=Manual AD_HOC_CODE_SIGNING_ALLOWED=NO \
             build

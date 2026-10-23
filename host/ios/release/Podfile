@@ -1,0 +1,25 @@
+source 'https://cdn.cocoapods.org/'
+
+platform :ios, '15.0'
+
+# CI 发版版:不带 LynxService/Devtool,编译更快、体积更小。
+# 与本地开发版可同时安装到同一台设备:CI 构建时覆盖
+# PRODUCT_BUNDLE_IDENTIFIER=org.pomelo.lynx.ci 和 POMELO_DISPLAY_NAME。
+#
+# 与开发版共用同一个 Pods 沙盒,这样工程里已有的 CocoaPods xcconfig
+# 引用在两套 graph 之间切换时仍然有效。
+Pod::Config.instance.sandbox_root = Pathname.new(__dir__).parent.join('Pods')
+
+project '../PomeloLynx.xcodeproj'
+workspace '../PomeloLynx'
+
+require_relative '../pods'
+extend PomeloPods
+
+target 'PomeloLynx' do
+  pomelo_pods(devtools: false)
+end
+
+post_install do |installer|
+  PomeloPods.apply_build_settings(installer)
+end

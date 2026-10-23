@@ -275,6 +275,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
+				POMELO_DISPLAY_NAME = "Pomelo Lynx";
 				PRODUCT_BUNDLE_IDENTIFIER = org.pomelo.lynx;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -298,6 +299,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
+				POMELO_DISPLAY_NAME = "Pomelo Lynx";
 				PRODUCT_BUNDLE_IDENTIFIER = org.pomelo.lynx;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

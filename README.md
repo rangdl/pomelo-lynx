@@ -53,12 +53,17 @@ docs/web-debug.md   Web 端调试:症状 → 根因 → 解法
 ## 自有宿主 app
 
 `host/` 是极简 Lynx 宿主壳(不依赖 LynxExplorer):`HostApplication` /
-`AppDelegate` 注册 Image/Log/Http 服务,Debug 构建额外注册 DevTool 服务 ——
+`AppDelegate` 注册 Image/Log/Http 服务;开发版 iOS 额外带 DevTool(Inspector),
 `agent-lynx` 与 e2e/对齐工具链因此可以直接驱动它,和驱动 Explorer 一样。
 
 - **双 bundle**:`main.lynx.bundle`(示例)与 `probe.lynx.bundle`(对齐探针)都内嵌进 app。
   Android 用 `adb shell am start -n org.pomelo.lynx/.MainActivity --ez bundle_probe true` 选 probe;
   iOS 用 `PomeloLynx --bundle probe` 启动参数。
+- **iOS 两套依赖图**:`host/ios/Podfile` 是本地开发版(带 `LynxService/Devtool`,
+  bundle id `org.pomelo.lynx`,显示名 `Pomelo Lynx`);`host/ios/release/Podfile`
+  是 CI 发版版(不含 Devtool,构建时覆盖为 `org.pomelo.lynx.ci` / `Pomelo Lynx CI`)。
+  两者 bundle id 不同,可同时安装在一台设备上;CI 版没有 Inspector,
+  `agent-lynx`/`e2e:native` 请用本地开发版。
 - **构建**:`pnpm build:host` 生成 JS 产物并拷入两端宿主;APK 用
   `cd host/android && ./gradlew assembleDebug`(需 JDK 17 + Android SDK);
   iOS 需 macOS:`cd host/ios && pod install && xcodebuild ...`(可走

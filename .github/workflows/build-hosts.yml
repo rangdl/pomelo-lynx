@@ -1,12 +1,16 @@
 name: Build Hosts
 
+# 发版即构建:打 vX.Y.Z tag 触发(tag 必须与 package.json 的 version 一致),
+# 产物发布到同名 Release。日常 push 不再触发构建。
+#
+#   pnpm version patch   # bump package.json + 自动打 vX.Y.Z tag
+#   git push --follow-tags
+#
+# 临时手动构建用 workflow_dispatch(产物仅进 artifacts,不发 Release)。
+
 on:
   push:
-    branches: [main, master]
-    paths-ignore: ["**.md", "LICENSE"]
-  pull_request:
-    branches: [main, master]
-    paths-ignore: ["**.md", "LICENSE"]
+    tags: ["v*"]
   workflow_dispatch:
 
 concurrency:
@@ -22,6 +26,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      # tag 触发时校验:tag 必须等于 package.json 的 version(带 v 前缀)
+      - name: Verify tag matches package.json version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          set -euo pipefail
+          PKG_VERSION="v$(node -p "require('./package.json').version")"
+          TAG_VERSION="${GITHUB_REF_NAME}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::tag $TAG_VERSION 与 package.json version $PKG_VERSION 不一致"
+            exit 1
+          fi
+          echo "version=$PKG_VERSION ok"
       - uses: pnpm/action-setup@v5
         with:
           version: 10
@@ -132,16 +148,34 @@ jobs:
           path: pomelo-lynx-ios-nosign.ipa
           if-no-files-found: error
           retention-days: 7
-      - name: Publish to release (rolling ipa-dev tag)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+  release:
+    name: Release (tag builds only)
+    needs: [android, ios]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: pomelo-lynx-ios-nosign
+          path: .
+      - uses: actions/download-artifact@v5
+        with:
+          name: pomelo-lynx-android-debug
+          path: .
+      - name: Rename artifacts with version
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          mv pomelo-lynx-ios-nosign.ipa "pomelo-lynx-ios-${VERSION}-nosign.ipa"
+          mv app-debug.apk "pomelo-lynx-android-${VERSION}-debug.apk"
+      - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG=ipa-dev
-          # 滚动 tag:每个 push 覆盖同一个 release,直链永远指向最新构建
-          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
-            --title "iOS 未签名 IPA (dev)" \
-            --notes "真机 arm64 未签名 ipa,对应 run ${{ github.run_id }} (${{ github.sha }})。安装前需 TrollStore 或自行重签(iOS 15+)。"
-          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber pomelo-lynx-ios-nosign.ipa
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --title "pomelo-lynx ${GITHUB_REF_NAME}" \
+            --notes "真机 arm64 未签名 IPA(TrollStore 或自行重签,iOS 15+)与 Android debug APK。"
+          gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            pomelo-lynx-ios-*.ipa pomelo-lynx-android-*.apk

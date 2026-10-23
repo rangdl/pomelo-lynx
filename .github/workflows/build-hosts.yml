@@ -77,7 +77,7 @@ jobs:
           retention-days: 7
 
   ios:
-    name: iOS app (unsigned simulator)
+    name: iOS IPA (unsigned)
     needs: prepare
     runs-on: macos-latest
     steps:

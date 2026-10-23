@@ -2,9 +2,9 @@
 .DS_Store
 *.local
 *.log*
-# Crash dumps (调试过程产生的 core dump)
-core
-core.*
+# Crash dumps (调试过程产生的 core dump,只匹配仓库根目录,勿匹配 src/core/)
+/core
+/core.*
 
 # Dist
 node_modules

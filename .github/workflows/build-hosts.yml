@@ -97,19 +97,6 @@ jobs:
       - name: Parse project
         working-directory: host/ios
         run: xcodebuild -list -workspace PomeloLynx.xcworkspace
-      - name: Build (iOS Simulator, unsigned)
-        working-directory: host/ios
-        run: |
-          set -o pipefail
-          xcodebuild -workspace PomeloLynx.xcworkspace -scheme PomeloLynx \
-            -configuration Debug -sdk iphonesimulator \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build/DerivedData \
-            -quiet \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
-            build 2>&1 | tee /tmp/xcodebuild.log | tail -50
-          # Keep a bounded, error-focused excerpt for debugging failures
-          grep -E "error:|warning: .*PomeloLynx|BUILD" /tmp/xcodebuild.log | tail -100 > build-errors.txt || true
       - name: Build (iPhoneOS device, unsigned)
         working-directory: host/ios
         run: |
@@ -138,12 +125,6 @@ jobs:
           name: ios-build-errors
           path: host/ios/build-errors.txt
           if-no-files-found: ignore
-          retention-days: 7
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pomelo-lynx-ios-simulator
-          path: host/ios/build/DerivedData/Build/Products/Debug-iphonesimulator/PomeloLynx.app
-          if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4
         with:

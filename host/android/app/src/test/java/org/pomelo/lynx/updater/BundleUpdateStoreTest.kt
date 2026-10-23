@@ -165,12 +165,12 @@ class BundleUpdateStoreTest {
         }
     }
 
-    @Test fun pluginTemplateCapabilityRequiresANewShellWithoutChangingBridgeOrSchema() {
-        assertCapabilityRequiresNewShell("pluginFrame.templates.v1")
+    @Test fun metadataCapabilityRequiresANewShellWithoutChangingBridgeOrSchema() {
+        assertCapabilityRequiresNewShell("updater.metadata.v1")
     }
 
-    @Test fun radioRemoteIntentCapabilityRequiresANewShellWithoutChangingBridgeOrSchema() {
-        assertCapabilityRequiresNewShell("audio.remoteIntent.v1")
+    @Test fun futureFeatureCapabilityRequiresANewShellWithoutChangingBridgeOrSchema() {
+        assertCapabilityRequiresNewShell("feature.demo.v1")
     }
 
     private fun assertCapabilityRequiresNewShell(capability: String) {

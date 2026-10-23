@@ -117,15 +117,24 @@ jobs:
         working-directory: host/ios
         run: |
           set -o pipefail
+          # 完整输出进日志(不裁剪、不静音);日志过大导致页面渲染困难时,
+          # GitHub 会自动截断,但 API 仍可取全量,失败排查用 artifacts 里的
+          # 原始 xcodebuild 日志,而不是在构建命令上做手脚。
           xcodebuild -workspace PomeloLynx.xcworkspace -scheme PomeloLynx \
             -configuration Debug -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             -derivedDataPath build/DerivedData-device \
-            -quiet \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
             CODE_SIGN_ENTITLEMENTS='' CODE_SIGN_STYLE=Manual AD_HOC_CODE_SIGNING_ALLOWED=NO \
-            build 2>&1 | tee /tmp/xcodebuild-device.log | tail -50
-          grep -E "error:|BUILD" /tmp/xcodebuild-device.log | tail -100 >> build-errors.txt || true
+            build 2>&1 | tee /tmp/xcodebuild-device.log
+      - name: Upload raw build log
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: ios-xcodebuild-log
+          path: /tmp/xcodebuild-device.log
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Package unsigned device IPA
         run: |
           set -euo pipefail
@@ -135,13 +144,6 @@ jobs:
           cp -R "$APP" Payload/
           zip -qry pomelo-lynx-ios-nosign.ipa Payload
           rm -rf Payload
-      - uses: actions/upload-artifact@v5
-        if: failure()
-        with:
-          name: ios-build-errors
-          path: host/ios/build-errors.txt
-          if-no-files-found: ignore
-          retention-days: 7
       - uses: actions/upload-artifact@v5
         with:
           name: pomelo-lynx-ios-nosign

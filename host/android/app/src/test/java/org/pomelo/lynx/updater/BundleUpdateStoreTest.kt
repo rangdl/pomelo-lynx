@@ -182,8 +182,9 @@ class BundleUpdateStoreTest {
         }
     }
 
-    @Test fun metadataCapabilityRequiresANewShellWithoutChangingBridgeOrSchema() {
-        assertCapabilityRequiresNewShell("updater.metadata.v1")
+    @Test fun newFeatureCapabilityRequiresANewShellWithoutChangingBridgeOrSchema() {
+        // 必须是宿主 capabilities 里没有的能力(fixtures 带 updater.v1/updater.metadata.v1)。
+        assertCapabilityRequiresNewShell("updater.future.v1")
     }
 
     @Test fun futureFeatureCapabilityRequiresANewShellWithoutChangingBridgeOrSchema() {

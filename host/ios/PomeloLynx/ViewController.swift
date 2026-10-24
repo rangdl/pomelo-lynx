@@ -69,8 +69,8 @@ final class ViewController: UIViewController {
     }
 
     NSLog("[PomeloLynx] creating LynxView (screen=%@, frame=%@)",
-          NSStringFromCGSize(view.window?.windowScene?.screen.bounds.size ?? .zero),
-          NSStringFromCGSize(frame.size))
+          NSCoder.string(for: view.window?.windowScene?.screen.bounds.size ?? .zero),
+          NSCoder.string(for: frame.size))
     laidOutSize = frame.size
     let screenSize = view.window?.windowScene?.screen.bounds.size ?? view.bounds.size
     let provider = templateProvider

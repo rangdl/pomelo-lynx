@@ -61,7 +61,7 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
       ))
       return
     }
-    NSLog("[PomeloLynx] template path=%@ size=%llu", path, FileManager.default.attributesOfItem(atPath: path)[.size] as? UInt64 ?? 0)
+    NSLog("[PomeloLynx] template path=%@", path)
     do {
       if url == Self.mainBundle, let updates = BundleUpdateStore.shared {
         NSLog("[PomeloLynx] update store available; beginLaunch…")

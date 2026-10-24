@@ -71,6 +71,7 @@ final class ViewController: UIViewController {
     NSLog("[PomeloLynx] creating LynxView (screen=%@, frame=%@)",
           NSCoder.string(for: view.window?.windowScene?.screen.bounds.size ?? .zero),
           NSCoder.string(for: frame.size))
+    LaunchDiagnostics.log("creating LynxView")
     laidOutSize = frame.size
     let screenSize = view.window?.windowScene?.screen.bounds.size ?? view.bounds.size
     let provider = templateProvider
@@ -80,6 +81,7 @@ final class ViewController: UIViewController {
       builder.fontScale = 1.0
     }
     NSLog("[PomeloLynx] LynxView created: %@", lynxView == nil ? "NIL!" : "ok")
+    LaunchDiagnostics.log(lynxView == nil ? "LynxView NIL!" : "LynxView created ok")
     lynxView.preferredLayoutWidth = frame.width
     lynxView.preferredLayoutHeight = frame.height
     lynxView.layoutWidthMode = .exact
@@ -98,6 +100,7 @@ final class ViewController: UIViewController {
       "isDebug": ProcessInfo.processInfo.environment["POMELO_DEBUG"] != nil,
     ])
     lynxView.loadTemplate(meta)
+    LaunchDiagnostics.log("loadTemplate(\(bundleURL)) invoked")
   }
 
   /**
@@ -116,6 +119,7 @@ final class ViewController: UIViewController {
 extension ViewController: LynxViewLifecycle {
   func lynxViewDidFirstScreen(_ view: LynxView) {
     NSLog("[PomeloLynx] FIRST SCREEN reached")
+    LaunchDiagnostics.log("FIRST SCREEN reached ✓")
   }
 
   /// 前台恢复(SceneDelegate sceneDidBecomeActive):推 JS 全局事件,
@@ -128,6 +132,7 @@ extension ViewController: LynxViewLifecycle {
 
   func lynxView(_ view: LynxView, didRecieveError error: NSError) {
     NSLog("[PomeloLynx] lynx error: %@ (fatal=%d)", error.localizedDescription, ((error as? LynxError)?.isFatal ?? false) ? 1 : 0)
+    LaunchDiagnostics.log("lynx error: \(error.localizedDescription)")
     guard (error as? LynxError)?.isFatal == true else { return }
     DispatchQueue.global(qos: .utility).async {
       try? BundleUpdateStore.shared?.failStartup()

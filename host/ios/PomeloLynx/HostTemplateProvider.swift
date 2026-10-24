@@ -46,10 +46,12 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
 
   func loadTemplate(withUrl url: String!, onComplete callback: LynxTemplateLoadBlock!) {
     NSLog("[PomeloLynx] loadTemplate url=%@", url ?? "<nil>")
+    DispatchQueue.main.async { LaunchDiagnostics.log("loadTemplate \(url ?? "<nil>")") }
     guard let url,
       let path = Bundle.main.path(forResource: url, ofType: "bundle")
     else {
       NSLog("[PomeloLynx] template %@.bundle NOT FOUND in app resources", url ?? "<nil>")
+      DispatchQueue.main.async { LaunchDiagnostics.log("template \(url ?? "<nil>") NOT FOUND") }
       callback(nil, NSError(
         domain: "org.pomelo.lynx",
         code: 404,
@@ -65,25 +67,32 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
     do {
       if url == Self.mainBundle, let updates = BundleUpdateStore.shared {
         NSLog("[PomeloLynx] update store available; beginLaunch…")
+        DispatchQueue.main.async { LaunchDiagnostics.log("update store ok; beginLaunch…") }
         do {
           if let candidate = try updates.beginLaunch() {
             NSLog("[PomeloLynx] using UPDATE bundle (%lu bytes)", candidate.count)
+            DispatchQueue.main.async { LaunchDiagnostics.log("using UPDATE bundle (\(candidate.count)B)") }
             callback(candidate, nil)
             return
           }
           NSLog("[PomeloLynx] no update candidate; falling back to embedded")
+          DispatchQueue.main.async { LaunchDiagnostics.log("no update; fallback embedded") }
         } catch {
           NSLog("[PomeloLynx] beginLaunch failed: %@", String(describing: error))
+          DispatchQueue.main.async { LaunchDiagnostics.log("beginLaunch failed: \(error)") }
           try? updates.failStartup()
         }
       } else {
         NSLog("[PomeloLynx] update store unavailable (builtin native-host or init failure)")
+        DispatchQueue.main.async { LaunchDiagnostics.log("update store unavailable") }
       }
       let data = try Data(contentsOf: URL(fileURLWithPath: path))
       NSLog("[PomeloLynx] embedded bundle loaded (%lu bytes), invoking callback", data.count)
+      DispatchQueue.main.async { LaunchDiagnostics.log("embedded \(data.count)B → callback") }
       callback(data, nil)
     } catch {
       NSLog("[PomeloLynx] failed to read template %@: %@", path, error.localizedDescription)
+      DispatchQueue.main.async { LaunchDiagnostics.log("read template failed: \(error.localizedDescription)") }
       callback(nil, error)
     }
   }

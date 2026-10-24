@@ -68,6 +68,9 @@ final class ViewController: UIViewController {
       return
     }
 
+    NSLog("[PomeloLynx] creating LynxView (screen=%@, frame=%@)",
+          NSStringFromCGSize(view.window?.windowScene?.screen.bounds.size ?? .zero),
+          NSStringFromCGSize(frame.size))
     laidOutSize = frame.size
     let screenSize = view.window?.windowScene?.screen.bounds.size ?? view.bounds.size
     let provider = templateProvider
@@ -76,6 +79,7 @@ final class ViewController: UIViewController {
       builder.screenSize = screenSize
       builder.fontScale = 1.0
     }
+    NSLog("[PomeloLynx] LynxView created: %@", lynxView == nil ? "NIL!" : "ok")
     lynxView.preferredLayoutWidth = frame.width
     lynxView.preferredLayoutHeight = frame.height
     lynxView.layoutWidthMode = .exact
@@ -110,14 +114,20 @@ final class ViewController: UIViewController {
 }
 
 extension ViewController: LynxViewLifecycle {
+  func lynxViewDidFirstScreen(_ view: LynxView) {
+    NSLog("[PomeloLynx] FIRST SCREEN reached")
+  }
+
   /// 前台恢复(SceneDelegate sceneDidBecomeActive):推 JS 全局事件,
   /// 页面的自动更新调度靠它补查到期任务。
   func notifyAppResumed() {
+    NSLog("[PomeloLynx] app resumed event → JS")
     let params = [["state": "resumed"]]
     lynxView?.sendGlobalEvent("PomeloLifecycle.resumed", withParams: params)
   }
 
   func lynxView(_ view: LynxView, didRecieveError error: NSError) {
+    NSLog("[PomeloLynx] lynx error: %@ (fatal=%d)", error.localizedDescription, ((error as? LynxError)?.isFatal ?? false) ? 1 : 0)
     guard (error as? LynxError)?.isFatal == true else { return }
     DispatchQueue.global(qos: .utility).async {
       try? BundleUpdateStore.shared?.failStartup()

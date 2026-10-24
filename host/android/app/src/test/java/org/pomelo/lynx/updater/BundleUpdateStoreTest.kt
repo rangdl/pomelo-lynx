@@ -22,13 +22,30 @@ import javax.net.ssl.X509TrustManager
 import javax.net.ssl.SSLServerSocket
 
 class BundleUpdateStoreTest {
+    companion object {
+        /**
+         * Fixtures 位于仓库根的 `updates/fixtures/`。Gradle 单测工作目录是 module
+         * 目录(pomelo: host/android/app;songloft 原版: android/app),相对层级
+         * 不同,故从 user.dir 向上逐级探测到仓库根。
+         */
+        fun fixtureFile(): File {
+            var dir: File? = File(System.getProperty("user.dir")).absoluteFile
+            while (dir != null) {
+                val candidate = File(dir, "updates/fixtures/signature-v1.json")
+                if (candidate.isFile) return candidate
+                dir = dir.parentFile
+            }
+            throw java.io.FileNotFoundException("updates/fixtures/signature-v1.json")
+        }
+    }
+
     private class Fixture : AutoCloseable {
         val root = Files.createTempDirectory("pomelo-updater-test-").toFile()
         val pair = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
-        val host = JSONObject(File("../../updates/fixtures/signature-v1.json").readText()).getJSONObject("native_host")
+        val host = JSONObject(fixtureFile().readText()).getJSONObject("native_host")
             .put("platform", "android").put("build_time", "2026-10-01T00:00:00.000Z").put("git_commit", "1234567")
         val data = ByteArray(256 * 1024) { (it % 253).toByte() }
-        val manifest = JSONObject(File("../../updates/fixtures/signature-v1.json").readText().let { JSONObject(it).getString("raw_manifest") })
+        val manifest = JSONObject(fixtureFile().readText().let { JSONObject(it).getString("raw_manifest") })
         init {
             host.put("trusted_keys", JSONArray().put(JSONObject()
                 .put("key_id", "test-key").put("key_bits", 2048).put("algorithm", "rsa-pkcs1v15-sha256")
@@ -135,7 +152,7 @@ class BundleUpdateStoreTest {
     }
 
     @Test fun sharedSignatureVectorIsAcceptedAndByteTamperingRejected() {
-        val vector = JSONObject(File("../../updates/fixtures/signature-v1.json").readText())
+        val vector = JSONObject(fixtureFile().readText())
         val root = Files.createTempDirectory("updater-vector-").toFile()
         try {
             val store = BundleUpdateStore(root, vector.getJSONObject("native_host").put("platform", "android"))

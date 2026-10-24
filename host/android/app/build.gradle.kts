@@ -58,6 +58,11 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+    testOptions {
+        // JVM 单测(updater 状态机回归)不加载 android.jar;框架方法返回默认值
+        // 而非抛 "not mocked"(对齐 songloft-player-lynx 的配置)。
+        unitTests.isReturnDefaultValues = true
+    }
     packaging {
         jniLibs {
             // Android 5/6 need native libraries extracted before loading them.

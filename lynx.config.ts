@@ -1,41 +1,7 @@
-import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-
 import { pluginQRCode } from '@lynx-js/qrcode-rsbuild-plugin';
 import { pluginReactLynx } from '@lynx-js/react-rsbuild-plugin';
 import { defineConfig } from '@lynx-js/rspeedy';
 import { pluginTypeCheck } from '@rsbuild/plugin-type-check';
-
-// 注入给 JS 侧 updater 的构建身份(与 scripts/gen-native-host.mjs 的
-// buildMetadata 语义一致;tag 构建为 stable,其余为 dev)。
-const packageVersion = JSON.parse(
-  readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
-).version as string;
-const gitRef = process.env.GITHUB_REF ?? '';
-const releaseTag = gitRef.startsWith('refs/tags/')
-  ? gitRef.slice('refs/tags/'.length)
-  : '';
-let gitCommit = 'unknown';
-try {
-  gitCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
-    encoding: 'utf8',
-  }).trim();
-} catch {
-  // 无 git 环境(如 artifact 构建):占位值使热更新自然失效。
-}
-const buildMetadata = {
-  version: releaseTag ? packageVersion : 'dev',
-  package_version: packageVersion,
-  native_version: packageVersion.split('-')[0],
-  build_number: process.env.GITHUB_RUN_NUMBER
-    ? Number(process.env.GITHUB_RUN_NUMBER)
-    : Math.floor((Date.now() - Date.UTC(2026, 0, 1)) / 1000),
-  git_commit: process.env.GITHUB_SHA ?? gitCommit,
-  build_time: new Date().toISOString(),
-  channel: releaseTag ? 'stable' : 'dev',
-  release_tag: releaseTag || 'dev',
-};
 
 export default defineConfig({
   // Lynx Web Platform's WASM engine needs `SharedArrayBuffer`, which the
@@ -53,15 +19,6 @@ export default defineConfig({
     entry: {
       main: './src/index.tsx',
       probe: './src/probe/index.tsx',
-    },
-    alias: {
-      // 第三方库(如 TanStack Router)从裸 `react` 导入。路由到本地 shim:
-      // 转寄 ReactLynx compat 入口(补 startTransition/useTransition)并加
-      // `use` stub,让 React-19 专有 API 的 ESM 链接通过。
-      react$: fileURLToPath(new URL('./src/shims/react.ts', import.meta.url)),
-    },
-    define: {
-      __POMELO_BUILD__: JSON.stringify(buildMetadata),
     },
   },
   environments: {

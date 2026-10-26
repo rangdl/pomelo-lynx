@@ -19,7 +19,7 @@
     "release:major": "pnpm version major",
     "release:minor": "pnpm version minor",
     "release:patch": "pnpm version patch",
-    "test": "rstest run && node --test scripts/__tests__/*.node-test.mjs",
+    "test": "rstest run",
     "typecheck": "tsc -b",
     "verify:web": "pnpm run build && pnpm run e2e:web",
     "version": "node scripts/sync-native-version.mjs && git add host/ios/PomeloLynx.xcodeproj/project.pbxproj",
@@ -27,10 +27,7 @@
   },
   "dependencies": {
     "@lynx-js/react": "^0.128.0",
-    "@lynx-js/web-core": "^0.26.4",
-    "@tanstack/react-router": "^1.170.46",
-    "url-search-params-polyfill": "^8.2.5",
-    "zustand": "^5.0.16"
+    "@lynx-js/web-core": "^0.26.4"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",

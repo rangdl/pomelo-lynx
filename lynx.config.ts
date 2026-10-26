@@ -55,9 +55,10 @@ export default defineConfig({
       probe: './src/probe/index.tsx',
     },
     alias: {
-      // 黑屏二分实验:暂时移除 react$ alias(嫌疑:全项目裸 react 被重定向到
-      // shim,与 ReactLynx 内部 react 打架导致渲染异常)。
-      // react$: fileURLToPath(new URL('./src/shims/react.ts', import.meta.url)),
+      // 第三方库(如 TanStack Router)从裸 `react` 导入。路由到本地 shim:
+      // 转寄 ReactLynx compat 入口(补 startTransition/useTransition)并加
+      // `use` stub,让 React-19 专有 API 的 ESM 链接通过。
+      react$: fileURLToPath(new URL('./src/shims/react.ts', import.meta.url)),
     },
     define: {
       __POMELO_BUILD__: JSON.stringify(buildMetadata),

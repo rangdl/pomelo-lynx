@@ -85,7 +85,7 @@ final class ViewController: UIViewController {
       return
     }
 
-    Log.debug("launch", "creating LynxView (screen=\(NSCoder.string(for: view.window?.windowScene?.screen.bounds.size ?? .zero)), frame=\(NSCoder.string(for: frame.size)), safe=\(NSStringFromUIEdgeInsets(view.safeAreaInsets)))")
+    Log.debug("launch", "creating LynxView (screen=\(NSCoder.string(for: view.window?.windowScene?.screen.bounds.size ?? .zero)), frame=\(NSCoder.string(for: frame.size)), safe=\(NSCoder.string(for: view.safeAreaInsets)))")
     laidOutSize = frame.size
     let screenSize = view.window?.windowScene?.screen.bounds.size ?? view.bounds.size
     let provider = templateProvider

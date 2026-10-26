@@ -1,16 +1,19 @@
 name: Build Hosts
 
 # 发版即构建:打 vX.Y.Z tag 触发(tag 必须与 package.json 的 version 一致),
-# 产物发布到同名 Release。日常 push 不再触发构建。
+# 产物发布到同名 Release。master push 也触发构建并滚动发布到 `dev` 预发布
+# Release(prerelease,固定资产名覆盖,dev tag 随 master 移动)——它同时是
+# 热更新 dev 通道(releases/tags/dev)的更新源。
 #
 #   pnpm release:patch   # bump package.json + 同步原生版本字段 + 本地 commit/tag
-#   git push --follow-tags   # 批准后再推送,才会触发构建
+#   git push --follow-tags   # 批准后再推送,才会触发正式发版
 #
-# 临时手动构建用 workflow_dispatch(产物仅进 artifacts,不发 Release)。
+# 临时手动构建用 workflow_dispatch。
 
 on:
   push:
     tags: ["v*"]
+    branches: [master]
   workflow_dispatch:
 
 concurrency:
@@ -278,5 +281,71 @@ jobs:
             release-files/version.json release-files/checksums.txt || true
           if [ -f release-files/version.json.sig ]; then
             gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+              release-files/version.json.sig release-files/pomelo-lynx-main.lynx.bundle
+          fi
+
+  # 预发布:非 tag 构建(master push / workflow_dispatch)成功后,把产物滚动
+  # 发布到固定 `dev` Release(prerelease,固定资产名覆盖旧文件),并把 dev tag
+  # 移到本次 commit。它同时是热更新 dev 通道的更新源(JS 侧查 releases/tags/dev)。
+  prerelease:
+    name: Prerelease (dev, rolling)
+    needs: [android, ios]
+    if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v8
+        with:
+          name: pomelo-lynx-ios-nosign
+          path: .
+      - uses: actions/download-artifact@v8
+        with:
+          name: pomelo-lynx-android-release
+          path: .
+      - uses: actions/download-artifact@v8
+        with:
+          name: js-bundles
+          path: js-bundles
+      - name: Assemble dev release directory
+        env:
+          POMELO_UPDATE_PUBLIC_KEY: ${{ vars.POMELO_UPDATE_PUBLIC_KEY }}
+          POMELO_UPDATE_PRIVATE_KEY: ${{ secrets.POMELO_UPDATE_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-files
+          mv app-release.apk release-files/pomelo-lynx-android.apk
+          mv pomelo-lynx-ios-nosign.ipa release-files/pomelo-lynx-ios-nosign.ipa
+          cp js-bundles/.build/version.json release-files/version.json
+          if [ -n "${POMELO_UPDATE_PRIVATE_KEY:-}" ]; then
+            node scripts/finalize-release.mjs release-files \
+              js-bundles/host/android/app/src/main/assets/main.lynx.bundle \
+              js-bundles/.build/native-host.json
+          else
+            node scripts/finalize-release.mjs release-files
+          fi
+      - name: Publish rolling dev prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          SHORT="${GITHUB_SHA::7}"
+          # 已存在的 dev release:删旧资产 + 覆盖;不存在则创建。
+          if gh release view dev --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release delete dev --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag
+          fi
+          git push origin ":refs/tags/dev" 2>/dev/null || true
+          git tag dev "$GITHUB_SHA" && git push origin dev
+          gh release create dev --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "pomelo-lynx dev ($SHORT)" \
+            --notes "滚动预发布(master@$SHORT)。iOS:未签名 IPA(TrollStore/自行重签);Android:release APK(debug keystore,直接侧载)。此 Release 是热更新 dev 通道的更新源,资产固定名,每次 master 构建覆盖。"
+          gh release upload dev --repo "$GITHUB_REPOSITORY" --clobber \
+            release-files/pomelo-lynx-android.apk \
+            release-files/pomelo-lynx-ios-nosign.ipa \
+            release-files/version.json release-files/checksums.txt
+          if [ -f release-files/version.json.sig ]; then
+            gh release upload dev --repo "$GITHUB_REPOSITORY" --clobber \
               release-files/version.json.sig release-files/pomelo-lynx-main.lynx.bundle
           fi

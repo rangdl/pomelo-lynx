@@ -174,9 +174,14 @@ jobs:
           if-no-files-found: error
           retention-days: 7
       # 热更新验签/状态机:真实 Security+CryptoKit+disk,无需 pods(纯 Foundation)。
+      # 原生回退实验期间(仓库无 BundleUpdateTransfer.swift)自动跳过。
       - name: Verify updater with Apple Security and real disk state
         run: |
           set -euo pipefail
+          if [ ! -f host/ios/PomeloLynx/BundleUpdateTransfer.swift ]; then
+            echo "::notice::BundleUpdateTransfer.swift 不存在(原生回退实验中),跳过 updater verify"
+            exit 0
+          fi
           swiftc -swift-version 5 host/ios/PomeloLynx/BundleUpdateStore.swift host/ios/PomeloLynx/BundleUpdateTransfer.swift scripts/verify-ios-updater.swift -o "$RUNNER_TEMP/verify-ios-updater"
           "$RUNNER_TEMP/verify-ios-updater" updates/fixtures/signature-v1.json
       - name: Parse project

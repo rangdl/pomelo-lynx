@@ -22,6 +22,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   // 前台恢复时通知页面:JS 侧 automatic-update 靠该事件补查到期任务
   // (src/native/app-lifecycle.ts 的 subscribeAppResumed)。
   func sceneDidBecomeActive(_ scene: UIScene) {
-    (window?.rootViewController as? ViewController)?.notifyAppResumed()
+    guard let controller = window?.rootViewController as? ViewController else { return }
+    // Safe-area-aware: LynxEnv can only read the real keyWindow insets once
+    // the scene is active, so the first LynxView build waits for this.
+    controller.sceneBecameActive()
+    controller.notifyAppResumed()
   }
 }

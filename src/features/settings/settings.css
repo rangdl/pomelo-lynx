@@ -48,8 +48,11 @@
 }
 
 .settings__back {
-  padding-top: 8px;
-  padding-bottom: 4px;
+  /* Comfortable tap target: the text alone is ~19px tall. */
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-right: 16px;
+  align-self: flex-start;
 }
 
 .settings__back-text {

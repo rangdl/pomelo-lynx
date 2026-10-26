@@ -27,6 +27,15 @@ final class ViewController: UIViewController {
   private var lynxView: LynxView?
   private let templateProvider = HostTemplateProvider()
   private var laidOutSize: CGSize = .zero
+  /// `LynxEnv` snapshots `keyWindow.safeAreaInsets` when the LynxView is built
+  /// (`initLayoutConfig:`), and `getKeyWindow` only accepts a scene in
+  /// `foregroundActive`. The first layout pass runs inside
+  /// `scene(_:willConnectTo:)`, while the scene is still inactive — building
+  /// there freezes every `env(safe-area-inset-*)` at 0, which puts headers
+  /// under the status bar and makes the back button untappable. So: wait for
+  /// `SceneDelegate` to tell us the scene is active.
+  private var sceneIsActive = false
+  private var deferralLogged = false
 
   init() {
     // `PomeloLynx --bundle probe` selects the alignment probe page.
@@ -68,7 +77,15 @@ final class ViewController: UIViewController {
       return
     }
 
-    Log.debug("launch", "creating LynxView (screen=\(NSCoder.string(for: view.window?.windowScene?.screen.bounds.size ?? .zero)), frame=\(NSCoder.string(for: frame.size)))")
+    guard sceneIsActive || view.window?.windowScene?.activationState == .foregroundActive else {
+      if !deferralLogged {
+        deferralLogged = true
+        Log.debug("launch", "deferring LynxView until the scene is foreground-active")
+      }
+      return
+    }
+
+    Log.debug("launch", "creating LynxView (screen=\(NSCoder.string(for: view.window?.windowScene?.screen.bounds.size ?? .zero)), frame=\(NSCoder.string(for: frame.size)), safe=\(NSStringFromUIEdgeInsets(view.safeAreaInsets)))")
     laidOutSize = frame.size
     let screenSize = view.window?.windowScene?.screen.bounds.size ?? view.bounds.size
     let provider = templateProvider
@@ -105,6 +122,19 @@ final class ViewController: UIViewController {
     ])
     lynxView.loadTemplate(meta)
     Log.info("launch", "loadTemplate(\(bundleURL)) invoked")
+  }
+
+  /**
+   * Called from `SceneDelegate.sceneDidBecomeActive`: the earliest point where
+   * `LynxEnv` can read a real `keyWindow` safe area. A deferred first layout
+   * is re-requested here; if the view laid out already (e.g. warm start), this
+   * is a harmless no-op.
+   */
+  func sceneBecameActive() {
+    sceneIsActive = true
+    if lynxView == nil {
+      view.setNeedsLayout()
+    }
   }
 
   /**

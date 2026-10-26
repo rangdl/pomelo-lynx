@@ -23,8 +23,10 @@ enum LaunchDiagnostics {
   }
 
   private static func ensureOverlay() -> UILabel? {
-    guard label == nil,
-      let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+    // 已创建且仍挂载 → 直接复用(否则后续 log 拿到 nil,更新被静默跳过,
+    // 浮层永远停在第一行——历史上两次"事件链只有一行"都是这个 bug)。
+    if let existing = label, existing.superview != nil { return existing }
+    guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
       let root = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController?.view
     else { return nil }
     let panel = UIView(frame: CGRect(x: 8, y: 60, width: root.bounds.width - 16, height: 480))

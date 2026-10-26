@@ -114,7 +114,7 @@ final class LogStore {
   static let maxRecentLimit = 500
   /// Aggregate window for the push event — a busy `console.debug` storm must
   /// not turn into one bridge event per line.
-  static let flushWindow = Duration.milliseconds(150)
+  static let flushWindow: DispatchTimeInterval = .milliseconds(150)
   static let maxFileBytes: Int64 = 5 * 1024 * 1024
 
   static let defaultsLevelKey = "pomelo_log.level"

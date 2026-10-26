@@ -58,6 +58,15 @@ export function AboutPage() {
           <ClientUpdateSection />
         )}
       </view>
+
+      <view
+        className="settings-row"
+        bindtap={() => navigate({ to: '/settings/about/logs' })}
+        data-testid="about-row-logs"
+      >
+        <text className="settings-row__label">日志</text>
+        <text className="settings-row__value">›</text>
+      </view>
     </view>
   );
 }

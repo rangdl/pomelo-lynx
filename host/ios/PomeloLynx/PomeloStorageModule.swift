@@ -169,8 +169,8 @@ final class PomeloStorageModule: NSObject, LynxModule {
       secureFallback.removeObject(forKey: key)
       return
     }
-    NSLog("[PomeloStorage] keychain write failed (OSStatus %d) for '%@'; using UserDefaults",
-          Int32(status), key)
+    Log.warn(
+      "storage", "keychain write failed (OSStatus \(status)) for '\(key)'; using UserDefaults")
     secureFallback.set(value, forKey: key)
   }
 

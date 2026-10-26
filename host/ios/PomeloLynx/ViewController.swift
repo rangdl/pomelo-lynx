@@ -68,29 +68,24 @@ final class ViewController: UIViewController {
       return
     }
 
-    NSLog("[PomeloLynx] creating LynxView (screen=%@, frame=%@)",
-          NSCoder.string(for: view.window?.windowScene?.screen.bounds.size ?? .zero),
-          NSCoder.string(for: frame.size))
-    LaunchDiagnostics.log("creating LynxView")
+    Log.debug("launch", "creating LynxView (screen=\(NSCoder.string(for: view.window?.windowScene?.screen.bounds.size ?? .zero)), frame=\(NSCoder.string(for: frame.size)))")
     laidOutSize = frame.size
     let screenSize = view.window?.windowScene?.screen.bounds.size ?? view.bounds.size
     let provider = templateProvider
-    // watchdog:LynxView 构造若卡死,3 秒后仍能看见(浮层挂在 root view 上,
-    // 主线程卡死则此定时器不会触发——本身就是信号)。
-    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-      LaunchDiagnostics.log("watchdog: LynxView constructor has NOT returned after 3s")
-    }
     let lynxView = LynxView { builder in
-      LaunchDiagnostics.log("builder: enter")
+      Log.debug("launch", "builder: enter")
       builder.config = Self.buildConfig(provider: provider)
-      LaunchDiagnostics.log("builder: config set")
+      Log.debug("launch", "builder: config set")
       builder.screenSize = screenSize
-      LaunchDiagnostics.log("builder: screenSize set")
+      Log.debug("launch", "builder: screenSize set")
       builder.fontScale = 1.0
-      LaunchDiagnostics.log("builder: done")
+      Log.debug("launch", "builder: done")
     }
-    NSLog("[PomeloLynx] LynxView created: %@", lynxView == nil ? "NIL!" : "ok")
-    LaunchDiagnostics.log(lynxView == nil ? "LynxView NIL!" : "LynxView created ok")
+    if lynxView == nil {
+      Log.error("launch", "LynxView NIL!")
+    } else {
+      Log.debug("launch", "LynxView created ok")
+    }
     lynxView.preferredLayoutWidth = frame.width
     lynxView.preferredLayoutHeight = frame.height
     lynxView.layoutWidthMode = .exact
@@ -109,42 +104,46 @@ final class ViewController: UIViewController {
       "isDebug": ProcessInfo.processInfo.environment["POMELO_DEBUG"] != nil,
     ])
     lynxView.loadTemplate(meta)
-    LaunchDiagnostics.log("loadTemplate(\(bundleURL)) invoked")
+    Log.info("launch", "loadTemplate(\(bundleURL)) invoked")
   }
 
   /**
    * The `LynxConfig` for our single LynxView: the template provider plus the
-   * PomeloUpdate native module (`NativeModules.PomeloUpdate` in JS, global
-   * event `PomeloUpdate.progress` for download progress).
+   * three Pomelo native modules (`NativeModules.PomeloUpdate` /
+   * `PomeloStorage` / `PomeloLog` in JS, global event `PomeloLog.append` for
+   * log push and `PomeloUpdate.progress` for download progress).
+   *
+   * These three were commented out during black-screen triage on a hunch that
+   * `config.register` hung the constructor — that diagnosis was wrong (the
+   * stall was TanStack's missing `self` bootstrap; the overlay had also
+   * stopped updating because of the `ensureOverlay` bug). songloft registers
+   * nine modules the same way on the same call, so restore all three here.
    */
   private static func buildConfig(provider: HostTemplateProvider) -> LynxConfig {
     let config = LynxConfig(provider: provider)
-    // 黑屏排查实验:真机上 LynxView 构造卡死在含 config.register 的路径
-    // (浮层只显示到 "creating LynxView")。暂时移除模块注册以验证根因;
-    // 结论出来后换正确的注册方式(songloft 的该路径同样未做过真机验收)。
-    // config.register(PomeloUpdateModule.self)
-    // config.register(PomeloStorageModule.self)
+    config.register(PomeloUpdateModule.self)
+    config.register(PomeloStorageModule.self)
+    config.register(PomeloLogModule.self)
     return config
   }
 }
 
 extension ViewController: LynxViewLifecycle {
   func lynxViewDidFirstScreen(_ view: LynxView) {
-    NSLog("[PomeloLynx] FIRST SCREEN reached")
-    LaunchDiagnostics.log("FIRST SCREEN reached ✓")
+    Log.info("launch", "FIRST SCREEN reached")
   }
 
   /// 前台恢复(SceneDelegate sceneDidBecomeActive):推 JS 全局事件,
   /// 页面的自动更新调度靠它补查到期任务。
   func notifyAppResumed() {
-    NSLog("[PomeloLynx] app resumed event → JS")
+    Log.info("lifecycle", "app resumed event → JS")
     let params = [["state": "resumed"]]
     lynxView?.sendGlobalEvent("PomeloLifecycle.resumed", withParams: params)
   }
 
   func lynxView(_ view: LynxView, didRecieveError error: NSError) {
-    NSLog("[PomeloLynx] lynx error: %@ (fatal=%d)", error.localizedDescription, ((error as? LynxError)?.isFatal ?? false) ? 1 : 0)
-    LaunchDiagnostics.log("lynx error: \(error.localizedDescription)")
+    Log.error(
+      "lynx", "error: \(error.localizedDescription) (fatal=\((error as? LynxError)?.isFatal ?? false))")
     guard (error as? LynxError)?.isFatal == true else { return }
     DispatchQueue.global(qos: .utility).async {
       try? BundleUpdateStore.shared?.failStartup()

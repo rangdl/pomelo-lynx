@@ -1,0 +1,177 @@
+/* 日志页(/settings/about/logs):紧凑 header + 设置行 + 实时列表。 */
+
+.logs {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: #f6f6f8;
+}
+
+.logs__header {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  padding-top: calc(env(safe-area-inset-top) + 8px);
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 8px;
+}
+
+.logs__back {
+  padding-right: 12px;
+}
+
+.logs__back-text {
+  font-size: 15px;
+  color: #007aff;
+}
+
+.logs__title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111111;
+}
+
+.logs__summary {
+  flex: 1;
+  font-size: 11px;
+  color: #98a2b3;
+  text-align: right;
+}
+
+.logs__setting {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  margin-top: 8px;
+}
+
+.logs__setting-label {
+  font-size: 14px;
+  color: #111111;
+}
+
+.logs__setting-value {
+  font-size: 14px;
+  color: #667085;
+}
+
+.logs__setting-value--on {
+  color: #007aff;
+  font-weight: 600;
+}
+
+.logs__action {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  margin-top: 8px;
+}
+
+.logs__action--busy {
+  opacity: 0.5;
+}
+
+.logs__action-text {
+  font-size: 15px;
+  color: #007aff;
+}
+
+.logs__note {
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-top: 10px;
+  padding-bottom: 2px;
+}
+
+.logs__note-text {
+  font-size: 12px;
+  color: #98a2b3;
+}
+
+.logs__list {
+  flex: 1;
+  min-height: 0;
+  margin-top: 8px;
+  background-color: #ffffff;
+}
+
+.logs__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+.logs__empty-text {
+  font-size: 13px;
+  color: #98a2b3;
+}
+
+.logs__row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.logs__time {
+  width: 80px;
+  font-size: 11px;
+  color: #98a2b3;
+}
+
+.logs__level {
+  width: 14px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.logs__level--verbose {
+  color: #98a2b3;
+}
+
+.logs__level--debug {
+  color: #667085;
+}
+
+.logs__level--info {
+  color: #101828;
+}
+
+.logs__level--warn {
+  color: #b54708;
+}
+
+.logs__level--error {
+  color: #d92d20;
+}
+
+.logs__tag {
+  max-width: 96px;
+  font-size: 11px;
+  color: #475467;
+  margin-right: 6px;
+}
+
+.logs__msg {
+  flex: 1;
+  font-size: 11px;
+  color: #101828;
+}

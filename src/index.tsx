@@ -4,8 +4,11 @@ import '@lynx-js/react/debug';
 import './shims/abort-controller.js';
 import { root } from '@lynx-js/react';
 
+import { initLogging } from './core/log/index.js';
 import { App } from './router.js';
 
+// console 接管 + 崩溃捕获 + session banner,先于首个渲染。
+initLogging();
 root.render(<App />);
 
 if (import.meta.webpackHot) {

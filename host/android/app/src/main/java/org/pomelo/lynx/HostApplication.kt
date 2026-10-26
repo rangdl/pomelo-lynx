@@ -10,6 +10,9 @@ import com.lynx.service.image.LynxImageService
 import com.lynx.service.log.LynxLogService
 import com.lynx.tasm.LynxEnv
 import com.lynx.tasm.service.LynxServiceCenter
+import org.pomelo.lynx.log.LogStore
+import org.pomelo.lynx.log.PomeloLog
+import org.pomelo.lynx.log.PomeloLogModule
 import org.pomelo.lynx.storage.PomeloStorageModule
 import org.pomelo.lynx.updater.PomeloUpdateModule
 
@@ -27,9 +30,17 @@ import org.pomelo.lynx.updater.PomeloUpdateModule
 class HostApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        // Logging must come up first so the launch chain itself is recorded.
+        LogStore.init(this)
+        PomeloLog.info("boot", banner())
         initLynxService()
         initLynxEnv()
+        PomeloLog.info("boot", "LynxEnv initialised")
     }
+
+    private fun banner(): String =
+        "PomeloLynx android ${BuildConfig.VERSION_NAME} Android ${android.os.Build.VERSION.RELEASE}" +
+            " (${android.os.Build.MODEL})"
 
     private fun initLynxService() {
         // Fresco backs LynxImageService; initialise it first.
@@ -57,5 +68,8 @@ class HostApplication : Application() {
         // `NativeModules.PomeloStorage`; the update on/off preference survives
         // process restarts (see src/core/storage/).
         LynxEnv.inst().registerModule("PomeloStorage", PomeloStorageModule::class.java)
+        // Log store: `NativeModules.PomeloLog.*` + `PomeloLog.append` global
+        // events (see src/core/log/ and src/features/settings/LogsPage).
+        LynxEnv.inst().registerModule("PomeloLog", PomeloLogModule::class.java)
     }
 }

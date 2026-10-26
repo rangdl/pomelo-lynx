@@ -4,6 +4,7 @@ import android.content.Context
 import com.lynx.tasm.provider.AbsTemplateProvider
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import org.pomelo.lynx.log.PomeloLog
 import org.pomelo.lynx.updater.BundleUpdates
 
 /**
@@ -26,20 +27,27 @@ class HostTemplateProvider(context: Context) : AbsTemplateProvider() {
     private val appContext: Context = context.applicationContext
 
     override fun loadTemplate(uri: String, callback: Callback) {
+        PomeloLog.debug("template", "loadTemplate $uri")
         Thread {
             try {
                 if (uri == MAIN_BUNDLE) {
                     val update = BundleUpdates.get(appContext)
+                    if (update == null) {
+                        PomeloLog.info("update", "update store unavailable; embedded only")
+                    }
                     val candidate = try {
                         update?.beginLaunch()
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        PomeloLog.error("update", "beginLaunch failed: ${e.javaClass.simpleName}")
                         runCatching { update?.failStartup() }
                         null
                     }
                     if (candidate != null) {
+                        PomeloLog.info("update", "using UPDATE bundle (${candidate.size} bytes)")
                         callback.onSuccess(candidate)
                         return@Thread
                     }
+                    PomeloLog.info("update", "using embedded bundle (no eligible update)")
                 }
                 appContext.assets.open(uri).use { inputStream ->
                     ByteArrayOutputStream().use { out ->
@@ -48,10 +56,13 @@ class HostTemplateProvider(context: Context) : AbsTemplateProvider() {
                         while (inputStream.read(buffer).also { length = it } != -1) {
                             out.write(buffer, 0, length)
                         }
-                        callback.onSuccess(out.toByteArray())
+                        val bytes = out.toByteArray()
+                        PomeloLog.info("template", "embedded $uri (${bytes.size} bytes)")
+                        callback.onSuccess(bytes)
                     }
                 }
             } catch (e: IOException) {
+                PomeloLog.error("template", "read template failed: $uri (${e.javaClass.simpleName})")
                 callback.onFailed(e.message)
             }
         }.start()

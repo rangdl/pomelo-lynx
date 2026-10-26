@@ -9,6 +9,7 @@ import com.lynx.tasm.LynxView
 import com.lynx.tasm.LynxViewBuilder
 import com.lynx.tasm.LynxViewClient
 import com.lynx.tasm.TemplateData
+import org.pomelo.lynx.log.PomeloLog
 import org.pomelo.lynx.updater.BundleUpdates
 
 /**
@@ -29,14 +30,26 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        PomeloLog.info("lifecycle", "MainActivity onCreate")
         val view: LynxView = buildLynxView()
         view.addLynxViewClient(object : LynxViewClient() {
+            override fun onFirstScreen() {
+                PomeloLog.info("launch", "FIRST SCREEN reached")
+            }
+
             override fun onLoadFailed(message: String?) {
+                PomeloLog.error("launch", "load failed: ${message ?: "unknown"}")
                 markStartupFailed()
             }
 
             override fun onReceivedError(error: LynxError?) {
-                if (error?.isFatal == true) markStartupFailed()
+                if (error == null) return
+                if (error.isFatal) {
+                    PomeloLog.error("launch", "fatal lynx error: ${error.summaryMessage}")
+                    markStartupFailed()
+                } else {
+                    PomeloLog.warn("launch", "lynx error: ${error.summaryMessage}")
+                }
             }
 
             private fun markStartupFailed() {
@@ -70,6 +83,7 @@ class MainActivity : Activity() {
             ),
         )
         view.loadTemplate(meta.build())
+        PomeloLog.info("launch", "loadTemplate(${selectedBundle()}) invoked")
     }
 
     /**
@@ -106,6 +120,7 @@ class MainActivity : Activity() {
             ),
         )
         view.loadTemplate(meta.build())
+        PomeloLog.info("launch", "loadTemplate(${selectedBundle()}) invoked (reload)")
     }
 
     override fun onResume() {
@@ -115,6 +130,7 @@ class MainActivity : Activity() {
         val params = com.lynx.react.bridge.JavaOnlyArray()
         params.pushMap(com.lynx.react.bridge.JavaOnlyMap.from(emptyMap<String, Any>()))
         lynxView?.sendGlobalEvent(EVENT_APP_RESUMED, params)
+        PomeloLog.info("lifecycle", "app resumed → JS")
     }
 
     override fun onDestroy() {

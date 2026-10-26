@@ -1,5 +1,6 @@
-import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
+import type { ReactNode } from '@lynx-js/react';
 
+import { useNavigate, useRouterState } from '../router.js';
 import './ShellLayout.css';
 
 interface TabItem {
@@ -18,7 +19,7 @@ const TABS: TabItem[] = [
  * 当前激活项按路由前缀归属判断:/settings 及其子页(如 /settings/about)
  * 都点亮「设置」。
  */
-export function ShellLayout() {
+export function ShellLayout({ children }: { children?: ReactNode }) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -26,9 +27,7 @@ export function ShellLayout() {
 
   return (
     <view className="shell" data-testid="shell-root">
-      <view className="shell__body">
-        <Outlet />
-      </view>
+      <view className="shell__body">{children}</view>
       <view className="shell__bottombar">
         {TABS.map((tab) => (
           <view

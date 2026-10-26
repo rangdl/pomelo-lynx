@@ -1,6 +1,5 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 
 import { pluginQRCode } from '@lynx-js/qrcode-rsbuild-plugin';
 import { pluginReactLynx } from '@lynx-js/react-rsbuild-plugin';
@@ -53,12 +52,6 @@ export default defineConfig({
     entry: {
       main: './src/index.tsx',
       probe: './src/probe/index.tsx',
-    },
-    alias: {
-      // 第三方库(如 TanStack Router)从裸 `react` 导入。路由到本地 shim:
-      // 转寄 ReactLynx compat 入口(补 startTransition/useTransition)并加
-      // `use` stub,让 React-19 专有 API 的 ESM 链接通过。
-      react$: fileURLToPath(new URL('./src/shims/react.ts', import.meta.url)),
     },
     define: {
       __POMELO_BUILD__: JSON.stringify(buildMetadata),

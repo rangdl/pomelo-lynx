@@ -2,11 +2,10 @@
  * 最小 `AbortController`/`AbortSignal` polyfill(移植自 songloft-player-lynx)。
  *
  * `AbortController` 是 WHATWG API,不属于 ECMAScript。iOS 真机的 JavaScriptCore
- * 没有它,而 `@tanstack/react-router` 在路由匹配/loader 路径无条件
- * `new AbortController()`——缺失时首次导航即 ReferenceError,整页黑屏。
- * 引擎自带(如 Web 端 V8/Worker)时原样保留。
+ * 可能没有它;运行时代码(ClientUpdateSection 下载取消、fetch signal 等)在
+ * 缺失时会 ReferenceError。引擎自带(如 Web 端 V8/Worker)时原样保留。
  *
- * 必须在构造 router 之前执行;幂等。
+ * 在入口最先执行;幂等。
  */
 export function ensureAbortController(): void {
   const g = globalThis as { AbortController?: unknown };

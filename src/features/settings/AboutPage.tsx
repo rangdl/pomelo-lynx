@@ -1,8 +1,7 @@
-import { useNavigate } from '@tanstack/react-router';
-
 import { clientBuild } from '../../core/config/constants.js';
 import { readLynxGlobal } from '../../native/native-modules.js';
 import { isWebPlatform } from '../../native/web-platform.js';
+import { useNavigate } from '../../shared/router.js';
 import { ClientUpdateSection } from './ClientUpdateSection.js';
 import './settings.css';
 

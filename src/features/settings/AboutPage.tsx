@@ -21,7 +21,7 @@ export function AboutPage() {
 
   return (
     <view className="settings" data-testid="about-page">
-      <view className="settings__header settings__header--with-back">
+      <view className="settings__navbar">
         <view
           className="settings__back"
           bindtap={() => navigate({ to: '/settings' })}
@@ -29,7 +29,8 @@ export function AboutPage() {
         >
           <text className="settings__back-text">‹ 设置</text>
         </view>
-        <text className="settings__title">关于</text>
+        <text className="settings__nav-title">关于</text>
+        <view className="settings__nav-spacer" />
       </view>
 
       <view className="settings-row">

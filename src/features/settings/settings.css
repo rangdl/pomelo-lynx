@@ -10,14 +10,15 @@
   padding-top: env(safe-area-inset-top);
   padding-left: 20px;
   padding-right: 20px;
-  padding-bottom: 12px;
+  padding-bottom: 8px;
 }
 
 .settings__title {
-  font-size: 28px;
+  /* iOS large title: 34pt bold, 52pt bar below the status bar. */
+  font-size: 34px;
   font-weight: 700;
   color: #111111;
-  margin-top: 16px;
+  margin-top: 8px;
 }
 
 .settings-row {
@@ -43,21 +44,43 @@
   color: #999999;
 }
 
-.settings__header--with-back {
-  padding-top: calc(env(safe-area-inset-top) + 8px);
+/* iOS standard navigation bar: 44pt content height + real top safe area. */
+.settings__navbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: calc(44px + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+  border-bottom-width: 1px;
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+  background-color: #f6f6f8;
 }
 
 .settings__back {
-  /* Comfortable tap target: the text alone is ~19px tall. */
-  padding-top: 10px;
-  padding-bottom: 10px;
-  padding-right: 16px;
-  align-self: flex-start;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 88px;
+  height: 44px;
+  padding-left: 16px;
 }
 
 .settings__back-text {
-  font-size: 16px;
+  font-size: 17px;
   color: #007aff;
+}
+
+.settings__nav-title {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 600;
+  color: #111111;
+  text-align: center;
+}
+
+.settings__nav-spacer {
+  width: 88px;
+  height: 44px;
 }
 
 .settings__section {

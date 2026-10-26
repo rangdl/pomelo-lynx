@@ -156,7 +156,7 @@ export function LogsPage() {
 
   return (
     <view className="logs" data-testid="logs-page">
-      <view className="logs__header">
+      <view className="logs__navbar">
         <view
           className="logs__back"
           bindtap={() => navigate({ to: '/settings/about' })}
@@ -165,10 +165,11 @@ export function LogsPage() {
           <text className="logs__back-text">‹ 关于</text>
         </view>
         <text className="logs__title">日志</text>
-        <text className="logs__summary">
-          {entries.length} 条 / 显示 {rows.length}
-        </text>
+        <view className="logs__nav-spacer" />
       </view>
+      <text className="logs__summary">
+        {entries.length} 条 / 显示 {rows.length}
+      </text>
 
       <view
         className="logs__setting"

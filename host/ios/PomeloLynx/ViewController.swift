@@ -110,8 +110,11 @@ final class ViewController: UIViewController {
    */
   private static func buildConfig(provider: HostTemplateProvider) -> LynxConfig {
     let config = LynxConfig(provider: provider)
-    config.register(PomeloUpdateModule.self)
-    config.register(PomeloStorageModule.self)
+    // 黑屏排查实验:真机上 LynxView 构造卡死在含 config.register 的路径
+    // (浮层只显示到 "creating LynxView")。暂时移除模块注册以验证根因;
+    // 结论出来后换正确的注册方式(songloft 的该路径同样未做过真机验收)。
+    // config.register(PomeloUpdateModule.self)
+    // config.register(PomeloStorageModule.self)
     return config
   }
 }

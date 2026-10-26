@@ -4,8 +4,54 @@ import { fileURLToPath } from 'node:url';
 
 import { pluginQRCode } from '@lynx-js/qrcode-rsbuild-plugin';
 import { pluginReactLynx } from '@lynx-js/react-rsbuild-plugin';
-import { defineConfig } from '@lynx-js/rspeedy';
+import { defineConfig, rspack } from '@lynx-js/rspeedy';
 import { pluginTypeCheck } from '@rsbuild/plugin-type-check';
+
+/*
+ * === Lynx 真机运行时 bootstrap banner(移植自 songloft-player-lynx)===
+ *
+ * 必须是每个 chunk 的**第一条语句**,先于 Rspack runtime 和一切模块评估:
+ * minifier 会把全局 `self` 捕获成模块级别名(并把 router-core 的
+ * `isServer` guard 优化成无条件写)——运行时补丁(ensureRouterEnv)晚于
+ * 别名捕获,来不及。三段各司其职:
+ */
+// TanStack RouterCore 构造里写 `self.__TSR_ROUTER__ = this`,Lynx background
+// realm 无 `self` → 无条件写直接抛 `undefined is not an object`(黑屏根因,
+// 真机诊断屏停在 ⑦ createRouter 构造中)。不定义 `document`,保持 router
+// 走非 DOM 分支。
+const GLOBAL_SELF_BANNER =
+  'typeof globalThis.self==="undefined"&&(globalThis.self=globalThis);';
+
+// Lynx 引擎无 AbortController/AbortSignal(WHATWG API 非 ECMAScript);
+// TanStack 的 loadClientRoute 等路径无条件 `new AbortController()`。
+// 与 JS 模块级 polyfill 互为冗余,banner 版保证每个 chunk(main-thread 也含)先在。
+const GLOBAL_ABORT_POLYFILL =
+  '(function(g){if(typeof g.AbortController!=="undefined")return;' +
+  'function S(){this.aborted=false;this.reason=undefined;this._l=[];}' +
+  'S.prototype.addEventListener=function(t,c){if(t==="abort")this._l.push(c);};' +
+  'S.prototype.removeEventListener=function(t,c){if(t==="abort")this._l=this._l.filter(function(f){return f!==c;});};' +
+  'S.prototype.dispatchEvent=function(e){var l=this._l.slice();for(var i=0;i<l.length;i++){try{l[i].call(this,e);}catch(_){}}' +
+  'if(typeof this.onabort==="function"){try{this.onabort(e);}catch(_){}}return true;};' +
+  'S.prototype.throwIfAborted=function(){if(this.aborted)throw this.reason;};' +
+  'function C(){this.signal=new S();}' +
+  'C.prototype.abort=function(r){var s=this.signal;if(s.aborted)return;s.aborted=true;' +
+  's.reason=r!==undefined?r:new Error("Aborted");s.dispatchEvent({type:"abort"});};' +
+  'g.AbortController=C;g.AbortSignal=S;})(globalThis);';
+
+// Lynx 4.0.0 宿主的 `lynx.queueMicrotask` 真机上抛
+// `TypeError: cannot read property 'getNativeLynx' of undefined`,而它正是
+// ReactLynx 选中的 Preact effect scheduler——抛错时 useEffect 被静默丢弃。
+// 保持属性存在(其它读取方仍拿到可用调度器),把实现替换成 ReactLynx 自带的
+// resolved-Promise 回退。`lynx` 是 bare host global,必须裸标识符+typeof 读取。
+const GLOBAL_QUEUE_MICROTASK_FIX =
+  '(function(){try{if(typeof lynx==="undefined"||!lynx)return;' +
+  'if(typeof lynx.queueMicrotask!=="function")return;' +
+  'var P=globalThis.Promise;if(typeof P!=="function")return;var r=P.resolve();' +
+  'lynx.queueMicrotask=function(fn){r.then(fn).catch(function(e){' +
+  'setTimeout(function(){throw e;},0);});};}catch(_){}})();';
+
+const GLOBAL_BOOTSTRAP_BANNER =
+  GLOBAL_SELF_BANNER + GLOBAL_ABORT_POLYFILL + GLOBAL_QUEUE_MICROTASK_FIX;
 
 // 注入给 JS 侧 updater 的构建身份(与 scripts/gen-native-host.mjs 的
 // buildMetadata 语义一致;tag 构建为 stable,其余为 dev)。
@@ -38,6 +84,22 @@ const buildMetadata = {
 };
 
 export default defineConfig({
+  // 函数形式 + appendPlugins:只**追加** BannerPlugin,不覆盖 Rspeedy 默认
+  // Rspack 配置(传普通对象会把 SWC minimizer 等默认项整个顶掉)。
+  tools: {
+    rspack: (_config, { appendPlugins }) => {
+      appendPlugins(
+        new rspack.BannerPlugin({
+          banner: GLOBAL_BOOTSTRAP_BANNER,
+          raw: true,
+          // 只注入 JS chunks(raw banner 进 CSS 会弄坏 minifier)
+          test: /\.(?:js|mjs|cjs)$/,
+          // 每个 chunk(含 vendor/async)都要,router-core 常在 vendor chunk
+          entryOnly: false,
+        }),
+      );
+    },
+  },
   // Lynx Web Platform's WASM engine needs `SharedArrayBuffer`, which the
   // browser only exposes to cross-origin-isolated documents. Without these
   // headers the engine silently falls back to a slower path. The setting

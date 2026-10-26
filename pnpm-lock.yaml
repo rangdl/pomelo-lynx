@@ -4,6 +4,14 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@tanstack/history@1.162.5':
+    hash: eaa9572584968f461f1a6d56770ca546b2e4ce4a5e4b52ae9f3b0e9476d68c4c
+    path: patches/@tanstack__history@1.162.5.patch
+  '@tanstack/router-core@1.171.39':
+    hash: 18b9d8626f897f7146fc71b5da0a2b08dd4ccb39ad4f803bbb437fe0587900f6
+    path: patches/@tanstack__router-core@1.171.39.patch
+
 importers:
 
   .:
@@ -3005,13 +3013,13 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@tanstack/history@1.162.5': {}
+  '@tanstack/history@1.162.5(patch_hash=eaa9572584968f461f1a6d56770ca546b2e4ce4a5e4b52ae9f3b0e9476d68c4c)': {}
 
   '@tanstack/react-router@1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@tanstack/history': 1.162.5
+      '@tanstack/history': 1.162.5(patch_hash=eaa9572584968f461f1a6d56770ca546b2e4ce4a5e4b52ae9f3b0e9476d68c4c)
       '@tanstack/react-store': 0.11.2(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@tanstack/router-core': 1.171.39
+      '@tanstack/router-core': 1.171.39(patch_hash=18b9d8626f897f7146fc71b5da0a2b08dd4ccb39ad4f803bbb437fe0587900f6)
       isbot: 5.2.2
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
@@ -3023,9 +3031,9 @@ snapshots:
       react-dom: 19.3.1(react@19.3.1)
       use-sync-external-store: 1.7.0(react@19.3.1)
 
-  '@tanstack/router-core@1.171.39':
+  '@tanstack/router-core@1.171.39(patch_hash=18b9d8626f897f7146fc71b5da0a2b08dd4ccb39ad4f803bbb437fe0587900f6)':
     dependencies:
-      '@tanstack/history': 1.162.5
+      '@tanstack/history': 1.162.5(patch_hash=eaa9572584968f461f1a6d56770ca546b2e4ce4a5e4b52ae9f3b0e9476d68c4c)
       cookie-es: 3.1.1
       seroval: 1.7.1
       seroval-plugins: 1.7.1(seroval@1.7.1)

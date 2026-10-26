@@ -1,0 +1,144 @@
+diff --git a/dist/cjs/load-client.cjs b/dist/cjs/load-client.cjs
+index 3b7293e1882e59cabcc32e3ff45b33c020700d97..71ab3ec7ee921ef79d0fed1a12c830255e21c8c3 100755
+--- a/dist/cjs/load-client.cjs
++++ b/dist/cjs/load-client.cjs
+@@ -2,6 +2,10 @@ const require_not_found = require("./not-found.cjs");
+ const require_redirect = require("./redirect.cjs");
+ const require_ssr_match_id = require("./ssr/ssr-match-id.cjs");
+ const require_router = require("./router.cjs");
++// Lynx patch: clearTimeout throws "param 0 should be Number" on non-number args
++// (browsers/node treat clearTimeout(undefined) as a no-op). Guard it.
++const __realClearTimeout = typeof clearTimeout !== "undefined" ? clearTimeout : void 0;
++const __safeClearTimeout = (id) => { if (typeof id === "number" && __realClearTimeout) __realClearTimeout(id); };
+ //#region src/load-client.ts
+ function replaceRouteChunk(route, lazyFn) {
+ 	route.lazyFn = lazyFn ?? route.lazyFn;
+@@ -714,7 +718,7 @@ function offerPending(router, tx) {
+ 			tookOver = session[0] !== tx;
+ 			session[0] = tx;
+ 		} else {
+-			clearTimeout(session?.[3]);
++			__safeClearTimeout(session?.[3]);
+ 			router._pending = session = void 0;
+ 		}
+ 		if (!session) router._pending = session = [
+@@ -728,7 +732,7 @@ function offerPending(router, tx) {
+ 		if (session[4] && !tookOver && session[5] === component) return;
+ 		session[5] = component;
+ 		if (!session[4]) {
+-			clearTimeout(session[3]);
++			__safeClearTimeout(session[3]);
+ 			const remaining = session[2] - Date.now();
+ 			if (remaining > 0) {
+ 				session[3] = setTimeout(() => offerPending(router, tx), remaining);
+@@ -755,14 +759,14 @@ function offerPending(router, tx) {
+ function finishPending(router, tx) {
+ 	const session = router._pending;
+ 	if (router._tx === tx || !router._tx?.[3].some((match) => match.id === session?.[1])) {
+-		clearTimeout(session?.[3]);
++		__safeClearTimeout(session?.[3]);
+ 		router._pending = void 0;
+ 	}
+ }
+ async function awaitPendingMinimum(router, tx) {
+ 	const session = router._pending;
+ 	if (!session) return;
+-	clearTimeout(session[3]);
++	__safeClearTimeout(session[3]);
+ 	const remaining = session[2] - Date.now();
+ 	if (!session[4] || remaining <= 0 || !_getRenderedMatches(tx[3]).some((match) => match.id === session[1])) return;
+ 	let timer;
+diff --git a/dist/cjs/router.cjs b/dist/cjs/router.cjs
+index 68b6ef850a1e1cd10d492dff39b8542adcc372db..666d34933668cd3ed234a3b60bf5eb05df6a6b5b 100755
+--- a/dist/cjs/router.cjs
++++ b/dist/cjs/router.cjs
+@@ -454,7 +454,7 @@ var RouterCore = class {
+ 				hashScrollIntoView,
+ 				ignoreBlocker
+ 			});
+-			queueMicrotask(() => {
++			(typeof queueMicrotask !== "undefined" ? queueMicrotask : (fn) => Promise.resolve().then(fn))(() => {
+ 				if (this._pendingLocation === location) this._pendingLocation = void 0;
+ 			});
+ 			return commitPromise;
+@@ -638,7 +638,7 @@ var RouterCore = class {
+ 			parseSearch: options.parseSearch ?? require_searchParams.defaultParseSearch,
+ 			protocolAllowlist: options.protocolAllowlist ?? require_utils.DEFAULT_PROTOCOL_ALLOWLIST
+ 		});
+-		if (!(_tanstack_router_core_isServer.isServer ?? typeof document === "undefined")) self.__TSR_ROUTER__ = this;
++		if (!(_tanstack_router_core_isServer.isServer ?? typeof document === "undefined") && typeof self !== "undefined") self.__TSR_ROUTER__ = this;
+ 	}
+ 	isShell() {
+ 		return !!this.options.isShell;
+diff --git a/dist/esm/load-client.js b/dist/esm/load-client.js
+index ba5ba0ddea627cdb937fa704ef742e984b667b34..9dceb4b9de807f85ff5034e92238f1d65e871992 100755
+--- a/dist/esm/load-client.js
++++ b/dist/esm/load-client.js
+@@ -2,6 +2,10 @@ import { isNotFound } from "./not-found.js";
+ import { isRedirect } from "./redirect.js";
+ import { dehydrateSsrMatchId } from "./ssr/ssr-match-id.js";
+ import { getLocationChangeInfo, lifecycleEnd, runRouteLifecycle } from "./router.js";
++// Lynx patch: clearTimeout throws "param 0 should be Number" on non-number args
++// (browsers/node treat clearTimeout(undefined) as a no-op). Guard it.
++const __realClearTimeout = typeof clearTimeout !== "undefined" ? clearTimeout : void 0;
++const __safeClearTimeout = (id) => { if (typeof id === "number" && __realClearTimeout) __realClearTimeout(id); };
+ //#region src/load-client.ts
+ function replaceRouteChunk(route, lazyFn) {
+ 	route.lazyFn = lazyFn ?? route.lazyFn;
+@@ -714,7 +718,7 @@ function offerPending(router, tx) {
+ 			tookOver = session[0] !== tx;
+ 			session[0] = tx;
+ 		} else {
+-			clearTimeout(session?.[3]);
++			__safeClearTimeout(session?.[3]);
+ 			router._pending = session = void 0;
+ 		}
+ 		if (!session) router._pending = session = [
+@@ -728,7 +732,7 @@ function offerPending(router, tx) {
+ 		if (session[4] && !tookOver && session[5] === component) return;
+ 		session[5] = component;
+ 		if (!session[4]) {
+-			clearTimeout(session[3]);
++			__safeClearTimeout(session[3]);
+ 			const remaining = session[2] - Date.now();
+ 			if (remaining > 0) {
+ 				session[3] = setTimeout(() => offerPending(router, tx), remaining);
+@@ -755,14 +759,14 @@ function offerPending(router, tx) {
+ function finishPending(router, tx) {
+ 	const session = router._pending;
+ 	if (router._tx === tx || !router._tx?.[3].some((match) => match.id === session?.[1])) {
+-		clearTimeout(session?.[3]);
++		__safeClearTimeout(session?.[3]);
+ 		router._pending = void 0;
+ 	}
+ }
+ async function awaitPendingMinimum(router, tx) {
+ 	const session = router._pending;
+ 	if (!session) return;
+-	clearTimeout(session[3]);
++	__safeClearTimeout(session[3]);
+ 	const remaining = session[2] - Date.now();
+ 	if (!session[4] || remaining <= 0 || !_getRenderedMatches(tx[3]).some((match) => match.id === session[1])) return;
+ 	let timer;
+diff --git a/dist/esm/router.js b/dist/esm/router.js
+index a31886020d1dfff3c10ee27fea6ae781e6211f9a..a571d15119ecedd49e69836c71e703f2ef6031c9 100755
+--- a/dist/esm/router.js
++++ b/dist/esm/router.js
+@@ -454,7 +454,7 @@ var RouterCore = class {
+ 				hashScrollIntoView,
+ 				ignoreBlocker
+ 			});
+-			queueMicrotask(() => {
++			(typeof queueMicrotask !== "undefined" ? queueMicrotask : (fn) => Promise.resolve().then(fn))(() => {
+ 				if (this._pendingLocation === location) this._pendingLocation = void 0;
+ 			});
+ 			return commitPromise;
+@@ -638,7 +638,7 @@ var RouterCore = class {
+ 			parseSearch: options.parseSearch ?? defaultParseSearch,
+ 			protocolAllowlist: options.protocolAllowlist ?? DEFAULT_PROTOCOL_ALLOWLIST
+ 		});
+-		if (!(isServer ?? typeof document === "undefined")) self.__TSR_ROUTER__ = this;
++		if (!(isServer ?? typeof document === "undefined") && typeof self !== "undefined") self.__TSR_ROUTER__ = this;
+ 	}
+ 	isShell() {
+ 		return !!this.options.isShell;

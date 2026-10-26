@@ -18,10 +18,4 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     self.window = window
     window.makeKeyAndVisible()
   }
-
-  // 前台恢复时通知页面:JS 侧 automatic-update 靠该事件补查到期任务
-  // (src/native/app-lifecycle.ts 的 subscribeAppResumed)。
-  func sceneDidBecomeActive(_ scene: UIScene) {
-    (window?.rootViewController as? ViewController)?.notifyAppResumed()
-  }
 }

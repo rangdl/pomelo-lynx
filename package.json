@@ -28,6 +28,8 @@
   "dependencies": {
     "@lynx-js/react": "^0.128.0",
     "@lynx-js/web-core": "^0.26.4",
+    "@tanstack/react-router": "^1.170.46",
+    "url-search-params-polyfill": "^8.2.5",
     "zustand": "^5.0.16"
   },
   "devDependencies": {

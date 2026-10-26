@@ -1,4 +1,4 @@
-import { useNavigate } from '../../shared/router.js';
+import { useNavigate } from '@tanstack/react-router';
 
 import './settings.css';
 

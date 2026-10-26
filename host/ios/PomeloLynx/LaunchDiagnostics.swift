@@ -1,37 +1,45 @@
 import UIKit
 
-/// 黑屏排查用:原生层自绘诊断浮层。LynxView 起不来/JS 崩了它也能显示,
-/// 事件链以固定顺序展示最近 12 条,便于截屏回报。
+/// 黑屏排查用:原生层自绘诊断浮层。直接挂在 rootVC.view 顶层(独立
+/// UIWindow 不关联 windowScene 在 iOS 13+ 真机上不渲染),事件链以固定
+/// 顺序展示最近 12 条,便于截屏回报。
 enum LaunchDiagnostics {
   private static let lock = NSLock()
   private static var lines: [String] = []
   private static var label: UILabel?
-  private static var window: UIWindow?
 
   static func log(_ text: String) {
-    dispatchPrecondition(condition: .onQueue(.main))
+    lock.lock(); defer { lock.unlock() }
     let stamp = String(format: "%.2f", ProcessInfo.processInfo.systemUptime)
     lines.append("\(stamp)  \(text)")
     if lines.count > 12 { lines.removeFirst(lines.count - 12) }
-    ensureOverlay()
-    label?.text = lines.joined(separator: "\n")
     NSLog("[PomeloLynx] \(text)")
+    let snapshot = lines.joined(separator: "\n")
+    DispatchQueue.main.async {
+      let label = ensureOverlay()
+      label?.text = snapshot
+      label?.superview?.bringSubviewToFront(label!)
+    }
   }
 
-  private static func ensureOverlay() {
-    guard label == nil else { return }
-    let window = UIWindow(frame: CGRect(x: 0, y: 60, width: UIScreen.main.bounds.width, height: 520))
-    window.windowLevel = .alert + 1
-    window.backgroundColor = UIColor(white: 0, alpha: 0.85)
+  private static func ensureOverlay() -> UILabel? {
+    guard label == nil,
+      let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+      let root = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController?.view
+    else { return nil }
+    let panel = UIView(frame: CGRect(x: 8, y: 60, width: root.bounds.width - 16, height: 480))
+    panel.backgroundColor = UIColor(white: 0, alpha: 0.85)
+    panel.layer.cornerRadius = 8
     let label = UILabel()
-    label.frame = window.bounds.insetBy(dx: 10, dy: 10)
+    label.frame = panel.bounds.insetBy(dx: 10, dy: 10)
+    label.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     label.font = .monospacedSystemFont(ofSize: 10, weight: .regular)
     label.textColor = .green
     label.numberOfLines = 0
-    window.addSubview(label)
-    window.isHidden = false
-    window.makeKeyAndVisible()
-    self.window = window
+    panel.addSubview(label)
+    root.addSubview(panel)
+    root.bringSubviewToFront(panel)
     self.label = label
+    return label
   }
 }

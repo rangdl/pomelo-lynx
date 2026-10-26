@@ -75,10 +75,19 @@ final class ViewController: UIViewController {
     laidOutSize = frame.size
     let screenSize = view.window?.windowScene?.screen.bounds.size ?? view.bounds.size
     let provider = templateProvider
+    // watchdog:LynxView 构造若卡死,3 秒后仍能看见(浮层挂在 root view 上,
+    // 主线程卡死则此定时器不会触发——本身就是信号)。
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+      LaunchDiagnostics.log("watchdog: LynxView constructor has NOT returned after 3s")
+    }
     let lynxView = LynxView { builder in
+      LaunchDiagnostics.log("builder: enter")
       builder.config = Self.buildConfig(provider: provider)
+      LaunchDiagnostics.log("builder: config set")
       builder.screenSize = screenSize
+      LaunchDiagnostics.log("builder: screenSize set")
       builder.fontScale = 1.0
+      LaunchDiagnostics.log("builder: done")
     }
     NSLog("[PomeloLynx] LynxView created: %@", lynxView == nil ? "NIL!" : "ok")
     LaunchDiagnostics.log(lynxView == nil ? "LynxView NIL!" : "LynxView created ok")

@@ -1,4 +1,4 @@
-import { Component, type ReactNode } from '@lynx-js/react';
+import { Component, type ReactNode, useLayoutEffect } from '@lynx-js/react';
 import {
   createMemoryHistory,
   createRootRoute,
@@ -13,7 +13,16 @@ import { HomePage } from './features/home/HomePage.js';
 import { AboutPage } from './features/settings/AboutPage.js';
 import { SettingsPage } from './features/settings/SettingsPage.js';
 import { ShellLayout } from './shared/layouts/ShellLayout.js';
+import { confirmAppMounted, markStage } from './shims/crash-guard.js';
 import { ensureRouterEnv } from './shims/router-env.js';
+
+/** App 树成功 commit 后通知诊断器静默(useLayoutEffect 同步于 commit,先于诊断屏的 setTimeout)。 */
+function MarkAppMounted() {
+  useLayoutEffect(() => {
+    confirmAppMounted();
+  }, []);
+  return null;
+}
 
 /**
  * Catches render errors in the route tree so the whole app does not go blank.
@@ -31,6 +40,7 @@ class RouteErrorBoundary extends Component<
   }
 
   componentDidCatch(error: unknown) {
+    markStage(`✗ RouteErrorBoundary:${String(error)}`);
     reportUpdateStartupFailure();
     // eslint-disable-next-line no-console
     console.error('[RouteErrorBoundary]', error);
@@ -55,6 +65,8 @@ class RouteErrorBoundary extends Component<
     return this.props.children;
   }
 }
+
+markStage('② router.tsx 顶层已执行(依赖评估完),创建路由表前');
 
 const rootRoute = createRootRoute({ component: Outlet });
 
@@ -86,6 +98,8 @@ const routeTree = rootRoute.addChildren([
   shellRoute.addChildren([homeRoute, settingsRoute, aboutRoute]),
 ]);
 
+markStage('③ 路由表已创建,等待 index 顶层/构造');
+
 /**
  * 构造应用路由。`ensureRouterEnv()` 必须与 router 构造同线程同 realm 调用
  * (见 src/shims/router-env.ts 注释)。memory history:Lynx 无地址栏。
@@ -97,16 +111,22 @@ const routeTree = rootRoute.addChildren([
  */
 export function createAppRouter() {
   ensureRouterEnv();
-  return createRouter({
+  markStage('⑥ ensureRouterEnv 完成,即将 createRouter');
+  markStage('⑦ createRouter 构造中(此阶段停留 = 构造内崩溃)');
+  const router = createRouter({
     routeTree,
     history: createMemoryHistory({ initialEntries: ['/'] }),
     isServer: false,
   });
+  markStage('⑧ createRouter 返回');
+  return router;
 }
 
 export function App() {
+  markStage('⑤ App render() 执行中');
   return (
     <RouteErrorBoundary>
+      <MarkAppMounted />
       {/* 真实路由挂载后 1.5s 按 bundleId 确认 trial 启动,并启动自动更新调度 */}
       <UpdateStartup />
       <RouterProvider router={createAppRouter()} />

@@ -46,16 +46,30 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
 
   func loadTemplate(withUrl url: String!, onComplete callback: LynxTemplateLoadBlock!) {
     Log.info("template", "loadTemplate url=\(url ?? "<nil>")")
-    guard let url,
-      let path = Bundle.main.path(forResource: url, ofType: "bundle")
-    else {
-      Log.error("template", "template \(url ?? "<nil>").bundle NOT FOUND in app resources")
+    guard let url else {
+      Log.error("template", "template url is nil")
+      callback(nil, NSError(
+        domain: "org.pomelo.lynx",
+        code: 400,
+        userInfo: [NSLocalizedDescriptionKey: "Template url is nil"]
+      ))
+      return
+    }
+    // Dev-server 分支:URL 是完整 http(s) 地址时直接网络拉取(实时开发,
+    // rspeedy dev server 增量编译后 reload 即拿到新 bundle)。失败回落
+    // 内嵌资源——坏 URL 不能让 app 永远打不开。
+    if url.hasPrefix("http://") || url.hasPrefix("https://") {
+      Self.fetchRemote(url, callback: callback)
+      return
+    }
+    guard let path = Bundle.main.path(forResource: url, ofType: "bundle") else {
+      Log.error("template", "template \(url).bundle NOT FOUND in app resources")
       callback(nil, NSError(
         domain: "org.pomelo.lynx",
         code: 404,
         userInfo: [
           NSLocalizedDescriptionKey:
-            "Template \(url ?? "<nil>").bundle is missing from app resources — "
+            "Template \(url).bundle is missing from app resources — "
             + "run `pnpm build:host` (it copies dist/*.lynx.bundle).",
         ]
       ))
@@ -86,5 +100,49 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
       Log.error("template", "read template failed: \(error.localizedDescription)")
       callback(nil, error)
     }
+  }
+
+  /**
+   * Dev-server fetch: GET the bundle over HTTP with a hard timeout. On
+   * failure the error carries the underlying cause so the log page can show
+   * why the dev server was unreachable (wrong IP, server down, …). No retry:
+   * the user reloads explicitly from the settings page.
+   */
+  private static func fetchRemote(
+    _ urlString: String, callback: LynxTemplateLoadBlock
+  ) {
+    guard let url = URL(string: urlString) else {
+      Log.error("devserver", "invalid dev URL: \(urlString)")
+      callback(nil, NSError(
+        domain: "org.pomelo.lynx",
+        code: 400,
+        userInfo: [NSLocalizedDescriptionKey: "无效的开发服务器 URL"]
+      ))
+      return
+    }
+    Log.info("devserver", "fetching \(urlString)")
+    var request = URLRequest(url: url)
+    request.timeoutInterval = 15
+    URLSession.shared.dataTask(with: request) { data, response, error in
+      if let error {
+        Log.error("devserver", "fetch failed: \(error.localizedDescription)")
+        callback(nil, error)
+        return
+      }
+      guard let http = response as? HTTPURLResponse, http.statusCode == 200,
+        let data, !data.isEmpty
+      else {
+        let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+        Log.error("devserver", "fetch returned status \(status)")
+        callback(nil, NSError(
+          domain: "org.pomelo.lynx",
+          code: status,
+          userInfo: [NSLocalizedDescriptionKey: "开发服务器返回 HTTP \(status)"]
+        ))
+        return
+      }
+      Log.info("devserver", "fetched \(data.count)B → callback")
+      callback(data, nil)
+    }.resume()
   }
 }

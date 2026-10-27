@@ -81,33 +81,36 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  android:
-    name: Android APK (release)
-    needs: prepare
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v8
-        with:
-          name: js-bundles
-          path: .
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "17"
-      - uses: android-actions/setup-android@v4
-        with:
-          packages: platform-tools platforms;android-34 build-tools;34.0.0
-      - uses: gradle/actions/setup-gradle@v5
-      - name: Build debug APK
-        working-directory: host/android
-        run: ./gradlew --no-daemon assembleRelease :app:testDebugUnitTest
-      - uses: actions/upload-artifact@v7
-        with:
-          name: pomelo-lynx-android-release
-          path: host/android/app/build/outputs/apk/release/app-release.apk
-          if-no-files-found: error
-          retention-days: 7
+  # Android 构建暂停(2026-10):JS bundle 产物仍由 prepare job 产出并随
+  # release/prerelease 发布(热更新 dev 通道更新源不受影响)。恢复方案与
+  # 实时开发(dev server 热加载 + devtool 门控)记录在 docs/dev-server.md。
+  # android:
+  #   name: Android APK (release)
+  #   needs: prepare
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v5
+  #     - uses: actions/download-artifact@v8
+  #       with:
+  #         name: js-bundles
+  #         path: .
+  #     - uses: actions/setup-java@v5
+  #       with:
+  #         distribution: temurin
+  #         java-version: "17"
+  #     - uses: android-actions/setup-android@v4
+  #       with:
+  #         packages: platform-tools platforms;android-34 build-tools;34.0.0
+  #     - uses: gradle/actions/setup-gradle@v5
+  #     - name: Build debug APK
+  #       working-directory: host/android
+  #       run: ./gradlew --no-daemon assembleRelease :app:testDebugUnitTest
+  #     - uses: actions/upload-artifact@v7
+  #       with:
+  #         name: pomelo-lynx-android-release
+  #         path: host/android/app/build/outputs/apk/release/app-release.apk
+  #         if-no-files-found: error
+  #         retention-days: 7
 
   ios:
     name: iOS IPA (unsigned)
@@ -150,11 +153,26 @@ jobs:
           key: ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/pods.rb', 'host/ios/Podfile', 'host/ios/release/Podfile', 'host/ios/release/Podfile.lock') }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/pods.rb', 'host/ios/Podfile', 'host/ios/release/Podfile', 'host/ios/release/Podfile.lock') }}-
-      # CI 使用 host/ios/release/Podfile:不含 LynxService/Devtool,编译更快、
-      # 体积更小。产物用独立 bundle id,可与本地开发版同时安装。
-      - name: pod install (CI graph, without Devtool)
+      # dev 通道(master push / workflow_dispatch)用本地 Podfile graph
+      # (devtools: true)+ Debug configuration:侧载包自带 Lynx Inspector,
+      # 可通过 agent-lynx 连接调试,与本地 Xcode Debug 构建同构
+      # (bundle id org.pomelo.lynx.debug)。tag 正式发版仍用 release/Podfile
+      # (devtools: false)+ Release configuration:体积小、无 Inspector。
+      # 两套 Podfile 共用同一 Pods 沙盒(pods.rb 设计),一次 job 只装一套。
+      - name: Select build mode
+        id: mode
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "podfile_dir=release" >> "$GITHUB_OUTPUT"
+            echo "configuration=Release" >> "$GITHUB_OUTPUT"
+          else
+            echo "podfile_dir=." >> "$GITHUB_OUTPUT"
+            echo "configuration=Debug" >> "$GITHUB_OUTPUT"
+          fi
+      - name: pod install (CI graph)
         id: pods
-        working-directory: host/ios/release
+        working-directory: host/ios/${{ steps.mode.outputs.podfile_dir }}
         run: |
           set -euo pipefail
           if [ -f Podfile.lock ]; then
@@ -162,15 +180,15 @@ jobs:
             pod _1.16.2_ install --deployment
           else
             echo "lock_committed=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::host/ios/release/Podfile.lock 尚未提交;本次按常规解析安装,并把生成的 lockfile 作为 artifact 上传,提交后自动启用 --deployment"
+            echo "::notice::Podfile.lock 尚未提交;本次按常规解析安装,并把生成的 lockfile 作为 artifact 上传,提交后自动启用 --deployment"
             pod _1.16.2_ install
           fi
       - name: Share generated Podfile.lock (first run only)
         if: steps.pods.outputs.lock_committed == 'false'
         uses: actions/upload-artifact@v7
         with:
-          name: ios-release-Podfile.lock
-          path: host/ios/release/Podfile.lock
+          name: ios-${{ steps.mode.outputs.podfile_dir == 'release' && 'release-' || '' }}Podfile.lock
+          path: host/ios/${{ steps.mode.outputs.podfile_dir == 'release' && 'release/' || '' }}Podfile.lock
           if-no-files-found: error
           retention-days: 7
       # 热更新验签/状态机:真实 Security+CryptoKit+disk,无需 pods(纯 Foundation)。
@@ -193,7 +211,7 @@ jobs:
           set -o pipefail
           # 完整输出直接进日志:不静音、不裁剪、不做摘要过滤。
           xcodebuild -workspace PomeloLynx.xcworkspace -scheme PomeloLynx \
-            -configuration Release -sdk iphoneos \
+            -configuration ${{ steps.mode.outputs.configuration }} -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             -derivedDataPath build/DerivedData-device \
             -showBuildTimingSummary \
@@ -215,7 +233,7 @@ jobs:
       - name: Package unsigned device IPA
         run: |
           set -euo pipefail
-          APP=host/ios/build/DerivedData-device/Build/Products/Release-iphoneos/PomeloLynx.app
+          APP=host/ios/build/DerivedData-device/Build/Products/${{ steps.mode.outputs.configuration }}-iphoneos/PomeloLynx.app
           test -d "$APP"
           mkdir Payload
           cp -R "$APP" Payload/
@@ -230,7 +248,7 @@ jobs:
 
   release:
     name: Release (tag builds only)
-    needs: [android, ios]
+    needs: [ios]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -294,7 +312,7 @@ jobs:
   # 移到本次 commit。它同时是热更新 dev 通道的更新源(JS 侧查 releases/tags/dev)。
   prerelease:
     name: Prerelease (dev, rolling)
-    needs: [android, ios]
+    needs: [ios]
     if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     permissions:

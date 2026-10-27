@@ -2,9 +2,10 @@ source 'https://cdn.cocoapods.org/'
 
 platform :ios, '15.0'
 
-# CI 发版版:不带 LynxService/Devtool,编译更快、体积更小。
-# 与本地开发版可同时安装到同一台设备:CI 构建时覆盖
-# PRODUCT_BUNDLE_IDENTIFIER=org.pomelo.lynx.ci 和 POMELO_DISPLAY_NAME。
+# CI 正式发版(tag 构建)专用:不带 LynxService/Devtool,编译更快、体积更小。
+# dev 通道(master push)改用顶层 Podfile + Debug configuration,自带
+# Inspector。与本地开发版可同时安装:tag 构建为 org.pomelo.lynx(Release
+# configuration),dev/本地构建为 org.pomelo.lynx.debug(Debug configuration)。
 #
 # 与开发版共用同一个 Pods 沙盒,这样工程里已有的 CocoaPods xcconfig
 # 引用在两套 graph 之间切换时仍然有效。

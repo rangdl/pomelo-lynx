@@ -45,10 +45,26 @@ final class ViewController: UIViewController {
       ProcessInfo.processInfo.arguments[index + 1] == "probe"
     {
       self.bundleURL = HostTemplateProvider.probeBundle
+    } else if let devURL = Self.storedDevServerURL() {
+      // 设置页配置的开发服务器 URL 优先:实时开发走 rspeedy dev server。
+      // `HostTemplateProvider` 识别 http(s) 前缀走网络拉取,失败由
+      // Lynx 的加载错误链路上报(见 lynxView(_:didRecieveError:))。
+      self.bundleURL = devURL
     } else {
       self.bundleURL = HostTemplateProvider.mainBundle
     }
     super.init(nibName: nil, bundle: nil)
+  }
+
+  /// Dev-server URL persisted by the settings page (`PomeloStorageModule`
+  /// prefs suite, key `dev_server_url`). `nil` → normal embedded loading.
+  /// Only http(s) values are honored; anything else is treated as unset.
+  private static func storedDevServerURL() -> String? {
+    let prefs = UserDefaults(suiteName: "pomelo_prefs") ?? .standard
+    guard let raw = prefs.string(forKey: "dev_server_url"),
+      raw.hasPrefix("http://") || raw.hasPrefix("https://")
+    else { return nil }
+    return raw
   }
 
   @available(*, unavailable)
@@ -174,9 +190,26 @@ extension ViewController: LynxViewLifecycle {
   func lynxView(_ view: LynxView, didRecieveError error: NSError) {
     Log.error(
       "lynx", "error: \(error.localizedDescription) (fatal=\((error as? LynxError)?.isFatal ?? false))")
+    // Dev-server 加载失败:清掉存储的 URL 并回退内嵌 bundle,坏 URL 不能
+    // 把 app 钉死在黑屏。用户下次在设置页重新连接即可。
+    if bundleURL.hasPrefix("http://") || bundleURL.hasPrefix("https://") {
+      Log.error("devserver", "dev URL load failed; clearing and falling back to embedded bundle")
+      let prefs = UserDefaults(suiteName: "pomelo_prefs") ?? .standard
+      prefs.removeObject(forKey: "dev_server_url")
+      DispatchQueue.main.async { self.reloadWithEmbeddedBundle() }
+      return
+    }
     guard (error as? LynxError)?.isFatal == true else { return }
     DispatchQueue.global(qos: .utility).async {
       try? BundleUpdateStore.shared?.failStartup()
     }
+  }
+
+  /// Tear down the current LynxView and rebuild against the embedded bundle.
+  private func reloadWithEmbeddedBundle() {
+    guard let lynxView else { return }
+    lynxView.removeFromSuperview()
+    self.lynxView = nil
+    view.setNeedsLayout()
   }
 }

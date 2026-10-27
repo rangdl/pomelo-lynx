@@ -259,10 +259,8 @@ jobs:
         with:
           name: pomelo-lynx-ios-nosign
           path: .
-      - uses: actions/download-artifact@v8
-        with:
-          name: pomelo-lynx-android-release
-          path: .
+      # 安卓构建暂停:无 pomelo-lynx-android-release 产物可下载,
+      # release 资产只含 iOS IPA + 热更新文件。恢复安卓时同步还原本段。
       - uses: actions/download-artifact@v8
         with:
           name: js-bundles
@@ -276,7 +274,6 @@ jobs:
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
           mkdir -p release-files
-          mv app-release.apk release-files/pomelo-lynx-android.apk
           mv pomelo-lynx-ios-nosign.ipa release-files/pomelo-lynx-ios-nosign.ipa
           # version.json:与 js job 同源的构建身份(gen-native-host 同一时刻生成,
           # 保证 native-host.json 与 release 元数据完全一致——finalize 会逐字段对拍)
@@ -289,7 +286,6 @@ jobs:
             node scripts/finalize-release.mjs release-files
           fi
           # 上传名带版本号;热更新资产(bundle/签名/manifest/checksums)保持固定名
-          cp release-files/pomelo-lynx-android.apk "pomelo-lynx-android-${VERSION}-release.apk"
           cp release-files/pomelo-lynx-ios-nosign.ipa "pomelo-lynx-ios-${VERSION}-nosign.ipa"
       - name: Create release
         env:
@@ -298,9 +294,9 @@ jobs:
           set -euo pipefail
           gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
             --title "pomelo-lynx ${GITHUB_REF_NAME}" \
-            --notes "iOS:真机 arm64 未签名 IPA(TrollStore 或自行重签,iOS 15+,不含 Inspector)。Android:release APK(debug keystore 签名,可直接侧载,非商店签名)。热更新:配置签名密钥后附带 signed bundle(version.json/version.json.sig/pomelo-lynx-main.lynx.bundle/checksums.txt),dev 通道装 dev 包可热更。"
+            --notes "iOS:真机 arm64 未签名 IPA(TrollStore 或自行重签,iOS 15+)。dev 通道(master 构建)带 Inspector(Debug configuration,bundle id org.pomelo.lynx.debug);tag 正式版不带。热更新:配置签名密钥后附带 signed bundle(version.json/version.json.sig/pomelo-lynx-main.lynx.bundle/checksums.txt),dev 通道装 dev 包可热更。"
           gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
-            pomelo-lynx-ios-*.ipa pomelo-lynx-android-*.apk \
+            pomelo-lynx-ios-*.ipa \
             release-files/version.json release-files/checksums.txt || true
           if [ -f release-files/version.json.sig ]; then
             gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
@@ -323,10 +319,8 @@ jobs:
         with:
           name: pomelo-lynx-ios-nosign
           path: .
-      - uses: actions/download-artifact@v8
-        with:
-          name: pomelo-lynx-android-release
-          path: .
+      # 安卓构建暂停:无 pomelo-lynx-android-release 产物可下载,
+      # dev 预发布资产只含 iOS IPA + 热更新文件。恢复安卓时同步还原本段。
       - uses: actions/download-artifact@v8
         with:
           name: js-bundles
@@ -338,7 +332,6 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release-files
-          mv app-release.apk release-files/pomelo-lynx-android.apk
           mv pomelo-lynx-ios-nosign.ipa release-files/pomelo-lynx-ios-nosign.ipa
           cp js-bundles/.build/version.json release-files/version.json
           if [ -n "${POMELO_UPDATE_PRIVATE_KEY:-}" ]; then
@@ -363,9 +356,8 @@ jobs:
           gh release create dev --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" --prerelease --latest=false \
             --title "pomelo-lynx dev ($SHORT)" \
-            --notes "滚动预发布(master@$SHORT)。iOS:未签名 IPA(TrollStore/自行重签);Android:release APK(debug keystore,直接侧载)。此 Release 是热更新 dev 通道的更新源,资产固定名,每次 master 构建覆盖。"
+            --notes "滚动预发布(master@$SHORT)。iOS:未签名 Debug IPA(TrollStore/自行重签,带 Inspector,org.pomelo.lynx.debug,可连 dev server 实时开发,见 docs/dev-server.md)。此 Release 是热更新 dev 通道的更新源,资产固定名,每次 master 构建覆盖。"
           gh release upload dev --repo "$GITHUB_REPOSITORY" --clobber \
-            release-files/pomelo-lynx-android.apk \
             release-files/pomelo-lynx-ios-nosign.ipa \
             release-files/version.json release-files/checksums.txt
           if [ -f release-files/version.json.sig ]; then

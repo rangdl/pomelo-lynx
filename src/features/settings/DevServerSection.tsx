@@ -87,18 +87,20 @@ export function DevServerSection() {
           {current ? `dev server\n${current}` : '内嵌 bundle'}
         </text>
       </view>
-      <input
-        className="dev-server__input"
-        placeholder="http://192.168.x.x:3000/main.lynx.bundle"
-        type="text"
-        confirm-type="done"
-        maxlength={200}
-        bindinput={(e: { detail: { value: string } }) => {
-          'background only';
-          setDraft(e.detail.value);
-        }}
-        data-testid="dev-server-input"
-      />
+      <view className="dev-server__input-wrap">
+        <input
+          className="dev-server__input"
+          placeholder="http://192.168.x.x:3000/main.lynx.bundle"
+          type="text"
+          confirm-type="done"
+          maxlength={200}
+          bindinput={(e: { detail: { value: string } }) => {
+            'background only';
+            setDraft(e.detail.value);
+          }}
+          data-testid="dev-server-input"
+        />
+      </view>
       {error ? (
         <text className="dev-server__error" data-testid="dev-server-error">
           {error}

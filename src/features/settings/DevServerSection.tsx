@@ -1,5 +1,6 @@
 import { useEffect, useState } from '@lynx-js/react';
 
+import { logger } from '../../core/log/index.js';
 import { getPomeloStorage } from '../../core/storage/index.js';
 import './DevServerSection.css';
 
@@ -22,6 +23,10 @@ function validate(url: string): string | null {
  * 会自动清掉该 key 并回退内嵌 bundle。
  *
  * 连接后需重启 app(或等待下一次冷启动)生效——宿主在启动时选择 bundle。
+ *
+ * `<input>` 写法对齐 @lynx-js/lynx-ui-input:受控 value + ignore-focus +
+ * 内联 style(不依赖 className CSS 对原生 input 的生效范围)+ focus 打点
+ * (日志页可确认元素是否真实创建,真机渲染问题定位)。
  */
 export function DevServerSection() {
   const [current, setCurrent] = useState<string | null>(null);
@@ -89,14 +94,29 @@ export function DevServerSection() {
       </view>
       <view className="dev-server__input-row">
         <input
-          className="dev-server__input"
           default-value={draft}
-          placeholder="http://192.168.x.x:3000/main.lynx.bundle"
-          placeholder-class="dev-server__placeholder"
+          ignore-focus={true}
+          show-soft-input-on-focus={true}
+          placeholder="http://192.168.x.x:3090/main.lynx.bundle"
+          placeholder-color="#999999"
           maxlength={1000}
+          style={{
+            flex: 1,
+            height: 40,
+            fontSize: 13,
+            paddingLeft: 10,
+            paddingRight: 10,
+            backgroundColor: '#ffffff',
+            borderRadius: 10,
+            color: '#111111',
+          }}
           bindinput={(e: { detail: { value: string } }) => {
             'background only';
             setDraft(e.detail.value);
+          }}
+          bindfocus={() => {
+            'background only';
+            logger.info('devserver', 'input focused');
           }}
           data-testid="dev-server-input"
         />
@@ -136,7 +156,7 @@ export function DevServerSection() {
         </view>
       </view>
       <text className="dev-server__note">
-        电脑运行 pnpm dev,手机与电脑同网段,粘贴终端打印的 bundle URL。
+        电脑运行 pnpm dev(3090 端口已映射),粘贴终端打印的 bundle URL。
         连接后需重启 app 生效。
       </text>
     </view>

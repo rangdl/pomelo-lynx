@@ -1,4 +1,5 @@
 import { createStore } from 'zustand/vanilla';
+import { getPomeloStorage } from '../storage/index.js';
 import {
   automaticUpdatePolicy,
   updateBundleKey,
@@ -16,7 +17,9 @@ import {
   type UpdateState,
 } from './native-updater.js';
 import { releaseAsset } from './release-resolver.js';
-// pomelo 无后端服务,GitHub 代理固定为空(公共 Release 可直连)。
+
+/** prefs key:GitHub API 代理前缀(gh-proxy 类服务),空 = 直连。 */
+export const PREF_UPDATE_PROXY = 'update_proxy';
 
 export interface UpdateSession {
   native: UpdateState | null;
@@ -59,7 +62,15 @@ export function checkClientRelease(
   const current = ++checkRevision;
   updateSession.setState({ checking: true, checkError: null });
   checking = (async () => {
-    const proxy = '';
+    // GitHub API 代理前缀(如 gh-proxy 类服务),设置页可配置;
+    // 空字符串走直连。代理失败会自动降级直连(release-resolver)。
+    let proxy = '';
+    try {
+      proxy =
+        (await getPomeloStorage().prefs.get(PREF_UPDATE_PROXY))?.trim() ?? '';
+    } catch {
+      // 存储不可用时代理为空,直连即可。
+    }
     try {
       const check = await checkClientUpdate({ proxy, force: !!input.force });
       if (current !== checkRevision) return null;

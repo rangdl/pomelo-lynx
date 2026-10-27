@@ -5,6 +5,7 @@ import {
   nativeUpdateMetadataAvailable,
   nativeUpdaterAvailable,
 } from '../../core/updater/native-updater.js';
+import { releasePage } from '../../core/updater/release-resolver.js';
 import {
   cancelClientBundle,
   checkClientRelease,
@@ -178,12 +179,20 @@ export function ClientUpdateSection() {
       </view>
 
       {error ? (
-        <text
-          className="client-update__error"
-          data-testid="client-update-error"
-        >
-          {error}
-        </text>
+        <view>
+          <text
+            className="client-update__error"
+            data-testid="client-update-error"
+          >
+            {error}
+          </text>
+          <view className="settings-row client-update__row">
+            <text className="settings-row__label">前往下载页</text>
+            <text className="client-update__sub">
+              {releasePage(identity.channel)}
+            </text>
+          </view>
+        </view>
       ) : null}
 
       {check ? (

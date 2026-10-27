@@ -87,13 +87,13 @@ export function DevServerSection() {
           {current ? `dev server\n${current}` : '内嵌 bundle'}
         </text>
       </view>
-      <view className="dev-server__input-wrap">
+      <view className="dev-server__input-row">
         <input
           className="dev-server__input"
+          default-value={draft}
           placeholder="http://192.168.x.x:3000/main.lynx.bundle"
-          type="text"
-          confirm-type="done"
-          maxlength={200}
+          placeholder-class="dev-server__placeholder"
+          maxlength={1000}
           bindinput={(e: { detail: { value: string } }) => {
             'background only';
             setDraft(e.detail.value);
@@ -101,6 +101,9 @@ export function DevServerSection() {
           data-testid="dev-server-input"
         />
       </view>
+      <text className="dev-server__draft" data-testid="dev-server-draft">
+        {draft ? `待连接:${draft}` : '未输入 URL'}
+      </text>
       {error ? (
         <text className="dev-server__error" data-testid="dev-server-error">
           {error}

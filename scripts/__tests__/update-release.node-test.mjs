@@ -45,7 +45,8 @@ function fixture(t) {
   const dist = join(base, 'dist');
   mkdirSync(directory);
   mkdirSync(dist);
-  for (const name of ['pomelo-lynx-android.apk', 'pomelo-lynx-ios-nosign.ipa'])
+  // 安卓构建暂停:发版资产只含 iOS IPA(见 update-release-lib.mjs expected)。
+  for (const name of ['pomelo-lynx-ios-nosign.ipa'])
     writeFileSync(join(directory, name), `package ${name}`);
   writeFileSync(join(directory, 'version.json'), JSON.stringify(metadata));
   const bundleSource = join(dist, 'main.lynx.bundle');
@@ -62,10 +63,10 @@ function fixture(t) {
   };
 }
 
-test('signed native bundle shares one manifest with the two full packages', (t) => {
+test('signed native bundle shares one manifest with the full package', (t) => {
   const options = fixture(t);
   assert.deepEqual(finalizeRelease(options), {
-    assetCount: 3,
+    assetCount: 2,
     signedUpdate: true,
   });
   const raw = readFileSync(join(options.directory, 'version.json'));
@@ -76,7 +77,7 @@ test('signed native bundle shares one manifest with the two full packages', (t) 
     publicKeyRecord(keys.publicKey),
   ]);
   assert.equal(manifest.channel, 'dev');
-  assert.equal(manifest.assets.length, 3);
+  assert.equal(manifest.assets.length, 2);
   assert.equal(manifest.bundle_update.asset, BUNDLE_ASSET);
   assert.deepEqual(
     manifest.bundle_update.targets.map((t) => [t.platform, t.engine]),
@@ -102,7 +103,7 @@ test('signed native bundle shares one manifest with the two full packages', (t) 
   )
     .trim()
     .split('\n');
-  assert.equal(checksums.length, 5);
+  assert.equal(checksums.length, 4);
   for (const line of checksums) {
     const [hash, name] = line.split('  ');
     assert.equal(
@@ -205,7 +206,7 @@ test('unconfigured signing emits only full packages and removes stale hot-update
   for (const publicKey of ['', keys.publicKey]) {
     assert.deepEqual(
       finalizeRelease({ ...options, privateKey: '', publicKey }),
-      { assetCount: 2, signedUpdate: false },
+      { assetCount: 1, signedUpdate: false },
     );
     assert.equal(existsSync(join(options.directory, BUNDLE_ASSET)), false);
     assert.equal(existsSync(join(options.directory, SIGNATURE_ASSET)), false);

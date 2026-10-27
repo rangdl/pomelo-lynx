@@ -181,7 +181,9 @@ export function finalizeRelease({
     readFileSync(join(directory, 'version.json'), 'utf8'),
   );
   const metadata = validateBuildMetadata(original, packageVersion);
-  const expected = ['pomelo-lynx-android.apk', 'pomelo-lynx-ios-nosign.ipa'];
+  // 安卓构建暂停(2026-10):发版资产只含 iOS IPA;恢复安卓 CI 时把
+  // 'pomelo-lynx-android.apk' 加回此清单(见 docs/dev-server.md)。
+  const expected = ['pomelo-lynx-ios-nosign.ipa'];
   const allowed = new Set([
     ...expected,
     'version.json',

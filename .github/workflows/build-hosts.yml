@@ -66,7 +66,12 @@ jobs:
       - run: pnpm run check
       - run: pnpm test
       # build:host = build + gen-native-host + copy into both host projects
+      # gen-native-host 把 POMELO_UPDATE_PUBLIC_KEY 转写进 native-host.json 的
+      # trusted_keys;没有它 finalize 的签名单钥对拍(native-host vs release)
+      # 必然失败(trusted_keys 空 vs 非空)。
       - run: pnpm run build:host
+        env:
+          POMELO_UPDATE_PUBLIC_KEY: ${{ vars.POMELO_UPDATE_PUBLIC_KEY }}
       - name: Share bundles and host metadata
         uses: actions/upload-artifact@v7
         with:

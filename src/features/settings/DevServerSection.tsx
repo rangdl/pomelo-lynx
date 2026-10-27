@@ -95,19 +95,19 @@ export function DevServerSection() {
       <view className="dev-server__input-row">
         <input
           default-value={draft}
-          ignore-focus={true}
-          show-soft-input-on-focus={true}
           placeholder="http://192.168.x.x:3090/main.lynx.bundle"
-          placeholder-color="#999999"
+          placeholder-class="dev-server__placeholder"
           maxlength={1000}
           style={{
+            // Lynx 要求长度带单位:无单位数字会抛
+            // "CSS length need units (except 0)"(真机 DevTool 报 130300)。
             flex: 1,
-            height: 40,
-            fontSize: 13,
-            paddingLeft: 10,
-            paddingRight: 10,
+            height: '40px',
+            fontSize: '13px',
+            paddingLeft: '10px',
+            paddingRight: '10px',
             backgroundColor: '#ffffff',
-            borderRadius: 10,
+            borderRadius: '10px',
             color: '#111111',
           }}
           bindinput={(e: { detail: { value: string } }) => {

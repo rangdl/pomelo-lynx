@@ -83,7 +83,7 @@ test('signed native bundle shares one manifest with the full package', (t) => {
     manifest.bundle_update.targets.map((t) => [t.platform, t.engine]),
     [
       ['android', '4.0.0'],
-      ['ios', '4.0.1'],
+      ['ios', '4.1.0'],
     ],
   );
   assert.ok(
@@ -180,7 +180,7 @@ test('contract preparation rejects SDK drift and invalid bridge/schema ranges', 
   );
   writeFileSync(
     join(project, 'host/ios/release/Podfile.lock'),
-    '  - Lynx (4.0.1):',
+    '  - Lynx (4.1.0):',
   );
   const save = (value) =>
     writeFileSync(

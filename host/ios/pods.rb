@@ -8,21 +8,20 @@
 module PomeloPods
   def pomelo_pods(devtools:)
     # ---- Lynx SDK ----------------------------------------------------------
-    # Versions copied from songloft-player-lynx's pods.rb.
+    # Versions follow the official reference integration
+    # (lynx-family/integrating-lynx-demo-projects, ios/HelloLynxSwift) —
+    # the only published configuration verified to render extend native
+    # elements (`<input>`) on device.
     #
-    # WHY 4.0.1 AND NOT EXACTLY 4.0.0 (cross-platform version skew — read this
-    # first when iOS and Android behave differently):
-    #   1. iOS resolves Lynx / LynxService / XElement in LOCKSTEP (each XElement
-    #      and LynxService subspec depends on `Lynx = <same version>`), so the
-    #      whole family has to move together — you cannot mix 4.0.0 and 4.0.1.
-    #   2. The 4.0.0 podspec could not be used on songloft's machine at all: the
-    #      CocoaPods trunk CDN cache holds a TRUNCATED `Lynx/4.0.0/
-    #      Lynx.podspec.json` (21 kB against ~235 kB), and CocoaPods dies with
-    #      `JSON::ParserError` before it can resolve anything.
-    # 4.0.1 is the nearest usable release and is the same major/minor as
-    # Android's `org.lynxsdk.lynx:*:4.0.0`, i.e. the same engine line and
-    # bundle-format compatibility.
-    pod 'Lynx', '4.0.1', :subspecs => ['Framework']
+    # WHY 4.1.0 (not 4.0.1):
+    #   1. iOS resolves Lynx / LynxService / XElement in LOCKSTEP (each
+    #      XElement and LynxService subspec depends on `Lynx = <same version>`),
+    #      so the whole family has to move together.
+    #   2. XElement's `Input` subspec hard-depends on the matching engine;
+    #      the reference app pairs XElement 4.1.0 with Lynx 4.1.0.
+    # 4.1.0 is the same major/minor as Android's `org.lynxsdk.lynx:*:4.0.0`,
+    # i.e. the same engine line and bundle-format compatibility.
+    pod 'Lynx', '4.1.0', :subspecs => ['Framework']
 
     # `Lynx/Framework` depends on `LynxBase/Framework` and `LynxServiceAPI`
     # **without any version constraint**, so an unpinned resolve cheerfully
@@ -30,12 +29,13 @@ module PomeloPods
     # Lynx's own release — nightlies of the base layer under a stable engine is
     # exactly the kind of mismatch that produces unreproducible device-only
     # breakage.
-    pod 'LynxBase', '4.0.1', :subspecs => ['Framework']
-    pod 'LynxServiceAPI', '4.0.1'
+    pod 'LynxBase', '4.1.0', :subspecs => ['Framework']
+    pod 'LynxServiceAPI', '4.1.0'
 
-    # JS engine. Lynx 4.0.1's `Framework` subspec pins `PrimJS/quickjs = 4.0.0`,
-    # so PrimJS stays on 4.0.0 (mirrors Android's `org.lynxsdk.lynx:primjs:4.0.0`).
-    pod 'PrimJS', '4.0.0', :subspecs => ['quickjs', 'napi']
+    # JS engine. The reference app pairs Lynx 4.1.0 with PrimJS 4.1.1
+    # (Lynx's `Framework` subspec pins `PrimJS/quickjs` to that exact
+    # version, so PrimJS must move with the engine).
+    pod 'PrimJS', '4.1.1', :subspecs => ['quickjs', 'napi']
 
     # ---- Host services -----------------------------------------------------
     #   Image → `<image>` (backed by SDWebImage on iOS / Fresco on Android)
@@ -50,7 +50,7 @@ module PomeloPods
     # there).
     subspecs = ['Image', 'Log']
     subspecs += ['Devtool'] if devtools
-    pod 'LynxService', '4.0.1', :subspecs => subspecs
+    pod 'LynxService', '4.1.0', :subspecs => subspecs
 
     # ---- Extend native elements -------------------------------------------
     # `XElement` is the extend native element library (official docs
@@ -58,15 +58,13 @@ module PomeloPods
     # iOS. WITHOUT it the engine has no element implementation to create, so
     # `<input>` is simply absent from the tree — it renders as nothing at all
     # (not a styling problem: no element, no view).
-    # Version is pinned to the engine's own release: XElement/Input declares
-    # `Lynx 4.0.1` as a hard dependency, so 4.0.1 keeps the graph in lockstep
-    # (the same reason LynxBase/LynxServiceAPI are pinned above). A newer
-    # XElement would drag the engine forward and re-open the version-skew
-    # class of device-only breakage.
-    # Only the `Input` subspec is taken: the default subspec set also drags
-    # in BlurView / Overlay / ViewPager / WebView / Video / Markdown, which
-    # this app does not use (each adds binary size to the IPA).
-    pod 'XElement', '4.0.1', :subspecs => ['Input']
+    #
+    # Taken at the FULL default subspec set, exactly like the reference app
+    # (integrating-lynx-demo-projects / ios/HelloLynxSwift): the element
+    # registry lives in the framework as a whole, and picking a single
+    # subspec is not a documented configuration — the reference app is the
+    # only configuration verified to render `<input>` on device.
+    pod 'XElement', '4.1.0'
 
     # LynxService/Image dependencies (versions pinned by the podspec itself).
     pod 'SDWebImage', '5.15.5'

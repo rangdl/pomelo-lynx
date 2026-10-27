@@ -6,6 +6,6 @@
   "required_capabilities": ["updater.v1", "updater.metadata.v1"],
   "engines": {
     "android": "4.0.0",
-    "ios": "4.0.1"
+    "ios": "4.1.0"
   }
 }

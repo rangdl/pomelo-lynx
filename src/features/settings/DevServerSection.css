@@ -41,6 +41,10 @@
   margin-right: 20px;
 }
 
+.dev-server__placeholder {
+  color: #999999;
+}
+
 .dev-server__draft {
   font-size: 12px;
   color: #666666;

@@ -1,3 +1,6 @@
+# 私有源与开发版一致(见 ../Podfile 的说明):Lynx / XElement 由官方
+# lynx-family/Specs.git 发布,trunk 提供公共包。
+source 'https://github.com/lynx-family/Specs.git'
 source 'https://cdn.cocoapods.org/'
 
 platform :ios, '15.0'

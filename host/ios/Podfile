@@ -1,3 +1,8 @@
+# 私有源是官方参考实现(lynx-family/integrating-lynx-demo-projects,
+# ios/HelloLynxSwift)所用的同一个 Specs 仓库:Lynx / LynxBase /
+# LynxService / LynxServiceAPI / XElement 全部由它发布;trunk 仍提供
+# libwebp / SDWebImage 等公共包。
+source 'https://github.com/lynx-family/Specs.git'
 source 'https://cdn.cocoapods.org/'
 
 platform :ios, '15.0'

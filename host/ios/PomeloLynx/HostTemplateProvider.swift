@@ -44,9 +44,7 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
     ))
   }
 
-  func loadTemplate(
-    withUrl url: String!, onComplete callback: (@escaping LynxTemplateLoadBlock)!
-  ) {
+  func loadTemplate(withUrl url: String!, onComplete callback: LynxTemplateLoadBlock!) {
     Log.info("template", "loadTemplate url=\(url ?? "<nil>")")
     guard let url else {
       Log.error("template", "template url is nil")
@@ -111,7 +109,7 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
    * the user reloads explicitly from the settings page.
    */
   private static func fetchRemote(
-    _ urlString: String, callback: (@escaping LynxTemplateLoadBlock)!
+    _ urlString: String, callback: LynxTemplateLoadBlock!
   ) {
     guard let url = URL(string: urlString) else {
       Log.error("devserver", "invalid dev URL: \(urlString)")

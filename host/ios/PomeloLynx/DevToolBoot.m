@@ -92,6 +92,32 @@ static void PomeloEnableDevTool(void) {
       NSLog(@"[pomelo-devtool] DebugRouter class absent — skipping router init");
     }
 
+    // (5) WS reverse-tunnel: when the phone and the dev machine are not on
+    //     the same LAN (e.g. phone at the office, container at home), the
+    //     device dials out to a room-based WS relay instead of listening.
+    //     The URL comes from the same prefs store the settings page writes
+    //     (`debug_tunnel_ws_url`, suite "pomelo_prefs") — JS and native share
+    //     the underlying UserDefaults suite. Schema format per the official
+    //     DebugRouter handler: "lynx://remote_debug_lynx/enable?url=..&room=.."
+    //     (DebugRouterCore::HandleSchema parses query params url + room).
+    NSString *tunnelUrl = [[NSUserDefaults alloc] initWithSuiteName:@"pomelo_prefs"] ?
+                          [[[NSUserDefaults alloc] initWithSuiteName:@"pomelo_prefs"] stringForKey:@"debug_tunnel_ws_url"] : nil;
+    if ([tunnelUrl isKindOfClass:[NSString class]] && tunnelUrl.length > 0 &&
+        ([tunnelUrl hasPrefix:@"ws://"] || [tunnelUrl hasPrefix:@"wss://"])) {
+      NSString *room = @"pomelo-lynx";  // room name the connector listens on
+      // Percent-encode so ws://1.2.3.4:21783 survives as a query param.
+      NSString *encodedUrl = [tunnelUrl stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+      NSString *schema = [NSString stringWithFormat:@"lynx://remote_debug_lynx/enable?url=%@&room=%@", encodedUrl, room];
+      id router = ((id (*)(id, SEL)) objc_msgSend)(debugRouterClass, NSSelectorFromString(@"instance"));
+      SEL handleSel = NSSelectorFromString(@"handleSchema:");
+      if (router != nil && [router respondsToSelector:handleSel]) {
+        BOOL handled = ((BOOL (*)(id, SEL, NSString *)) objc_msgSend)(router, handleSel, schema);
+        NSLog(@"[pomelo-devtool] tunnel schema handled=%d url=%@ room=%@", handled, tunnelUrl, room);
+      } else {
+        NSLog(@"[pomelo-devtool] tunnel requested but handleSchema unavailable — DebugRouter too old?");
+      }
+    }
+
     NSLog(@"[pomelo-devtool] dev channel bootstrap done (allSessions=%d)", sessionsEnabled);
   });
 }

@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 
 import { clientBuild } from '../../core/config/constants.js';
+import { DebugTunnelSection } from './DebugTunnelSection.js';
 import { DevServerSection } from './DevServerSection.js';
 import './settings.css';
 
@@ -22,6 +23,7 @@ export function SettingsPage() {
         <text className="settings-row__value">›</text>
       </view>
       {clientBuild.channel === 'dev' ? <DevServerSection /> : null}
+      {clientBuild.channel === 'dev' ? <DebugTunnelSection /> : null}
     </view>
   );
 }

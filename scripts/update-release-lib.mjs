@@ -30,6 +30,31 @@ export const MAX_BUNDLE_BYTES = 32 * 1024 * 1024;
 export const MAX_MANIFEST_BYTES = 128 * 1024;
 const PLATFORMS = ['android', 'ios'];
 
+/**
+ * iOS engine version: prefer the committed lockfiles (the resolved truth),
+ * fall back to the version pinned in pods.rb. Lockfiles may legitimately be
+ * absent (fresh checkout, or a graph change that invalidates them) — the
+ * pinned pod version is the contract the build actually resolves against.
+ */
+function iosEngineVersion(root) {
+  for (const rel of [
+    'host/ios/release/Podfile.lock',
+    'host/ios/Podfile.lock',
+  ]) {
+    try {
+      const version = readFileSync(join(root, rel), 'utf8').match(
+        /^ {2}- Lynx \(([^)]+)\):/m,
+      )?.[1];
+      if (version) return version;
+    } catch {
+      // no lockfile yet
+    }
+  }
+  return readFileSync(join(root, 'host/ios/pods.rb'), 'utf8').match(
+    /pod 'Lynx', '([^']+)'/,
+  )?.[1];
+}
+
 export function loadNativeContract(root) {
   const contract = JSON.parse(
     readFileSync(join(root, 'updates/native-contract.json'), 'utf8'),
@@ -58,16 +83,7 @@ export function loadNativeContract(root) {
     join(root, 'host/android/app/build.gradle.kts'),
     'utf8',
   ).match(/implementation\("org\.lynxsdk\.lynx:lynx:([^"\n]+)"\)/)?.[1];
-  const ios =
-    readFileSync(join(root, 'host/ios/release/Podfile.lock'), 'utf8').match(
-      /^ {2}- Lynx \(([^)]+)\):/m,
-    )?.[1] ??
-    readFileSync(join(root, 'host/ios/Podfile.lock'), 'utf8').match(
-      /^ {2}- Lynx \(([^)]+)\):/m,
-    )?.[1] ??
-    readFileSync(join(root, 'host/ios/pods.rb'), 'utf8').match(
-      /pod 'Lynx', '([^']+)'/,
-    )?.[1];
+  const ios = iosEngineVersion(root);
   for (const [platform, version] of Object.entries({ android, ios })) {
     if (contract.engines[platform] !== version)
       throw new Error(

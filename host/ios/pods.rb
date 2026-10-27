@@ -52,6 +52,22 @@ module PomeloPods
     subspecs += ['Devtool'] if devtools
     pod 'LynxService', '4.0.1', :subspecs => subspecs
 
+    # ---- Extend native elements -------------------------------------------
+    # `XElement` is the extend native element library (official docs
+    # "More Elements"): it provides `<input>`, `<textarea>`, `<list>`, … on
+    # iOS. WITHOUT it the engine has no element implementation to create, so
+    # `<input>` is simply absent from the tree — it renders as nothing at all
+    # (not a styling problem: no element, no view).
+    # Version is pinned to the engine's own release: XElement/Input declares
+    # `Lynx 4.0.1` as a hard dependency, so 4.0.1 keeps the graph in lockstep
+    # (the same reason LynxBase/LynxServiceAPI are pinned above). A newer
+    # XElement would drag the engine forward and re-open the version-skew
+    # class of device-only breakage.
+    # Only the `Input` subspec is taken: the default subspec set also drags
+    # in BlurView / Overlay / ViewPager / WebView / Video / Markdown, which
+    # this app does not use (each adds binary size to the IPA).
+    pod 'XElement', '4.0.1', :subspecs => ['Input']
+
     # LynxService/Image dependencies (versions pinned by the podspec itself).
     pod 'SDWebImage', '5.15.5'
     pod 'SDWebImageWebPCoder', '0.11.0'

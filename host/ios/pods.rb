@@ -52,6 +52,22 @@ module PomeloPods
     subspecs += ['Devtool'] if devtools
     pod 'LynxService', '4.1.0', :subspecs => subspecs
 
+    # ---- DevTool debug socket (dev channel only) ---------------------------
+    #   Official integrate-lynx-devtool guide requires DebugRouter with the
+    #   MessageTransceiverEnable subspec: without ENABLE_MESSAGE_IMPL the
+    #   native core compiles kTransceiverCount = 0 and the device-side socket
+    #   server (8901..8920, INADDR_ANY) is never created — the connector has
+    #   nothing to attach to. LynxDevtool 4.1.0 already pulls in bare
+    #   `DebugRouter >= 5.0.15`; declaring it here again with the subspec is
+    #   the documented way to enable the transceiver (CocoaPods merges both).
+    if devtools
+      # Exactly the two lines from the official integrate-lynx-devtool guide:
+      # bare DebugRouter (defaults: Framework + Native + third_party) plus the
+      # MessageTransceiverEnable subspec that flips ENABLE_MESSAGE_IMPL=1.
+      pod 'DebugRouter', '5.0.15'
+      pod 'DebugRouter/MessageTransceiverEnable', '5.0.15'
+    end
+
     # ---- Extend native elements -------------------------------------------
     # `XElement` is the extend native element library (official docs
     # "More Elements"): it provides `<input>`, `<textarea>`, `<list>`, … on

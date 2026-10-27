@@ -31,6 +31,15 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>用于局域网内的 Lynx 调试连接(DevTool 连接本机调试端口)与开发服务器加载页面资源。</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<!-- Required by DebugRouter's LocalNetworkPermissionChecker (exact
+		     service type it probes for; wrong value = permission check fails
+		     on iOS 14+). -->
+		<string>_check_local_network_permission._tcp</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

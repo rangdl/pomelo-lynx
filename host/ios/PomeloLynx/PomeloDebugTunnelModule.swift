@@ -29,8 +29,9 @@ final class PomeloDebugTunnelModule: NSObject, LynxModule {
   }
 
   @objc func reconnect(_ callback: @escaping (Any) -> Void) {
-    PomeloEnsureDevToolEnabled()
-    PomeloDebugTunnelConnect()
+    // Force: the automatic path skips when already connected, but the page's
+    // "重新连接" button must tear down and re-dial a possibly stale socket.
+    PomeloDebugTunnelReconnect()
     callback(PomeloDebugTunnelStatus())
   }
 

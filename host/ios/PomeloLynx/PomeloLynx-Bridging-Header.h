@@ -27,5 +27,6 @@ NS_INLINE LynxTemplateResource * _Nonnull PomeloTemplateResourceFromData(NSData 
 // DevToolBoot.m — DebugRouter WS reverse tunnel (JS: NativeModules.PomeloDebugTunnel).
 void PomeloEnsureDevToolEnabled(void);
 void PomeloDebugTunnelConnect(void);
+void PomeloDebugTunnelReconnect(void);
 void PomeloDebugTunnelDisconnect(void);
 NSDictionary * _Nonnull PomeloDebugTunnelStatus(void);

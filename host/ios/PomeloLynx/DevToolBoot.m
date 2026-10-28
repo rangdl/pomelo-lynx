@@ -66,39 +66,6 @@ static NSDictionary *PomeloTunnelSnapshot(void) {
   }
 }
 
-// MARK: - DebugRouter state listener
-
-// The protocol (DebugRouterStateListener) lives in the release-graph-absent
-// DebugRouter headers, so we implement the selectors without declaring
-// conformance — `addStateListener:` takes `id` and the runtime just calls them.
-@interface PomeloDebugRouterListener : NSObject
-@end
-
-@implementation PomeloDebugRouterListener
-
-- (void)onOpen:(NSUInteger)type {
-  PomeloTunnelSet(@"last_event", @"open");
-  PomeloTunnelSet(@"last_error", @"");
-  PomeloTunnelLog([NSString stringWithFormat:@"router onOpen type=%lu", (unsigned long)type]);
-}
-
-- (void)onClose:(NSInteger)code withReason:(NSString *)reason {
-  PomeloTunnelSet(@"last_event", [NSString stringWithFormat:@"close(%ld)", (long)code]);
-  PomeloTunnelSet(@"last_error", reason ?: @"");
-  PomeloTunnelLog([NSString stringWithFormat:@"router onClose code=%ld reason=%@",
-                                             (long)code, reason ?: @""]);
-}
-
-- (void)onError:(NSString *)error {
-  PomeloTunnelSet(@"last_event", @"error");
-  PomeloTunnelSet(@"last_error", error ?: @"");
-  PomeloTunnelLog([NSString stringWithFormat:@"router onError %@", error ?: @""]);
-}
-
-@end
-
-static PomeloDebugRouterListener *gStateListener = nil;
-
 // MARK: - DebugRouter accessors
 
 static id PomeloDebugRouterInstance(void) {
@@ -119,15 +86,14 @@ static id PomeloDebugRouterInstance(void) {
  * Callable from JS (`PomeloDebugTunnel.reconnect`) and from sceneDidBecomeActive
  * so a socket suspended in the background is re-established without a relaunch.
  */
-void PomeloDebugTunnelConnect(void) {
+static void PomeloDebugTunnelConnectInternal(BOOL force) {
   NSString *room = @"pomelo-lynx";
   NSUserDefaults *prefs = [[NSUserDefaults alloc] initWithSuiteName:@"pomelo_prefs"];
   NSString *tunnelUrl = prefs ? [prefs stringForKey:@"debug_tunnel_ws_url"] : nil;
+  NSString *prevUrl = PomeloTunnelSnapshot()[@"url"];
 
   PomeloTunnelSet(@"url", tunnelUrl ?: @"");
   PomeloTunnelSet(@"room", room);
-  PomeloTunnelSet(@"attempted", @NO);
-  PomeloTunnelSet(@"handled", @NO);
 
   if (![tunnelUrl isKindOfClass:[NSString class]] || tunnelUrl.length == 0 ||
       (![tunnelUrl hasPrefix:@"ws://"] && ![tunnelUrl hasPrefix:@"wss://"])) {
@@ -136,6 +102,25 @@ void PomeloDebugTunnelConnect(void) {
     return;
   }
 
+  // didFinishLaunching and sceneDidBecomeActive both call us. Re-connecting a
+  // live socket tears down the handshake mid-flight (Register without JoinRoom),
+  // so bail out unless the saved target actually changed.
+  if (!force && [prevUrl isEqualToString:tunnelUrl]) {
+    id existing = PomeloDebugRouterInstance();
+    SEL stateSel = NSSelectorFromString(@"connection_state");
+    if (existing != nil && [existing respondsToSelector:stateSel]) {
+      int state = ((int (*)(id, SEL)) objc_msgSend)(existing, stateSel);
+      if (state == 0 || state == 1) {  // CONNECTING / CONNECTED
+        PomeloTunnelLog(@"tunnel already connecting/connected; skip");
+        return;
+      }
+    }
+  }
+
+  PomeloTunnelSet(@"attempted", @NO);
+  PomeloTunnelSet(@"handled", @NO);
+  PomeloTunnelSet(@"last_event", @"connecting");
+
   id router = PomeloDebugRouterInstance();
   SEL handleSel = NSSelectorFromString(@"handleSchema:");
   if (router == nil || ![router respondsToSelector:handleSel]) {
@@ -143,17 +128,6 @@ void PomeloDebugTunnelConnect(void) {
     PomeloTunnelLog(@"tunnel requested but DebugRouter.handleSchema unavailable");
     return;
   }
-
-  // One listener per process: records close codes / errors for the settings UI.
-  static dispatch_once_t onceListener;
-  dispatch_once(&onceListener, ^{
-    gStateListener = [PomeloDebugRouterListener new];
-    SEL addSel = NSSelectorFromString(@"addStateListener:");
-    if ([router respondsToSelector:addSel]) {
-      ((void (*)(id, SEL, id)) objc_msgSend)(router, addSel, gStateListener);
-      PomeloTunnelLog(@"router state listener installed");
-    }
-  });
 
   NSString *encodedUrl = [tunnelUrl stringByAddingPercentEncodingWithAllowedCharacters:
                                           [NSCharacterSet URLQueryAllowedCharacterSet]];
@@ -169,6 +143,15 @@ void PomeloDebugTunnelConnect(void) {
                                              handled, tunnelUrl, room]);
 }
 
+void PomeloDebugTunnelConnect(void) {
+  PomeloDebugTunnelConnectInternal(NO);
+}
+
+/** JS-exposed force reconnect: bypasses the "already connected" guard. */
+void PomeloDebugTunnelReconnect(void) {
+  PomeloDebugTunnelConnectInternal(YES);
+}
+
 /**
  * Live status for the settings page. Combines our last-attempt record with
  * DebugRouter's own connection state.
@@ -180,23 +163,18 @@ NSDictionary *PomeloDebugTunnelStatus(void) {
                                     ?: [NSMutableDictionary dictionary];
 
   NSInteger state = -2;  // unknown / DebugRouter absent
-  NSString *roomId = @"";
-  NSString *serverUrl = @"";
   id router = PomeloDebugRouterInstance();
   if (router != nil) {
     SEL stateSel = NSSelectorFromString(@"connection_state");
     if ([router respondsToSelector:stateSel]) {
       state = (NSInteger)((int (*)(id, SEL)) objc_msgSend)(router, stateSel);
     }
-    SEL roomSel = NSSelectorFromString(@"room_id");
-    if ([router respondsToSelector:roomSel]) {
-      roomId = ((NSString * (*)(id, SEL)) objc_msgSend)(router, roomSel) ?: @"";
-    }
-    SEL urlSel = NSSelectorFromString(@"server_url");
-    if ([router respondsToSelector:urlSel]) {
-      serverUrl = ((NSString * (*)(id, SEL)) objc_msgSend)(router, urlSel) ?: @"";
-    }
   }
+  // `room_id`/`server_url` are non-atomic std::string getters written by the
+  // connect thread; reading them from the JS poll thread is a data race. The
+  // configured url/room in our own snapshot are equivalent.
+  NSString *roomId = status[@"room"] ?: @"";
+  NSString *serverUrl = status[@"url"] ?: @"";
 
   status[@"state"] = @(state);
   status[@"state_text"] = state == -1 ? @"disconnected"

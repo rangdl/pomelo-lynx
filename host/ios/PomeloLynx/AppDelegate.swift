@@ -23,6 +23,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // Logging comes up right after the runtime, so the whole launch chain —
     // including anything below this line — lands in the daily file.
     LogStore.shared.bootstrap()
+    // DevToolBoot's constructor runs before LynxEnv's lazy registrations and
+    // before the prefs suite is guaranteed readable. Retry here, after the
+    // runtime + logger are up; this also (re)dials the WS tunnel.
+    PomeloEnsureDevToolEnabled()
     Log.info("boot", Self.bootBanner())
     return true
   }

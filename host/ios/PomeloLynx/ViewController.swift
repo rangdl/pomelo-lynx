@@ -170,6 +170,7 @@ final class ViewController: UIViewController {
     config.register(PomeloUpdateModule.self)
     config.register(PomeloStorageModule.self)
     config.register(PomeloLogModule.self)
+    config.register(PomeloDebugTunnelModule.self)
     return config
   }
 }

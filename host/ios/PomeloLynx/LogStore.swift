@@ -479,3 +479,13 @@ final class LogStore {
     return out
   }
 }
+
+// MARK: - ObjC bridge
+
+/// C-callable bridge so `DevToolBoot.m` (ObjC) can write into the same
+/// in-app log ring/file the JS LogsPage reads. Kept next to `Log` so the
+/// format and level mapping stay in one place.
+@_cdecl("PomeloLogInfo")
+public func PomeloLogInfo(_ tag: UnsafePointer<CChar>, _ message: UnsafePointer<CChar>) {
+  Log.info(String(cString: tag), String(cString: message))
+}

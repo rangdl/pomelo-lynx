@@ -27,5 +27,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     // the scene is active, so the first LynxView build waits for this.
     controller.sceneBecameActive()
     controller.notifyAppResumed()
+    // iOS suspends the device's outbound WebSocket while backgrounded; re-dial
+    // the debug tunnel when the app becomes active again (no relaunch needed).
+    PomeloDebugTunnelConnect()
   }
 }

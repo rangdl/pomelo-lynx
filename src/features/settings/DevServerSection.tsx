@@ -89,8 +89,16 @@ export function DevServerSection() {
           className="dev-server__status-value"
           data-testid="dev-server-current"
         >
-          {current ? `dev server\n${current}` : '内嵌 bundle'}
+          {current ? 'dev server' : '内嵌 bundle'}
         </text>
+        {current ? (
+          <text
+            className="dev-server__status-value"
+            data-testid="dev-server-url"
+          >
+            {current}
+          </text>
+        ) : null}
       </view>
       <view className="dev-server__input-row">
         <input

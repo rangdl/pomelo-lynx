@@ -110,7 +110,8 @@ static void PomeloDebugTunnelConnectInternal(BOOL force) {
     SEL stateSel = NSSelectorFromString(@"connection_state");
     if (existing != nil && [existing respondsToSelector:stateSel]) {
       int state = ((int (*)(id, SEL)) objc_msgSend)(existing, stateSel);
-      if (state == 0 || state == 1) {  // CONNECTING / CONNECTED
+      // Public NS_ENUM: DISCONNECTED=0, CONNECTING=1, CONNECTED=2.
+      if (state == 1 || state == 2) {  // CONNECTING / CONNECTED
         PomeloTunnelLog(@"tunnel already connecting/connected; skip");
         return;
       }
@@ -156,7 +157,8 @@ void PomeloDebugTunnelReconnect(void) {
  * Live status for the settings page. Combines our last-attempt record with
  * DebugRouter's own connection state.
  *
- * ConnectionState: DISCONNECTED = -1, CONNECTING = 0, CONNECTED = 1.
+ * Public ConnectionState (DebugRouterCommon.h):
+ * DISCONNECTED = 0, CONNECTING = 1, CONNECTED = 2.
  */
 NSDictionary *PomeloDebugTunnelStatus(void) {
   NSMutableDictionary *status = [PomeloTunnelSnapshot() mutableCopy]
@@ -177,11 +179,11 @@ NSDictionary *PomeloDebugTunnelStatus(void) {
   NSString *serverUrl = status[@"url"] ?: @"";
 
   status[@"state"] = @(state);
-  status[@"state_text"] = state == -1 ? @"disconnected"
-                          : state == 0 ? @"connecting"
-                          : state == 1 ? @"connected"
+  status[@"state_text"] = state == 0 ? @"disconnected"
+                          : state == 1 ? @"connecting"
+                          : state == 2 ? @"connected"
                                        : @"unknown";
-  status[@"connected"] = @(state == 1);
+  status[@"connected"] = @(state == 2);
   status[@"room_id"] = roomId;
   status[@"server_url"] = serverUrl;
   return status;

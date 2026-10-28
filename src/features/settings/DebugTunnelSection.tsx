@@ -121,9 +121,13 @@ export function DebugTunnelSection() {
     };
   }, []);
 
+  // The native module reads the same prefs directly; prefer it when the JS
+  // storage read is empty (e.g. after a reinstall or a bridge hiccup).
+  const shownUrl = (current ?? '').trim() || (status?.url ?? '').trim() || null;
+
   const connect = () => {
     'background only';
-    const url = (draft.trim() || current || '').trim();
+    const url = (draft.trim() || shownUrl || '').trim();
     const problem = validate(url);
     if (problem) {
       setError(problem);
@@ -148,7 +152,7 @@ export function DebugTunnelSection() {
       }
     };
 
-    if (draft.trim() && draft.trim() !== current) {
+    if (draft.trim() && draft.trim() !== shownUrl) {
       getPomeloStorage()
         .prefs.set(PREF_KEY, url)
         .then(() => {
@@ -201,7 +205,7 @@ export function DebugTunnelSection() {
   const nativeDetail = status
     ? `原生: handled=${status.handled ? '1' : '0'} · state=${
         status.state_text ?? '?'
-      } · event=${status.last_event || '-'}`
+      } · event=${status.last_event || '-'} · url=${status.url || '-'}`
     : '原生: 状态模块不可用(需安装含 PomeloDebugTunnel 的新包)';
 
   return (
@@ -213,8 +217,16 @@ export function DebugTunnelSection() {
           className="dev-server__status-value"
           data-testid="debug-tunnel-current"
         >
-          {current ? `WS 中继\n${current}` : '未启用(直连模式)'}
+          {shownUrl ? 'WS 中继' : '未启用(直连模式)'}
         </text>
+        {shownUrl ? (
+          <text
+            className="dev-server__status-value"
+            data-testid="debug-tunnel-url"
+          >
+            {shownUrl}
+          </text>
+        ) : null}
       </view>
       <view className="dev-server__row">
         <text className="dev-server__status-label">运行状态</text>
@@ -222,7 +234,7 @@ export function DebugTunnelSection() {
           className="dev-server__status-value"
           data-testid="debug-tunnel-status"
         >
-          {statusText(current, status)}
+          {statusText(shownUrl, status)}
         </text>
       </view>
       <text
@@ -287,14 +299,14 @@ export function DebugTunnelSection() {
           data-testid="debug-tunnel-connect"
         >
           <text className="dev-server__btn-text">
-            {draft.trim() && draft.trim() !== current
+            {draft.trim() && draft.trim() !== shownUrl
               ? '保存并连接'
               : '重新连接'}
           </text>
         </view>
         <view
           className={
-            saving || !current
+            saving || !shownUrl
               ? 'dev-server__btn dev-server__btn--disabled'
               : 'dev-server__btn'
           }

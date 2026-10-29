@@ -166,13 +166,19 @@ final class ViewController: UIViewController {
     DispatchQueue.main.async { [weak self] in
       self?.pushAppearance(reason: "foreground", includeColorScheme: true)
     }
+    // 回到前台后 trait 可能还要一拍才稳定,再补一次。
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+      self?.pushAppearance(reason: "foreground", includeColorScheme: true)
+    }
   }
 
   /// 当前深浅色与安全区。globalProps 初值与变更事件共用同一形状。
   private var appearancePayload: [String: Any] {
     let insets = view.safeAreaInsets
+    // VC 在前后台切换时可能是瞬态 trait;窗口 trait 才是最终值。
+    let style = (view.window?.traitCollection ?? traitCollection).userInterfaceStyle
     return [
-      "colorScheme": traitCollection.userInterfaceStyle == .dark ? "dark" : "light",
+      "colorScheme": style == .dark ? "dark" : "light",
       "safeTop": Double(insets.top),
       "safeBottom": Double(insets.bottom),
       "safeLeft": Double(insets.left),
@@ -205,12 +211,16 @@ final class ViewController: UIViewController {
     _ previousTraitCollection: UITraitCollection?
   ) {
     super.traitCollectionDidChange(previousTraitCollection)
-    // 只有 userInterfaceStyle 真的变化才更新主题;同一个 trait 下的
-    // 其它变化只同步安全区。
+    // 只有前台且 userInterfaceStyle 真的变化才更新主题;后台/失活时的
+    // trait 可能短暂变 dark,只同步安全区。
+    let active = UIApplication.shared.applicationState == .active
     let styleChanged =
       previousTraitCollection?.userInterfaceStyle
       != traitCollection.userInterfaceStyle
-    pushAppearance(reason: "trait", includeColorScheme: styleChanged)
+    pushAppearance(
+      reason: "trait",
+      includeColorScheme: active && styleChanged,
+    )
   }
 
   override func viewSafeAreaInsetsDidChange() {

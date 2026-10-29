@@ -89,6 +89,7 @@ describe('system appearance', () => {
     const handler = listeners.get('PomeloAppearance.changed');
     expect(handler).toBeDefined();
 
+    // 真实 trait 事件允许改主题。
     handler?.({ reason: 'trait', colorScheme: 'dark', safeBottom: 34 });
     expect(seen.at(-1)).toEqual({
       ...DEFAULTS,
@@ -110,7 +111,6 @@ describe('system appearance', () => {
       ...DEFAULTS,
       colorScheme: 'light',
       safeTop: 47,
-      // 部分事件只覆盖出现的字段,上一次的 safeBottom 保留。
       safeBottom: 34,
     });
 

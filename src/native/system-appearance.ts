@@ -93,8 +93,8 @@ export function subscribeSystemAppearance(
     if (!active) return;
     try {
       const payload = { ...parseEventPayload(raw) };
-      // 旧宿主的事件没有 reason;安全区/前台恢复事件也不能顺带改主题。
-      // 只有明确的 trait/foreground/firstScreen 才允许更新 colorScheme。
+      // 只有真实的前台 trait 变化/前台重读才允许改系统主题。安全区事件
+      // 和旧宿主(无 reason)的事件只同步安全区,避免后台瞬态 dark 误切。
       const reason = typeof payload.reason === 'string' ? payload.reason : null;
       if (
         reason !== 'trait' &&

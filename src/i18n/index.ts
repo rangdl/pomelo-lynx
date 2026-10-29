@@ -14,6 +14,10 @@ export type MessageKey =
   | 'settings.about'
   | 'settings.group.app'
   | 'settings.aboutDetail'
+  | 'settings.group.appearance'
+  | 'appearance.system'
+  | 'appearance.light'
+  | 'appearance.dark'
   | 'about.title'
   | 'about.back'
   | 'about.group.app'
@@ -42,6 +46,10 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.about': '关于',
     'settings.group.app': '应用',
     'settings.aboutDetail': '版本、更新与日志',
+    'settings.group.appearance': '外观',
+    'appearance.system': '跟随系统',
+    'appearance.light': '浅色',
+    'appearance.dark': '深色',
     'about.title': '关于',
     'about.back': '设置',
     'about.group.app': '应用',
@@ -67,6 +75,10 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.about': 'About',
     'settings.group.app': 'App',
     'settings.aboutDetail': 'Version, updates and logs',
+    'settings.group.appearance': 'Appearance',
+    'appearance.system': 'System',
+    'appearance.light': 'Light',
+    'appearance.dark': 'Dark',
     'about.title': 'About',
     'about.back': 'Settings',
     'about.group.app': 'App',

@@ -66,3 +66,9 @@
   padding-left: 20px;
   padding-bottom: 4px;
 }
+
+.appearance-check {
+  color: var(--color-accent);
+  font-size: 17px;
+  font-weight: 600;
+}

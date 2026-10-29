@@ -14,6 +14,10 @@ import {
   subscribeSystemAppearance,
 } from '../../native/system-appearance.js';
 import { isIosPlatform, isWebPlatform } from '../../native/web-platform.js';
+import {
+  resolveTheme,
+  useAppearanceMode,
+} from '../theme/appearance-preference.js';
 import { TabIcon, type TabIconName } from './TabIcon.js';
 import './ShellLayout.css';
 
@@ -48,6 +52,7 @@ export function ShellLayout() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [appearance, setAppearance] = useState(readSystemAppearance);
+  const appearanceMode = useAppearanceMode();
   const [showMore, setShowMore] = useState(false);
 
   useEffect(() => {
@@ -70,7 +75,8 @@ export function ShellLayout() {
       : Math.max(0, rawActiveIndex);
   const moreActive = hasMore && rawActiveIndex >= visibleTabs.length;
   const barWidth = slotCount * SLOT_WIDTH + BAR_EXTRA_WIDTH;
-  const dark = appearance.colorScheme === 'dark';
+  const theme = resolveTheme(appearanceMode, appearance.colorScheme);
+  const dark = theme === 'dark';
   const ios = isIosPlatform();
   const glass = ios || isWebPlatform();
   const iconColor = (active: boolean): string =>
@@ -78,7 +84,7 @@ export function ShellLayout() {
 
   return (
     <view
-      className={`shell theme-${appearance.colorScheme}${
+      className={`shell theme-${theme}${
         pathname === '/' ? ' shell--home' : ''
       }`}
       data-testid="shell-root"

@@ -16,6 +16,9 @@
 .shell__body {
   flex: 1;
   min-height: 0;
+  /* 顶部安全区只在这里加一次(songloft 同款)；页面自己的 topbar/header
+     不再重复加 safe-top,否则会二次下移。 */
+  padding-top: env(safe-area-inset-top);
   /* 不在这里留底栏高度的 padding:页面内容要能从浮动胶囊下方滚过,
      模糊/玻璃才看得见。每个可滚动页面自己加尾部 spacer。 */
 }

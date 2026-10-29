@@ -19,10 +19,10 @@ export function SettingsPage() {
 
   return (
     <view className="settings" data-testid="settings-page">
+      <view className="settings__header">
+        <text className="settings__title">{t('settings.title')}</text>
+      </view>
       <scroll-view className="settings__scroll" scroll-orientation="vertical">
-        <view className="settings__header">
-          <text className="settings__title">{t('settings.title')}</text>
-        </view>
         <SettingsGroup title={t('settings.group.app')}>
           <ListRow
             icon={<text className="list-row__icon-text">ⓘ</text>}

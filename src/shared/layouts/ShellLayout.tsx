@@ -36,7 +36,7 @@ const TABS: TabItem[] = [
 
 /** 底栏宽度自适应:每个 tab 96px,最多 4 个槽位;超出后最后一个是「更多」。 */
 const MAX_VISIBLE_SLOTS = 4;
-const SLOT_WIDTH = 96;
+const SLOT_WIDTH = 84;
 const BAR_EXTRA_WIDTH = 8;
 
 /**

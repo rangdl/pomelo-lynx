@@ -8,6 +8,8 @@
 
 - Lynx: [llms.txt](https://lynxjs.org/next/llms.txt),**必读**。
   处理 Lynx 相关任务时,agent **必须**阅读此文档,它是所有 Lynx 相关文档的入口。
+- 页面结构: [页面设计约束](docs/page-design.md)。**新增页面或修改页面结构
+  (顶栏、底栏、安全区、滚动容器、设置行)前必读**,并按文末检查清单逐项核对。
 
 ## 项目技能
 
@@ -51,7 +53,7 @@
 
 - Rspack: <https://rspack.rs/llms.txt>
 
-- 项目内: [Web 端调试](docs/web-debug.md)(症状 → 根因 → 解法) · [E2E 套件](e2e/README.md) · [跨端对齐](e2e/alignment/README.md)
+- 项目内: [页面设计约束](docs/page-design.md) · [Web 端调试](docs/web-debug.md)(症状 → 根因 → 解法) · [E2E 套件](e2e/README.md) · [跨端对齐](e2e/alignment/README.md)
 
 ## 工具
 
@@ -67,6 +69,9 @@
   禁止用 rerun 碰运气。
 - **长任务保持进度可见**。超过 1 分钟的等待/轮询,说明在等什么、预期多久,不得静默 sleep 阻塞。
 - **注释语言**:新增或修改的注释一律用中文;移植自其它仓库的注释保持原文语言,不做翻译。
+- **页面结构改动**:新增页面或修改顶栏/底栏/安全区/滚动结构前,必须先读
+  `docs/page-design.md`;不得在页面重复加 `safe-area-inset-top`,不得在
+  `.shell__body` 预留底栏高度,滚动页必须用尾部 spacer 而不是 scroll-view padding。
 
 ### iOS 原生改动(Linux 本地无法编译)
 

@@ -19,10 +19,11 @@
 }
 
 .settings__header {
-  padding-top: env(safe-area-inset-top);
+  /* 在滚动区外固定;顶部安全区已由 .shell__body 处理。 */
   padding-left: 20px;
   padding-right: 20px;
-  padding-bottom: 8px;
+  padding-top: 16px;
+  padding-bottom: 12px;
 }
 
 .settings__title {
@@ -30,7 +31,6 @@
   font-size: 34px;
   font-weight: 700;
   color: var(--color-text);
-  margin-top: 8px;
 }
 
 .settings-row {

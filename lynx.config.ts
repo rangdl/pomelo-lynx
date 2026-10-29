@@ -105,6 +105,10 @@ export default defineConfig({
   // headers the engine silently falls back to a slower path. The setting
   // applies to both the dev server and `rspeedy preview`.
   server: {
+    // 本机开发服务固定 3090:宿主机只映射了这个端口,换端口后手机访问不到。
+    // host 0.0.0.0 让局域网/中继侧可以直接访问。
+    port: 3090,
+    host: '0.0.0.0',
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp',

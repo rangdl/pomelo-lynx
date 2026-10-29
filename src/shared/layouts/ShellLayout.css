@@ -17,14 +17,14 @@
   flex: 1;
   min-height: 0;
   /* 给浮动胶囊 + 底部安全区留出尾部空间,页面内容不会停在胶囊下面。 */
-  padding-bottom: calc(64px + var(--safe-bottom));
+  padding-bottom: calc(64px + env(safe-area-inset-bottom));
 }
 
 .shell__bottombar {
   position: fixed;
-  left: calc(12px + var(--safe-left));
-  right: calc(12px + var(--safe-right));
-  bottom: calc(8px + var(--safe-bottom));
+  left: calc(12px + env(safe-area-inset-left));
+  right: calc(12px + env(safe-area-inset-right));
+  bottom: calc(8px + env(safe-area-inset-bottom));
   height: 56px;
   display: flex;
   flex-direction: row;

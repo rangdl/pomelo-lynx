@@ -65,3 +65,18 @@ Android 侧 devtool 依赖已就位(`lynx-service-devtool`,build.gradle.kts),
 恢复时:取消注释、把 `release`/`prerelease` job 的 `needs: [ios]` 改回
 `needs: [android, ios]`,并确认 `assembleRelease` 的 devtool 门控按上面
 第 1 条实施。
+
+## 本地开发服务端口
+
+`pnpm dev` 固定监听 **3090**(外网映射端口)。不要依赖自动 fallback 的端口,
+其他端口没有映射时手机访问不到。容器内 3000 被占用时旧行为会退到未映射端口。
+
+## dev server 回退的常见原因
+
+- **首屏后出现 399/301**:日志里是 `fatal=false` 的 sourcemap/devtool 错误,
+  dev bundle 实际已经渲染。宿主只在 fatal,或还没出首屏(下载/解码失败)时
+  清 URL 并回退;不要因为错误文本误判。
+- **服务没起来/端口不对**:先 `curl http://localhost:3090/main.lynx.bundle`
+  确认 200,再在设置页保存 URL 并冷启动 app。
+- **dev bundle 已下载但加载失败**:日志里应有 `fetched ...B → callback`,
+  随后才是 Lynx 错误;区分下载失败和解码/首屏错误。

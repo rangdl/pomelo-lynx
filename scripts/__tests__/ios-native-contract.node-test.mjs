@@ -58,6 +58,22 @@ test('Any 回调不传 nil,成功用 NSNull()', () => {
   }
 });
 
+test('didRecieveError 只在 fatal 或未出首屏时回退 dev URL', () => {
+  const source = read('ViewController.swift');
+  const fallbackGuard = source.indexOf(
+    'guard isFatal || !firstScreenReached else { return }',
+  );
+  const clearPref = source.indexOf(
+    'prefs.removeObject(forKey: "dev_server_url")',
+  );
+  assert.ok(fallbackGuard >= 0, '缺少 fatal/firstScreenReached 守卫');
+  assert.ok(clearPref >= 0, '缺少 dev_server_url 清理');
+  assert.ok(
+    fallbackGuard < clearPref,
+    '必须先判断 fatal/首屏状态,再清 dev_server_url;否则 399/301 等首屏后非致命错误会误回退',
+  );
+});
+
 test('运行期会重新赋值的 bundleURL 必须声明为 var', () => {
   const source = read('ViewController.swift');
   if (/bundleURL\s*=\s*HostTemplateProvider\.mainBundle/.test(source)) {

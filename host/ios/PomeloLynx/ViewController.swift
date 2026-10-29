@@ -36,6 +36,9 @@ final class ViewController: UIViewController {
   /// `SceneDelegate` to tell us the scene is active.
   private var sceneIsActive = false
   private var deferralLogged = false
+  /// 当前 LynxView 是否已经渲染出首屏;用于区分“加载失败”和首屏后的
+  /// sourcemap/devtool 非致命错误(399/301)。
+  private var firstScreenReached = false
   /// 上次推给 JS 的外观签名,避免布局/旋转回调重复发同值事件。
   private var lastAppearanceSignature = ""
 
@@ -142,6 +145,7 @@ final class ViewController: UIViewController {
     // 首帧就带上深浅色与安全区;运行中变化由 PomeloAppearance.changed 补齐。
     globalProps.merge(appearancePayload) { _, new in new }
     meta.globalProps = LynxTemplateData(dictionary: globalProps)
+    firstScreenReached = false
     lynxView.loadTemplate(meta)
     Log.info("launch", "loadTemplate(\(bundleURL)) invoked")
   }
@@ -222,6 +226,7 @@ final class ViewController: UIViewController {
 extension ViewController: LynxViewLifecycle {
   func lynxViewDidFirstScreen(_ view: LynxView) {
     Log.info("launch", "FIRST SCREEN reached")
+    firstScreenReached = true
     pushAppearance()
   }
 
@@ -239,18 +244,20 @@ extension ViewController: LynxViewLifecycle {
   @objc(lynxView:didRecieveError:)
   func lynxView(_ view: LynxView, didRecieveError error: Error) {
     let lynxError = error as? LynxError
-    Log.error(
-      "lynx", "error: \(error.localizedDescription) (fatal=\(lynxError?.isFatal ?? false))")
-    // Dev-server 加载失败:清掉存储的 URL 并回退内嵌 bundle,坏 URL 不能
-    // 把 app 钉死在黑屏。用户下次在设置页重新连接即可。
+    let isFatal = lynxError?.isFatal == true
+    Log.error("lynx", "error: \(error.localizedDescription) (fatal=\(isFatal))")
+    // 399/301 这类 sourcemap/devtool 错误是 fatal=false,dev bundle 其实已经
+    // 渲染出首屏;不能因为它清掉 dev URL 并回退。只有 fatal,或还没出首屏
+    // (下载/解码失败)时才回退。
     if bundleURL.hasPrefix("http://") || bundleURL.hasPrefix("https://") {
+      guard isFatal || !firstScreenReached else { return }
       Log.error("devserver", "dev URL load failed; clearing and falling back to embedded bundle")
       let prefs = UserDefaults(suiteName: "pomelo_prefs") ?? .standard
       prefs.removeObject(forKey: "dev_server_url")
       DispatchQueue.main.async { self.reloadWithEmbeddedBundle() }
       return
     }
-    guard lynxError?.isFatal == true else { return }
+    guard isFatal else { return }
     DispatchQueue.global(qos: .utility).async {
       try? BundleUpdateStore.shared?.failStartup()
     }

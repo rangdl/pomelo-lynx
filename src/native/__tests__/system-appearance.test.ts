@@ -89,20 +89,38 @@ describe('system appearance', () => {
     const handler = listeners.get('PomeloAppearance.changed');
     expect(handler).toBeDefined();
 
-    handler?.({ colorScheme: 'dark', safeBottom: 34 });
+    handler?.({ reason: 'trait', colorScheme: 'dark', safeBottom: 34 });
     expect(seen.at(-1)).toEqual({
       ...DEFAULTS,
       colorScheme: 'dark',
       safeBottom: 34,
     });
 
-    handler?.('{"safeTop":47,"colorScheme":"light"}');
+    // 安全区事件即使携带 colorScheme,也不能改主题。
+    handler?.({ reason: 'safeArea', colorScheme: 'light', safeTop: 47 });
+    expect(seen.at(-1)).toEqual({
+      ...DEFAULTS,
+      colorScheme: 'dark',
+      safeTop: 47,
+      safeBottom: 34,
+    });
+
+    handler?.('{"reason":"trait","safeTop":47,"colorScheme":"light"}');
     expect(seen.at(-1)).toEqual({
       ...DEFAULTS,
       colorScheme: 'light',
       safeTop: 47,
       // 部分事件只覆盖出现的字段,上一次的 safeBottom 保留。
       safeBottom: 34,
+    });
+
+    // 旧宿主没有 reason:只合并几何字段,主题保持当前值。
+    handler?.({ colorScheme: 'dark', safeBottom: 35 });
+    expect(seen.at(-1)).toEqual({
+      ...DEFAULTS,
+      colorScheme: 'light',
+      safeTop: 47,
+      safeBottom: 35,
     });
 
     unsubscribe();

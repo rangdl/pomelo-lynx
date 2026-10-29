@@ -161,6 +161,11 @@ final class ViewController: UIViewController {
     if lynxView == nil {
       view.setNeedsLayout()
     }
+    // 从后台回来时 trait 可能刚从后台瞬态恢复;延后一拍重读,避免把
+    // 后台期间的临时 dark trait 留在页面上。
+    DispatchQueue.main.async { [weak self] in
+      self?.pushAppearance(reason: "foreground", includeColorScheme: true)
+    }
   }
 
   /// 当前深浅色与安全区。globalProps 初值与变更事件共用同一形状。
@@ -176,15 +181,23 @@ final class ViewController: UIViewController {
   }
 
   /// 只在值变化时推送;首帧值已由 globalProps 带入,首屏后再补一次。
-  private func pushAppearance() {
+  /// `includeColorScheme` 为 false 时只推安全区:后台/前台恢复会触发
+  /// safe-area 回调,不能让它顺带把主题切成后台瞬态的 trait。
+  private func pushAppearance(reason: String, includeColorScheme: Bool) {
     guard let lynxView else { return }
-    let payload = appearancePayload
-    let signature =
-      "\(payload["colorScheme"] ?? "")-\(payload["safeTop"] ?? 0)-"
-      + "\(payload["safeBottom"] ?? 0)-\(payload["safeLeft"] ?? 0)-"
-      + "\(payload["safeRight"] ?? 0)"
+    var payload = appearancePayload
+    if !includeColorScheme {
+      payload.removeValue(forKey: "colorScheme")
+    }
+    let signature = payload.keys.sorted()
+      .map { "\($0)=\(payload[$0] ?? "")" }
+      .joined(separator: "|")
     guard signature != lastAppearanceSignature else { return }
     lastAppearanceSignature = signature
+    Log.debug("appearance", "push \(reason) \(payload)")
+    // 新版 JS 只接受带明确 reason 的外观事件;值签名仍只用几何/主题字段,
+    // 避免 reason 变化导致重复发送。
+    payload["reason"] = reason
     lynxView.sendGlobalEvent("PomeloAppearance.changed", withParams: [payload])
   }
 
@@ -192,12 +205,17 @@ final class ViewController: UIViewController {
     _ previousTraitCollection: UITraitCollection?
   ) {
     super.traitCollectionDidChange(previousTraitCollection)
-    pushAppearance()
+    // 只有 userInterfaceStyle 真的变化才更新主题;同一个 trait 下的
+    // 其它变化只同步安全区。
+    let styleChanged =
+      previousTraitCollection?.userInterfaceStyle
+      != traitCollection.userInterfaceStyle
+    pushAppearance(reason: "trait", includeColorScheme: styleChanged)
   }
 
   override func viewSafeAreaInsetsDidChange() {
     super.viewSafeAreaInsetsDidChange()
-    pushAppearance()
+    pushAppearance(reason: "safeArea", includeColorScheme: false)
   }
 
   /**
@@ -227,7 +245,7 @@ extension ViewController: LynxViewLifecycle {
   func lynxViewDidFirstScreen(_ view: LynxView) {
     Log.info("launch", "FIRST SCREEN reached")
     firstScreenReached = true
-    pushAppearance()
+    pushAppearance(reason: "firstScreen", includeColorScheme: true)
   }
 
   /// 前台恢复(SceneDelegate sceneDidBecomeActive):推 JS 全局事件,

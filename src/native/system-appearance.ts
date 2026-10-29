@@ -92,7 +92,18 @@ export function subscribeSystemAppearance(
   const handler = (raw: unknown) => {
     if (!active) return;
     try {
-      current = normalize(parseEventPayload(raw), current);
+      const payload = { ...parseEventPayload(raw) };
+      // 旧宿主的事件没有 reason;安全区/前台恢复事件也不能顺带改主题。
+      // 只有明确的 trait/foreground/firstScreen 才允许更新 colorScheme。
+      const reason = typeof payload.reason === 'string' ? payload.reason : null;
+      if (
+        reason !== 'trait' &&
+        reason !== 'foreground' &&
+        reason !== 'firstScreen'
+      ) {
+        delete payload.colorScheme;
+      }
+      current = normalize(payload, current);
       listener(current);
     } catch {
       /* 坏事件不能影响页面。 */

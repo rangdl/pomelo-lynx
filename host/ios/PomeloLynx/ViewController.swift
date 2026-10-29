@@ -339,15 +339,20 @@ final class ViewController: UIViewController {
     _ previousTraitCollection: UITraitCollection?
   ) {
     super.traitCollectionDidChange(previousTraitCollection)
-    // 只有前台且 userInterfaceStyle 真的变化才更新主题;后台/失活时的
-    // trait 可能短暂变 dark,只同步安全区。
-    let active = UIApplication.shared.applicationState == .active
+    // 只忽略真正进入后台时的 trait。切换系统主题时 app 可能短暂处于
+    // inactive(控制中心/设置页),若仍按 app 活跃状态过滤,主题要等回到
+    // 前台才更新,表现为明显延迟。
+    let appInBackground = UIApplication.shared.applicationState == .background
+    let sceneInBackground =
+      view.window?.windowScene?.activationState == .background
+    let inBackground = appInBackground || sceneInBackground
+    let windowStyle =
+      (view.window?.traitCollection ?? traitCollection).userInterfaceStyle
     let styleChanged =
-      previousTraitCollection?.userInterfaceStyle
-      != traitCollection.userInterfaceStyle
+      previousTraitCollection?.userInterfaceStyle != windowStyle
     pushAppearance(
       reason: "trait",
-      includeColorScheme: active && styleChanged,
+      includeColorScheme: !inBackground && styleChanged,
     )
   }
 

@@ -83,7 +83,10 @@ export function ShellLayout() {
     active ? (dark ? '#4da3ff' : '#007aff') : dark ? '#b0b7c3' : '#666666';
 
   return (
+    // iOS Lynx 移除 `.theme-dark` 后可能保留旧 CSS 变量;主题变化时重建
+    // 整棵 shell,保证页面以新主题重新解析样式。
     <view
+      key={theme}
       className={`shell theme-${theme}${
         pathname === '/' ? ' shell--home' : ''
       }`}

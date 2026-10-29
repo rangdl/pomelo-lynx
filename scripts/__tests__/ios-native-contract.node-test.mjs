@@ -88,6 +88,20 @@ test('dev URL 加载失败回退内嵌但保留配置供开发者页重试', () 
   );
 });
 
+test('系统主题变化不因 inactive 被丢弃', () => {
+  const source = read('ViewController.swift');
+  assert.doesNotMatch(
+    source,
+    /applicationState == \.active/,
+    '切换系统主题时 app 常处于 inactive;用 applicationState == .active 过滤会造成明显延迟',
+  );
+  assert.match(
+    source,
+    /activationState == \.background/,
+    '只应忽略真正进入后台的 trait,避免后台瞬态 dark',
+  );
+});
+
 test('应用外观偏好同步 UIKit 并在冷启动读取 prefs', () => {
   const viewController = read('ViewController.swift');
   assert.match(

@@ -96,6 +96,13 @@ ShellLayout(全局唯一)
 - 颜色只用 `src/shared/theme/tokens.css` 的语义 token;
   不要在页面 CSS/组件内联样式里写死 `#hex` 或 `rgba()`(图标块品牌色除外)。
 - 深色模式由 `.theme-dark` 覆盖 token;主题类挂在 `.shell`。
+- **`.theme-light` 必须显式覆盖 `.theme-dark` 的每个 token**。iOS Lynx
+  移除 `.theme-dark` 后不会恢复 `:root` 值,d→浅切换时背景/文字会继续
+  沿用深色 token;新增深色 token 时必须同步补浅色值。
+  `scripts/__tests__/theme-tokens.node-test.mjs` 会校验这一点。
+- `ShellLayout` 的根 `<view>` 以 `key={theme}` 强制重建:切换外观时整棵
+  shell 重新挂载,避免 iOS 继续使用旧的自定义属性缓存。切换主题会重置
+  当前页面内部状态(滚动位置等),这是可接受的低频操作。
 - 外观偏好持久化在 `PomeloStorage.prefs` 的 `appearance_mode`:
   `system`(默认)/`light`/`dark`;设置页「外观」分组提供三个选项。
 - 固定浅色/深色时,JS 通过 `PomeloPlatform.setAppearanceMode` 同步
@@ -107,7 +114,8 @@ ShellLayout(全局唯一)
   `reason = trait / foreground / firstScreen` 的外观事件更新;
   `safeArea` 事件和旧宿主(无 `reason`)只同步安全区,不改主题。
 - iOS 前台恢复时宿主会重读窗口 trait(并延迟补一次),后台瞬态 dark 不会
-  被应用;真正的系统主题变化仍然实时生效。
+  被应用;只有 `activationState == .background` 的 trait 会被忽略,
+  `inactive`(控制中心/设置切换)仍然立即更新,真正的系统主题变化不延迟。
 - 安全区在实际使用点直接写 `env(safe-area-inset-*)`;
   **不要**把 `env()` 放进 CSS 自定义属性的默认值(iOS Lynx 解析失效,
   会导致 `bottom/left/right` 整条属性无效)。

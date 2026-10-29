@@ -12,6 +12,7 @@ import {
   setClipboard,
   setKeepScreenOn,
   setNativeAppearanceMode,
+  setNativeEdgeBackEnabled,
   shareFile,
 } from '../platform.js';
 
@@ -40,6 +41,7 @@ interface PlatformMock {
   reloadBundle?: (callback: (error: unknown) => void) => void;
   probeDevServer?: (url: string, callback: (result: unknown) => void) => void;
   setAppearanceMode?: (mode: 'system' | 'light' | 'dark') => void;
+  setEdgeBackEnabled?: (enabled: boolean) => void;
 }
 
 const globals = globalThis as unknown as {
@@ -419,6 +421,21 @@ describe('native platform facade', () => {
     await expect(
       probeDevServer('http://192.168.1.2:3090/index.html'),
     ).rejects.toThrow('devserver_invalid_url');
+  });
+
+  test('setNativeEdgeBackEnabled 只在宿主支持时下发', () => {
+    const calls: boolean[] = [];
+    setNativeEdgeBackEnabled(false);
+    globals.NativeModules = {
+      PomeloPlatform: {
+        openURL: () => {},
+        setKeepScreenOn: () => {},
+        setEdgeBackEnabled: (enabled: boolean) => calls.push(enabled),
+      } satisfies PlatformMock,
+    };
+    setNativeEdgeBackEnabled(true);
+    setNativeEdgeBackEnabled(false);
+    expect(calls).toEqual([true, false]);
   });
 
   test('setNativeAppearanceMode 只在宿主支持时下发', () => {

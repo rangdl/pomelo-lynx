@@ -15,7 +15,8 @@ import {
 } from '@tanstack/react-router';
 
 import { type MessageKey, t } from '../../i18n/index.js';
-import { subscribeNavigationBack } from '../../native/navigation.js';
+import { subscribeNavigationSwipe } from '../../native/navigation.js';
+import { setNativeEdgeBackEnabled } from '../../native/platform.js';
 import {
   readSystemAppearance,
   subscribeSystemAppearance,
@@ -102,26 +103,135 @@ export function ShellLayout() {
   }
   const pageDirection = pageDirectionRef.current;
 
+  // 跟手滑动:主线程直接写 transform,松手再动画到 0 或屏宽。
+  const pageRef = useMainThreadRef<MainThread.Element>(null);
+  const pageAnimationRef = useMainThreadRef<MainThread.Animation | null>(null);
+  const followPage = useMemo(
+    () =>
+      runOnMainThread((offset: number) => {
+        'main thread';
+        const page = pageRef.current;
+        if (!page) return;
+        pageAnimationRef.current?.cancel();
+        pageAnimationRef.current = null;
+        page.setStyleProperty(
+          'transform',
+          offset === 0 ? 'none' : `translateX(${offset}px)`,
+        );
+      }),
+    [],
+  );
+  const settlePage = useMemo(
+    () =>
+      runOnMainThread((from: number, to: number, duration: number) => {
+        'main thread';
+        const page = pageRef.current;
+        if (!page) return;
+        pageAnimationRef.current?.cancel();
+        pageAnimationRef.current = null;
+        if (typeof page.animate !== 'function') {
+          page.setStyleProperty(
+            'transform',
+            to === 0 ? 'none' : `translateX(${to}px)`,
+          );
+          return;
+        }
+        page.setStyleProperty('transform', `translateX(${from}px)`);
+        pageAnimationRef.current = page.animate(
+          [
+            { transform: `translateX(${from}px)` },
+            { transform: `translateX(${to}px)` },
+          ],
+          {
+            duration,
+            easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
+            fill: 'forwards',
+          },
+        );
+      }),
+    [],
+  );
+  const clearPageMotion = useMemo(
+    () =>
+      runOnMainThread(() => {
+        'main thread';
+        pageAnimationRef.current?.cancel();
+        pageAnimationRef.current = null;
+        pageRef.current?.setStyleProperty('transform', 'none');
+      }),
+    [],
+  );
+
   useEffect(() => {
     setAppearance(readSystemAppearance());
     return subscribeSystemAppearance(setAppearance);
   }, []);
 
-  // iOS 左边缘侧滑:只有子页响应;有历史就 pop,否则回设置根页。
-  // 根 tab(首页/设置)不响应,避免把 tab 当成导航栈。
+  // 根 tab 关闭原生边缘手势,避免冻结触摸却不移动页面。
+  useEffect(() => {
+    setNativeEdgeBackEnabled(pathname.startsWith('/settings/'));
+  }, [pathname]);
+
+  // iOS 左边缘跟手返回:只有子页响应;根 tab(首页/设置)不响应。
   useEffect(() => {
     if (!pathname.startsWith('/settings/')) return;
-    return subscribeNavigationBack(() => {
-      if (router.history.canGoBack()) {
-        router.history.back();
+    let navTimer: ReturnType<typeof setTimeout> | undefined;
+    let clearTimer: ReturnType<typeof setTimeout> | undefined;
+    let translation = 0;
+    let committed = false;
+
+    const unsubscribe = subscribeNavigationSwipe((event) => {
+      if (navTimer) {
+        clearTimeout(navTimer);
+        navTimer = undefined;
+      }
+      if (clearTimer) {
+        clearTimeout(clearTimer);
+        clearTimer = undefined;
+      }
+
+      if (event.phase === 'begin') {
+        committed = false;
+        translation = 0;
+        followPage(0);
         return;
       }
-      navigate({
-        to:
-          pathname === '/settings/about/logs' ? '/settings/about' : '/settings',
-      });
+      if (event.phase === 'change') {
+        if (committed) return;
+        translation = Math.max(0, event.translation);
+        followPage(translation);
+        return;
+      }
+
+      if (event.commit && !committed) {
+        committed = true;
+        const offscreen = event.width > 0 ? event.width : 400;
+        settlePage(translation, offscreen, 180);
+        navTimer = setTimeout(() => {
+          if (router.history.canGoBack()) {
+            router.history.back();
+            return;
+          }
+          navigate({
+            to:
+              pathname === '/settings/about/logs'
+                ? '/settings/about'
+                : '/settings',
+          });
+        }, 190);
+        return;
+      }
+
+      settlePage(translation, 0, 220);
+      clearTimer = setTimeout(() => clearPageMotion(), 240);
     });
-  }, [navigate, pathname, router]);
+
+    return () => {
+      if (navTimer) clearTimeout(navTimer);
+      if (clearTimer) clearTimeout(clearTimer);
+      unsubscribe();
+    };
+  }, [clearPageMotion, followPage, navigate, pathname, router, settlePage]);
 
   const activePath = pathname.startsWith('/settings') ? '/settings' : '/';
   const rawActiveIndex = TABS.findIndex((tab) => tab.path === activePath);
@@ -159,6 +269,7 @@ export function ShellLayout() {
         <view
           key={pathname}
           className={`shell__page shell__page--${pageDirection}`}
+          main-thread:ref={pageRef}
           data-testid="shell-page"
         >
           <Outlet />

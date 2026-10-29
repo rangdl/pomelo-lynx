@@ -37,7 +37,7 @@
   - 顺序:覆盖层 LIFO → 子页父级 → tab 根退出;是否可返回由 JS 状态决定
   - 无覆盖层且已在 tab 根时调用 `finish()`;iOS 无返回键,不实现
   - 验证:`assembleDebug` + 真机返回手势/按键
-- [x] iOS 左边缘右滑返回:宿主发 `PomeloNavigation.back`,JS 子页 pop 历史
+- [x] iOS 左边缘跟手返回:宿主上报 swipe 位移,JS 主线程平移页面后 pop/回弹
 - [x] 输入框键盘避让:`avoid-keyboard` + 12px spacing(待真机验证)
 - [x] 外观设置改为单条目 + 右侧锚定浮层;底栏指示器固定高度居中
 - [x] 页面 push/pop/fade 挂载动画(Lynx 无原生导航栈)

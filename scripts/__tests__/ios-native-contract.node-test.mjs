@@ -102,7 +102,7 @@ test('系统主题变化不因 inactive 被丢弃', () => {
   );
 });
 
-test('iOS 左边缘手势通过全局事件请求返回', () => {
+test('iOS 左边缘手势上报跟手进度并提交返回', () => {
   const viewController = read('ViewController.swift');
   assert.match(
     viewController,
@@ -111,10 +111,13 @@ test('iOS 左边缘手势通过全局事件请求返回', () => {
   );
   assert.match(
     viewController,
-    /PomeloNavigation\.back/,
-    '手势必须发送 PomeloNavigation.back 给 JS 路由',
+    /PomeloNavigation\.swipe/,
+    '手势必须发送 PomeloNavigation.swipe 给 JS 主线程',
   );
   assert.match(viewController, /func handleEdgePan\(/);
+  assert.match(viewController, /func sendNavigationSwipe\(/);
+  assert.match(viewController, /phase: "change"/);
+  assert.match(viewController, /commit:/);
   assert.match(
     viewController,
     /cancelsTouchesInView = true/,
@@ -122,12 +125,14 @@ test('iOS 左边缘手势通过全局事件请求返回', () => {
   );
   assert.match(viewController, /gestureRecognizerShouldBegin/);
   assert.match(viewController, /isUserInteractionEnabled = false/);
+  assert.match(viewController, /func setEdgeBackEnabled\(/);
+  assert.match(viewController, /edgePanGesture\?\.isEnabled = enabled/);
 
   const navigation = readFileSync(
     join(ROOT, 'src/native/navigation.ts'),
     'utf8',
   );
-  assert.match(navigation, /PomeloNavigation\.back/);
+  assert.match(navigation, /PomeloNavigation\.swipe/);
 });
 
 test('应用外观偏好同步 UIKit 并在冷启动读取 prefs', () => {

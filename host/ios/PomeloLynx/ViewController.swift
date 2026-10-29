@@ -43,6 +43,8 @@ final class ViewController: UIViewController {
   private var lastAppearanceSignature = ""
   /// 冷启动只从 prefs 应用一次 UIKit 外观;之后由 PomeloPlatform 更新。
   private var storedAppearanceModeApplied = false
+  /// 左边缘返回手势;只有 JS 路由处于子页时启用。
+  private var edgePanGesture: UIScreenEdgePanGestureRecognizer?
 
   init() {
     // `PomeloLynx --bundle probe` selects the alignment probe page.
@@ -88,30 +90,61 @@ final class ViewController: UIViewController {
     // 手势一旦识别就取消 LynxView 内的触摸,避免侧滑同时滚动页面。
     edgePan.cancelsTouchesInView = true
     edgePan.delegate = self
+    edgePan.isEnabled = false
+    edgePanGesture = edgePan
     view.addGestureRecognizer(edgePan)
   }
 
-  /// 左边缘向右滑动超过阈值时发事件;根 tab 由 JS 忽略。
+  /// 由 JS 根据当前路由开关:根 tab 不接管边缘手势。
+  func setEdgeBackEnabled(_ enabled: Bool) {
+    edgePanGesture?.isEnabled = enabled
+  }
+
+  /// 左边缘拖拽:持续上报位移让 JS 页面跟手,松手由 JS 提交或回弹。
   @objc private func handleEdgePan(
     _ gesture: UIScreenEdgePanGestureRecognizer
   ) {
+    let translation = max(0, gesture.translation(in: view).x)
     switch gesture.state {
     case .began:
       // 识别为横向边缘手势后立即冻结 LynxView,避免 scroll-view 同时滚动。
       lynxView?.isUserInteractionEnabled = false
-    case .ended, .cancelled, .failed:
+      sendNavigationSwipe(phase: "begin", translation: 0, commit: false)
+    case .changed:
+      sendNavigationSwipe(
+        phase: "change", translation: translation, commit: false)
+    case .ended:
       lynxView?.isUserInteractionEnabled = true
+      let velocity = gesture.velocity(in: view).x
+      let width = max(view.bounds.width, 1)
+      let commit = translation > width * 0.28 || velocity > 500
+      sendNavigationSwipe(
+        phase: "end", translation: translation, commit: commit)
+    case .cancelled, .failed:
+      lynxView?.isUserInteractionEnabled = true
+      sendNavigationSwipe(
+        phase: "end", translation: translation, commit: false)
     default:
-      return
+      break
     }
-    guard gesture.state == .ended else { return }
-    let translation = gesture.translation(in: view)
-    let velocity = gesture.velocity(in: view)
-    guard translation.x > 60, velocity.x > 0 else { return }
-    Log.debug("navigation", "edge swipe back")
-    lynxView?.sendGlobalEvent(
-      "PomeloNavigation.back",
-      withParams: [["source": "edge"]])
+  }
+
+  /// 把拖拽进度发给 JS;`translation` 为 pt,`progress` 供 JS 判断阈值。
+  private func sendNavigationSwipe(
+    phase: String, translation: CGFloat, commit: Bool
+  ) {
+    guard let lynxView else { return }
+    let width = max(view.bounds.width, 1)
+    let progress = min(1, max(0, translation / width))
+    lynxView.sendGlobalEvent(
+      "PomeloNavigation.swipe",
+      withParams: [[
+        "phase": phase,
+        "translation": Double(translation),
+        "width": Double(width),
+        "progress": Double(progress),
+        "commit": commit,
+      ]])
   }
 
   override func viewDidLayoutSubviews() {

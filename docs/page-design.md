@@ -48,10 +48,13 @@ ShellLayout(全局唯一)
 - 结构:根 view(100% 高) → `PageTopBar` → `scroll-view`(flex:1) → 内容 + tail spacer。
 - 开发者页(`/settings/developer`)同样遵守子页结构:设置页只保留一个
   「开发者」入口行,Dev Server 与调试通道都放在子页内。
-- iOS 左边缘右滑返回:宿主 `UIScreenEdgePanGestureRecognizer` 发
-  `PomeloNavigation.back`,JS 只在 `/settings/*` 子页响应并 pop 路由历史;
-  根 tab(`/`、`/settings`)不响应。手势识别后取消 LynxView 触摸,避免侧滑
-  同时滚动页面;纵向边缘滑动仍交给页面滚动。
+- iOS 左边缘右滑返回:宿主 `UIScreenEdgePanGestureRecognizer` 持续发
+  `PomeloNavigation.swipe`(`begin/change/end` + 位移),JS 主线程平移
+  `.shell__page` 跟手;超过 28% 屏宽或速度 > 500 时滑出并 pop 历史,
+  否则回弹。只有 `/settings/*` 子页响应,根 tab 不响应。
+- 手势由 JS 按路由开关(`setEdgeBackEnabled`):根 tab 关闭,子页开启。
+- 手势识别后取消 LynxView 触摸并临时禁用交互,避免侧滑同时滚动页面;
+  纵向边缘滑动仍交给页面滚动。
 - 页面切换动画由 `.shell__page` 的挂载 keyframes 实现(push/pop/fade);
   Lynx 没有原生导航栈,不要期待系统 interactivePop。
 

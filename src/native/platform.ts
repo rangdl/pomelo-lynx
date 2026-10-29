@@ -35,6 +35,8 @@ export interface PomeloPlatformNativeModule {
   probeDevServer?(url: string, callback: (result: unknown) => void): void;
   /** 把应用外观同步到 UIKit(状态栏/键盘/系统弹窗)。 */
   setAppearanceMode?(mode: 'system' | 'light' | 'dark'): void;
+  /** 按路由开关左边缘返回手势。 */
+  setEdgeBackEnabled?(enabled: boolean): void;
 }
 
 /** 模块存在所必需的方法;缺一个就视为旧壳,整体降级。 */
@@ -160,6 +162,10 @@ export function setKeepScreenOn(enabled: boolean): boolean {
  * 把应用外观偏好同步给原生 UIKit。旧壳/Web 没有该方法时静默降级;
  * 返回是否真的下发给宿主。
  */
+export function setNativeEdgeBackEnabled(enabled: boolean): void {
+  readPlatformModule()?.setEdgeBackEnabled?.(enabled);
+}
+
 export function setNativeAppearanceMode(
   mode: 'system' | 'light' | 'dark',
 ): boolean {

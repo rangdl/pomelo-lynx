@@ -56,6 +56,15 @@ test('页面切换有 push/pop/fade 挂载动画', () => {
   );
 });
 
+test('侧滑跟手由主线程平移并与路由开关联动', () => {
+  const layout = read('src/shared/layouts/ShellLayout.tsx');
+  assert.match(layout, /main-thread:ref=\{pageRef\}/);
+  assert.match(layout, /subscribeNavigationSwipe/);
+  assert.match(layout, /setNativeEdgeBackEnabled/);
+  const navigation = read('src/native/navigation.ts');
+  assert.match(navigation, /PomeloNavigation\.swipe/);
+});
+
 test('开发者页输入框启用键盘避让', () => {
   for (const file of [
     'src/features/settings/DevServerSection.tsx',

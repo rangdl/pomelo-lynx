@@ -42,6 +42,8 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
         #selector(PomeloPlatformModule.probeDevServer(_:callback:))),
       "setAppearanceMode": NSStringFromSelector(
         #selector(PomeloPlatformModule.setAppearanceMode(_:))),
+      "setEdgeBackEnabled": NSStringFromSelector(
+        #selector(PomeloPlatformModule.setEdgeBackEnabled(_:))),
     ]
   }
 
@@ -154,6 +156,15 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
         }
       }
     }.resume()
+  }
+
+  // MARK: - 边缘返回开关
+
+  /// JS 按路由开关左边缘手势;根 tab 关闭,避免冻结触摸却不移动页面。
+  @objc func setEdgeBackEnabled(_ enabled: Bool) {
+    DispatchQueue.main.async {
+      Self.hostViewController()?.setEdgeBackEnabled(enabled)
+    }
   }
 
   // MARK: - 应用外观

@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
 
 import {
-  NAVIGATION_BACK_EVENT,
-  subscribeNavigationBack,
+  NAVIGATION_SWIPE_EVENT,
+  type NavigationSwipeEvent,
+  subscribeNavigationSwipe,
 } from '../navigation.js';
 
 const globals = globalThis as unknown as { lynx?: unknown };
 
-describe('navigation back event', () => {
+describe('navigation swipe event', () => {
   beforeEach(() => {
     globals.lynx = undefined;
   });
@@ -16,7 +17,7 @@ describe('navigation back event', () => {
     globals.lynx = undefined;
   });
 
-  test('订阅侧滑返回并在退订时移除监听', () => {
+  test('订阅拖拽进度并在退订时移除监听', () => {
     const listeners = new Map<string, (payload: unknown) => void>();
     const removed: string[] = [];
     globals.lynx = {
@@ -34,20 +35,53 @@ describe('navigation back event', () => {
       },
     };
 
-    const calls: string[] = [];
-    const unsubscribe = subscribeNavigationBack(() => calls.push('back'));
-    expect(listeners.has(NAVIGATION_BACK_EVENT)).toBe(true);
+    const events: NavigationSwipeEvent[] = [];
+    const unsubscribe = subscribeNavigationSwipe((event) => events.push(event));
+    expect(listeners.has(NAVIGATION_SWIPE_EVENT)).toBe(true);
 
-    listeners.get(NAVIGATION_BACK_EVENT)?.({ source: 'edge' });
-    expect(calls).toEqual(['back']);
+    listeners.get(NAVIGATION_SWIPE_EVENT)?.({
+      phase: 'change',
+      translation: 120,
+      width: 390,
+      progress: 0.31,
+      commit: false,
+    });
+    expect(events[0]).toEqual({
+      phase: 'change',
+      translation: 120,
+      width: 390,
+      progress: 0.31,
+      commit: false,
+    });
+
+    listeners.get(NAVIGATION_SWIPE_EVENT)?.(
+      '{"phase":"end","translation":390,"width":390,"progress":1,"commit":true}',
+    );
+    expect(events[1]).toMatchObject({ phase: 'end', commit: true });
 
     unsubscribe();
-    expect(removed).toEqual([NAVIGATION_BACK_EVENT]);
+    expect(removed).toEqual([NAVIGATION_SWIPE_EVENT]);
   });
 
-  test('没有事件发射器时退订是空操作', () => {
+  test('忽略非法事件,没有发射器时退订安全', () => {
+    const listeners = new Map<string, (payload: unknown) => void>();
+    globals.lynx = {
+      getJSModule: () => ({
+        addListener: (event: string, handler: (payload: unknown) => void) => {
+          listeners.set(event, handler);
+        },
+        removeListener: () => {},
+      }),
+    };
+    const events: NavigationSwipeEvent[] = [];
+    const unsubscribe = subscribeNavigationSwipe((event) => events.push(event));
+    listeners.get(NAVIGATION_SWIPE_EVENT)?.({ phase: 'oops' });
+    listeners.get(NAVIGATION_SWIPE_EVENT)?.('not json');
+    expect(events).toEqual([]);
+    unsubscribe();
+
     globals.lynx = {};
-    const unsubscribe = subscribeNavigationBack(() => {});
-    expect(() => unsubscribe()).not.toThrow();
+    const empty = subscribeNavigationSwipe(() => {});
+    expect(() => empty()).not.toThrow();
   });
 });

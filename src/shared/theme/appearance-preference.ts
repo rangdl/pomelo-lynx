@@ -4,6 +4,7 @@ import {
   getPomeloStorage,
   type PomeloStorage,
 } from '../../core/storage/index.js';
+import { setNativeAppearanceMode } from '../../native/platform.js';
 import type { ColorScheme } from '../../native/system-appearance.js';
 
 /** 外观偏好:跟随系统 / 固定浅色 / 固定深色。 */
@@ -65,6 +66,7 @@ export class AppearancePreference {
         if (this.userSelected || revision !== this.revision) return;
         if (raw === 'system' || raw === 'light' || raw === 'dark') {
           this.mode = raw;
+          setNativeAppearanceMode(raw);
           this.emit();
         }
       } catch {
@@ -78,6 +80,7 @@ export class AppearancePreference {
     this.userSelected = true;
     this.revision++;
     this.mode = mode;
+    setNativeAppearanceMode(mode);
     this.emit();
     return this.storage()
       .prefs.set(APPEARANCE_PREF_KEY, mode)

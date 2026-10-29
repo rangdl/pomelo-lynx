@@ -11,6 +11,7 @@ import {
   reloadBundle,
   setClipboard,
   setKeepScreenOn,
+  setNativeAppearanceMode,
   shareFile,
 } from '../platform.js';
 
@@ -38,6 +39,7 @@ interface PlatformMock {
   clearDevServer?: (callback: (error: unknown) => void) => void;
   reloadBundle?: (callback: (error: unknown) => void) => void;
   probeDevServer?: (url: string, callback: (result: unknown) => void) => void;
+  setAppearanceMode?: (mode: 'system' | 'light' | 'dark') => void;
 }
 
 const globals = globalThis as unknown as {
@@ -417,5 +419,23 @@ describe('native platform facade', () => {
     await expect(
       probeDevServer('http://192.168.1.2:3090/index.html'),
     ).rejects.toThrow('devserver_invalid_url');
+  });
+
+  test('setNativeAppearanceMode 只在宿主支持时下发', () => {
+    const calls: string[] = [];
+    expect(setNativeAppearanceMode('light')).toBe(false);
+
+    globals.NativeModules = {
+      PomeloPlatform: {
+        openURL: () => {},
+        setKeepScreenOn: () => {},
+        setAppearanceMode: (mode: 'system' | 'light' | 'dark') => {
+          calls.push(mode);
+        },
+      } satisfies PlatformMock,
+    };
+    expect(setNativeAppearanceMode('light')).toBe(true);
+    expect(setNativeAppearanceMode('system')).toBe(true);
+    expect(calls).toEqual(['light', 'system']);
   });
 });

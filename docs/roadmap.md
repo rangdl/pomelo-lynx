@@ -22,6 +22,7 @@
 - [x] `SystemAppearance` facade:初值走 `lynx.__globalProps`,变更走全局事件
 - [x] 安全区统一注入(`--safe-*`),ShellLayout 用宿主上报的 px 值覆盖
 - [x] iOS:`ViewController` 注入 `colorScheme`/安全区,监听 trait 与安全区变化
+- [x] 应用外观(跟随系统/浅色/深色)同步到 UIKit;首页背景改用主题 token
 - [ ] **Android(计划)**
   - `SystemAppearance.kt`:读取 `uiMode`、字体缩放、`ANIMATOR_DURATION_SCALE`
   - `MainActivity` 监听 `onConfigurationChanged`,通过 `sendGlobalEvent` 推送

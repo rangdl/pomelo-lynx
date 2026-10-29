@@ -52,3 +52,25 @@ test('用户先选择时,迟到的 hydrate 不覆盖', async () => {
   await preference.hydrate();
   expect(preference.getMode()).toBe('light');
 });
+
+test('setMode 同步原生 UIKit 外观', async () => {
+  const globals = globalThis as unknown as {
+    NativeModules?: Record<string, unknown>;
+  };
+  const calls: string[] = [];
+  globals.NativeModules = {
+    PomeloPlatform: {
+      openURL: () => {},
+      setKeepScreenOn: () => {},
+      setAppearanceMode: (mode: string) => calls.push(mode),
+    },
+  };
+  try {
+    const storage = createMemoryStorage();
+    const preference = new AppearancePreference(() => storage);
+    await preference.setMode('light');
+    expect(calls).toEqual(['light']);
+  } finally {
+    globals.NativeModules = undefined;
+  }
+});

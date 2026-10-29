@@ -98,6 +98,11 @@ ShellLayout(全局唯一)
 - 深色模式由 `.theme-dark` 覆盖 token;主题类挂在 `.shell`。
 - 外观偏好持久化在 `PomeloStorage.prefs` 的 `appearance_mode`:
   `system`(默认)/`light`/`dark`;设置页「外观」分组提供三个选项。
+- 固定浅色/深色时,JS 通过 `PomeloPlatform.setAppearanceMode` 同步
+  `overrideUserInterfaceStyle`;状态栏、键盘、系统弹窗都跟随应用选择。
+  冷启动由 `ViewController` 读取同一 prefs key 并先行应用。
+- 首页也使用主题 token:`.Home` 背景为 `var(--color-bg)`,装饰渐变在
+  亮色下降低透明度;不要再写死 `#000` 或白色文字。
 - `system` 模式由宿主 `globalProps.colorScheme` 初始化,并只接受
   `reason = trait / foreground / firstScreen` 的外观事件更新;
   `safeArea` 事件和旧宿主(无 `reason`)只同步安全区,不改主题。
@@ -107,7 +112,7 @@ ShellLayout(全局唯一)
   **不要**把 `env()` 放进 CSS 自定义属性的默认值(iOS Lynx 解析失效,
   会导致 `bottom/left/right` 整条属性无效)。
 - 不允许在页面里使用 `:root` 设背景/文字色(会污染其它页面);
-  Home 的黑色背景必须限定在 `.Home` 作用域。
+  首页样式必须限定在 `.Home` 作用域。
 
 ## 6. 新增/修改页面检查清单
 

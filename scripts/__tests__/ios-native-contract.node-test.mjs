@@ -88,6 +88,29 @@ test('dev URL 加载失败回退内嵌但保留配置供开发者页重试', () 
   );
 });
 
+test('应用外观偏好同步 UIKit 并在冷启动读取 prefs', () => {
+  const viewController = read('ViewController.swift');
+  assert.match(
+    viewController,
+    /func applyAppearanceMode\(/,
+    '控制器必须能把 system/light/dark 应用到 UIKit',
+  );
+  assert.match(
+    viewController,
+    /overrideUserInterfaceStyle/,
+    '状态栏/键盘需要 overrideUserInterfaceStyle 才能跟随应用选择',
+  );
+  assert.match(
+    viewController,
+    /applyStoredAppearanceModeIfNeeded\(\)/,
+    '冷启动必须读取 appearance_mode,避免首帧外观错误',
+  );
+
+  const module = read('PomeloPlatformModule.swift');
+  assert.match(module, /"setAppearanceMode"/);
+  assert.match(module, /@objc func setAppearanceMode\(/);
+});
+
 test('dev server 热切换先下载校验再重建 LynxView', () => {
   const viewController = read('ViewController.swift');
   assert.match(viewController, /func applyDevServer\(/);

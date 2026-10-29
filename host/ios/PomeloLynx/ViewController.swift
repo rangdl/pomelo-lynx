@@ -41,6 +41,8 @@ final class ViewController: UIViewController {
   private var firstScreenReached = false
   /// 上次推给 JS 的外观签名,避免布局/旋转回调重复发同值事件。
   private var lastAppearanceSignature = ""
+  /// 冷启动只从 prefs 应用一次 UIKit 外观;之后由 PomeloPlatform 更新。
+  private var storedAppearanceModeApplied = false
 
   init() {
     // `PomeloLynx --bundle probe` selects the alignment probe page.
@@ -86,6 +88,7 @@ final class ViewController: UIViewController {
     // status bar / home indicator itself (deviation 1).
     let frame = view.bounds
     guard frame.width > 0, frame.height > 0 else { return }
+    applyStoredAppearanceModeIfNeeded()
 
     if let lynxView {
       // Rotation / window resize: Lynx does not observe UIKit layout, so the
@@ -270,6 +273,31 @@ final class ViewController: UIViewController {
       self.lynxView = nil
     }
     view.setNeedsLayout()
+  }
+
+  /// 把应用外观偏好同步到 UIKit:状态栏、键盘、系统弹窗都跟随选择,
+  /// 而不是只在 JS 层换 token。
+  func applyAppearanceMode(_ mode: String) {
+    let style: UIUserInterfaceStyle
+    switch mode {
+    case "light":
+      style = .light
+    case "dark":
+      style = .dark
+    default:
+      style = .unspecified
+    }
+    view.overrideUserInterfaceStyle = style
+    view.window?.overrideUserInterfaceStyle = style
+    setNeedsStatusBarAppearanceUpdate()
+  }
+
+  /// 冷启动时读取 JS 写入的 `appearance_mode`,保证首帧系统 UI 就正确。
+  private func applyStoredAppearanceModeIfNeeded() {
+    guard !storedAppearanceModeApplied else { return }
+    storedAppearanceModeApplied = true
+    let prefs = UserDefaults(suiteName: "pomelo_prefs") ?? .standard
+    applyAppearanceMode(prefs.string(forKey: "appearance_mode") ?? "system")
   }
 
   /// 当前深浅色与安全区。globalProps 初值与变更事件共用同一形状。

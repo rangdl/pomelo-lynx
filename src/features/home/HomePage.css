@@ -1,10 +1,19 @@
-/* 首页作用域:不要用 :root,否则黑色背景和文字色会污染其它页面。 */
+/* 首页作用域:背景/文字跟随主题 token;深色模式保留原稿的黑色氛围。 */
 .Home {
   height: 100%;
   /* 首页不滚动:把内容整体抬到底栏上方,避免被胶囊覆盖。 */
   padding-bottom: calc(68px + env(safe-area-inset-bottom));
-  background-color: #000;
-  --color-text: #fff;
+  background-color: var(--color-bg);
+  /* 亮色下降低渐变饱和度,避免整屏仍显得像深色海报。 */
+  --home-gradient-mid: rgba(239, 155, 255, 0.16);
+  --home-gradient-end: rgba(255, 100, 72, 0.24);
+  --home-gradient-glow: rgba(255, 210, 141, 0.28);
+}
+
+.theme-dark .Home {
+  --home-gradient-mid: rgba(239, 155, 255, 0.3);
+  --home-gradient-end: #ff6448;
+  --home-gradient-glow: #ffd28db2;
 }
 
 .Home text {
@@ -16,10 +25,10 @@
   background: radial-gradient(
     71.43% 62.3% at 46.43% 36.43%,
     rgba(18, 229, 229, 0) 15%,
-    rgba(239, 155, 255, 0.3) 56.35%,
-    #ff6448 100%
+    var(--home-gradient-mid) 56.35%,
+    var(--home-gradient-end) 100%
   );
-  box-shadow: 0px 12.93px 28.74px 0px #ffd28db2 inset;
+  box-shadow: 0px 12.93px 28.74px 0px var(--home-gradient-glow) inset;
   border-radius: 50%;
   width: 200vw;
   height: 200vw;
@@ -51,6 +60,13 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 8px;
+}
+
+/* 白色 Lynx logo 在亮色背景上不可见,浅色模式给一个深色圆角底。 */
+.theme-light .Logo {
+  padding: 14px;
+  border-radius: 24px;
+  background-color: #111111;
 }
 
 .Logo--react {
@@ -112,19 +128,19 @@
 
 .Description {
   font-size: 20px;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-text-secondary);
   margin: 15rpx;
 }
 
 .Hint {
   font-size: 12px;
   margin: 5px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--color-text-tertiary);
 }
 
 .Hint-file {
   font-style: italic;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-text-secondary);
 }
 
 .Spacer {

@@ -40,6 +40,8 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
         #selector(PomeloPlatformModule.reloadBundle(_:))),
       "probeDevServer": NSStringFromSelector(
         #selector(PomeloPlatformModule.probeDevServer(_:callback:))),
+      "setAppearanceMode": NSStringFromSelector(
+        #selector(PomeloPlatformModule.setAppearanceMode(_:))),
     ]
   }
 
@@ -152,6 +154,21 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
         }
       }
     }.resume()
+  }
+
+  // MARK: - 应用外观
+
+  /// 把 `system/light/dark` 同步到 UIKit,让状态栏和系统控件跟随应用选择。
+  /// 同时写入 prefs,保证下次冷启动首帧就是正确的外观。
+  @objc func setAppearanceMode(_ mode: String) {
+    guard mode == "system" || mode == "light" || mode == "dark" else {
+      return
+    }
+    let prefs = UserDefaults(suiteName: "pomelo_prefs") ?? .standard
+    prefs.set(mode, forKey: "appearance_mode")
+    DispatchQueue.main.async {
+      Self.hostViewController()?.applyAppearanceMode(mode)
+    }
   }
 
   // MARK: - 剪贴板

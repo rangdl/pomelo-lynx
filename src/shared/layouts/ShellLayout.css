@@ -5,12 +5,8 @@
   flex-direction: column;
   width: 100%;
   height: 100%;
-  /* 页面默认浅灰;首页用 shell--home 覆盖成黑色,避免底部安全区露白。 */
+  /* 页面默认使用主题背景;首页也跟随主题,不要再写死黑色。 */
   background-color: var(--color-bg);
-}
-
-.shell--home {
-  background-color: #000;
 }
 
 .shell__body {

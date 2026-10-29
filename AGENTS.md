@@ -68,6 +68,21 @@
 - **长任务保持进度可见**。超过 1 分钟的等待/轮询,说明在等什么、预期多久,不得静默 sleep 阻塞。
 - **注释语言**:新增或修改的注释一律用中文;移植自其它仓库的注释保持原文语言,不做翻译。
 
+### iOS 原生改动(Linux 本地无法编译)
+
+- 提交前跑 `pnpm run check:ios`;它也会随 `pnpm test` 自动执行,在 CI 的 prepare job
+  就失败,不必等 macOS runner。
+- 已知 Swift/ObjC 桥接陷阱:
+  - `LynxViewLifecycle` 的可选回调必须与协议签名一致,并显式写 `@objc(selector)`;
+    `didRecieveError` 的参数是 `Error`,写成 `NSError` 只会得到 nearly-matches 告警,
+    回调根本不会执行。
+  - `(Any) -> Void` 回调成功时传 `NSNull()`,不能传 `nil`。
+  - 运行期会重新赋值(如回退)的启动状态用 `var`,不能用 `let`。
+  - `@escaping` 与 IUO `!` 不能叠加;部署目标 iOS 15,使用新 API 前核对可用性。
+  - 新增模块必须同步 `ViewController.buildConfig`、`project.pbxproj`
+    (PBXFileReference / PBXBuildFile / Sources) 与 TS facade。
+- 本地只能验证 JS;iOS 编译与行为以 CI 的 `iOS IPA` job 为准,通过前不得称"完成"。
+
 ### Biome
 
 - 运行 `pnpm run check` 进行代码检查

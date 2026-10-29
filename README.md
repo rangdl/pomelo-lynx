@@ -29,6 +29,7 @@
 | `pnpm verify:web` | 一键回归:`build` + `e2e:web` |
 | `pnpm typecheck` | `tsc -b` 全量类型检查 |
 | `pnpm run check` | Biome 检查并自动修复 |
+| `pnpm run check:ios` | iOS 原生源码契约闸门(Linux 可跑,含已知 Swift 桥接陷阱) |
 | `pnpm run lint` | Biome 只读检查(告警即失败,CI 用) |
 | `pnpm run format` | Biome 格式化 |
 

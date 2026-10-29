@@ -8,6 +8,7 @@
     "build:lynx": "rspeedy build --environment lynx",
     "build:web": "rspeedy build --environment web",
     "check": "biome check --write",
+    "check:ios": "node --test scripts/__tests__/ios-native-contract.node-test.mjs",
     "lint": "biome ci --error-on-warnings",
     "dev": "rspeedy dev",
     "e2e": "rstest run -c rstest.e2e.config.ts",

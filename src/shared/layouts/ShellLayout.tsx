@@ -1,5 +1,10 @@
+import { useEffect, useState } from '@lynx-js/react';
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 
+import {
+  readSystemAppearance,
+  subscribeSystemAppearance,
+} from '../../native/system-appearance.js';
 import './ShellLayout.css';
 
 interface TabItem {
@@ -21,12 +26,33 @@ const TABS: TabItem[] = [
 export function ShellLayout() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [appearance, setAppearance] = useState(readSystemAppearance);
+
+  useEffect(() => {
+    setAppearance(readSystemAppearance());
+    return subscribeSystemAppearance(setAppearance);
+  }, []);
 
   const activePath = pathname.startsWith('/settings') ? '/settings' : '/';
 
+  // 宿主上报的安全区用 inline 变量覆盖 :root 的 env() 默认值;值为 0 时
+  // 不写,保留 CSS 的 env() 回退。
+  const safeAreaStyle: Record<string, string> = {};
+  if (appearance.safeTop > 0)
+    safeAreaStyle['--safe-top'] = `${appearance.safeTop}px`;
+  if (appearance.safeBottom > 0)
+    safeAreaStyle['--safe-bottom'] = `${appearance.safeBottom}px`;
+  if (appearance.safeLeft > 0)
+    safeAreaStyle['--safe-left'] = `${appearance.safeLeft}px`;
+  if (appearance.safeRight > 0)
+    safeAreaStyle['--safe-right'] = `${appearance.safeRight}px`;
+
   return (
     <view
-      className={pathname === '/' ? 'shell shell--home' : 'shell'}
+      className={`shell theme-${appearance.colorScheme}${
+        pathname === '/' ? ' shell--home' : ''
+      }`}
+      style={safeAreaStyle}
       data-testid="shell-root"
     >
       <view className="shell__body">

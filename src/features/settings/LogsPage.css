@@ -5,17 +5,16 @@
   flex-direction: column;
   width: 100%;
   height: 100%;
-  background-color: #f6f6f8;
+  background-color: var(--color-bg);
 }
 
-/* iOS standard navigation bar: 44pt content height + real top safe area. */
 .logs__summary {
   padding-left: 16px;
   padding-right: 16px;
   padding-top: 4px;
   padding-bottom: 4px;
   font-size: 11px;
-  color: #98a2b3;
+  color: var(--color-text-tertiary);
   text-align: right;
 }
 
@@ -24,7 +23,7 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   padding-left: 16px;
   padding-right: 16px;
   padding-top: 10px;
@@ -34,16 +33,16 @@
 
 .logs__setting-label {
   font-size: 14px;
-  color: #111111;
+  color: var(--color-text);
 }
 
 .logs__setting-value {
   font-size: 14px;
-  color: #667085;
+  color: var(--color-text-secondary);
 }
 
 .logs__setting-value--on {
-  color: #007aff;
+  color: var(--color-accent);
   font-weight: 600;
 }
 
@@ -52,7 +51,7 @@
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   padding-top: 12px;
   padding-bottom: 12px;
   margin-top: 8px;
@@ -64,7 +63,7 @@
 
 .logs__action-text {
   font-size: 15px;
-  color: #007aff;
+  color: var(--color-accent);
 }
 
 .logs__note {
@@ -76,14 +75,14 @@
 
 .logs__note-text {
   font-size: 12px;
-  color: #98a2b3;
+  color: var(--color-text-tertiary);
 }
 
 .logs__list {
   flex: 1;
   min-height: 0;
   margin-top: 8px;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
 }
 
 .logs__empty {
@@ -96,7 +95,7 @@
 
 .logs__empty-text {
   font-size: 13px;
-  color: #98a2b3;
+  color: var(--color-text-tertiary);
 }
 
 .logs__row {
@@ -112,7 +111,7 @@
 .logs__time {
   width: 80px;
   font-size: 11px;
-  color: #98a2b3;
+  color: var(--color-text-tertiary);
 }
 
 .logs__level {
@@ -123,34 +122,34 @@
 }
 
 .logs__level--verbose {
-  color: #98a2b3;
+  color: var(--color-text-tertiary);
 }
 
 .logs__level--debug {
-  color: #667085;
+  color: var(--color-text-secondary);
 }
 
 .logs__level--info {
-  color: #101828;
+  color: var(--color-text);
 }
 
 .logs__level--warn {
-  color: #b54708;
+  color: var(--color-warning);
 }
 
 .logs__level--error {
-  color: #d92d20;
+  color: var(--color-danger);
 }
 
 .logs__tag {
   max-width: 96px;
   font-size: 11px;
-  color: #475467;
+  color: var(--color-text-secondary);
   margin-right: 6px;
 }
 
 .logs__msg {
   flex: 1;
   font-size: 11px;
-  color: #101828;
+  color: var(--color-text);
 }

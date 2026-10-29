@@ -3,7 +3,7 @@
   flex-direction: column;
   width: 100%;
   height: 100%;
-  background-color: #f6f6f8;
+  background-color: var(--color-bg);
 }
 
 /* 页面内容滚动区:设置页/关于页内容可能超过一屏,必须滚动而不是被
@@ -18,17 +18,17 @@
 }
 
 .settings__header {
-  padding-top: env(safe-area-inset-top);
+  padding-top: var(--safe-top);
   padding-left: 20px;
   padding-right: 20px;
   padding-bottom: 8px;
 }
 
 .settings__title {
-  /* iOS large title: 34pt bold, 52pt bar below the status bar. */
+  /* iOS large title: 34pt bold。 */
   font-size: 34px;
   font-weight: 700;
-  color: #111111;
+  color: var(--color-text);
   margin-top: 8px;
 }
 
@@ -37,7 +37,7 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   padding-left: 20px;
   padding-right: 20px;
   padding-top: 16px;
@@ -47,22 +47,21 @@
 
 .settings-row__label {
   font-size: 16px;
-  color: #111111;
+  color: var(--color-text);
 }
 
 .settings-row__value {
   font-size: 16px;
-  color: #999999;
+  color: var(--color-text-tertiary);
 }
 
-/* iOS standard navigation bar: 44pt content height + real top safe area. */
 .settings__section {
   margin-top: 24px;
 }
 
 .settings__section-title {
   font-size: 13px;
-  color: #999999;
+  color: var(--color-text-tertiary);
   padding-left: 20px;
   padding-bottom: 4px;
 }

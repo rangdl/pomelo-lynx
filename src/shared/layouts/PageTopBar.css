@@ -3,11 +3,11 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  height: calc(44px + env(safe-area-inset-top));
-  padding-top: env(safe-area-inset-top);
+  height: calc(44px + var(--safe-top));
+  padding-top: var(--safe-top);
   border-bottom-width: 1px;
-  border-bottom-color: rgba(0, 0, 0, 0.08);
-  background-color: #f6f6f8;
+  border-bottom-color: var(--color-separator);
+  background-color: var(--color-bg);
 }
 
 .page-topbar__side {
@@ -33,13 +33,13 @@
 
 .page-topbar__back-text {
   font-size: 17px;
-  color: #007aff;
+  color: var(--color-accent);
 }
 
 .page-topbar__title {
   flex: 1;
   font-size: 17px;
   font-weight: 600;
-  color: #111111;
+  color: var(--color-text);
   text-align: center;
 }

@@ -5,7 +5,7 @@
 
 .client-update__section-title {
   font-size: 13px;
-  color: #999999;
+  color: var(--color-text-tertiary);
   padding-left: 20px;
   padding-bottom: 4px;
 }
@@ -19,23 +19,23 @@
 }
 
 .client-update__row--danger .settings-row__label {
-  color: #d93025;
+  color: var(--color-danger);
 }
 
 .client-update__sub {
   font-size: 13px;
-  color: #999999;
+  color: var(--color-text-tertiary);
   max-width: 180px;
 }
 
 .client-update__toggle {
   font-size: 15px;
-  color: #007aff;
+  color: var(--color-accent);
 }
 
 .client-update__note {
   font-size: 13px;
-  color: #666666;
+  color: var(--color-text-secondary);
   padding-left: 20px;
   padding-right: 20px;
   padding-top: 8px;
@@ -44,7 +44,7 @@
 
 .client-update__error {
   font-size: 13px;
-  color: #d93025;
+  color: var(--color-danger);
   padding-left: 20px;
   padding-right: 20px;
   padding-top: 8px;

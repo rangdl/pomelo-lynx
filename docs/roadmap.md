@@ -18,10 +18,10 @@
 
 ## 批次 2:系统外观 / 安全区 / 深色模式
 
-- [ ] JS 主题 token 与深色模式(替换设置页/顶栏/底栏的硬编码颜色)
-- [ ] `SystemAppearance` facade:初值走 `lynx.__globalProps`,变更走全局事件
-- [ ] 安全区统一注入(`--safe-top/bottom/left/right`),页面消费统一 token
-- [ ] iOS:`ViewController` 读取 `traitCollection`/`UIAccessibility` 并推送变更
+- [x] JS 主题 token(`src/shared/theme/tokens.css`)与深色模式
+- [x] `SystemAppearance` facade:初值走 `lynx.__globalProps`,变更走全局事件
+- [x] 安全区统一注入(`--safe-*`),ShellLayout 用宿主上报的 px 值覆盖
+- [x] iOS:`ViewController` 注入 `colorScheme`/安全区,监听 trait 与安全区变化
 - [ ] **Android(计划)**
   - `SystemAppearance.kt`:读取 `uiMode`、字体缩放、`ANIMATOR_DURATION_SCALE`
   - `MainActivity` 监听 `onConfigurationChanged`,通过 `sendGlobalEvent` 推送

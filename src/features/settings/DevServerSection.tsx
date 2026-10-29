@@ -114,9 +114,9 @@ export function DevServerSection() {
             fontSize: '13px',
             paddingLeft: '10px',
             paddingRight: '10px',
-            backgroundColor: '#ffffff',
+            backgroundColor: 'var(--color-surface)',
             borderRadius: '10px',
-            color: '#111111',
+            color: 'var(--color-text)',
           }}
           bindinput={(e: { detail: { value: string } }) => {
             'background only';

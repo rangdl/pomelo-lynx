@@ -36,6 +36,8 @@ final class ViewController: UIViewController {
   /// `SceneDelegate` to tell us the scene is active.
   private var sceneIsActive = false
   private var deferralLogged = false
+  /// 上次推给 JS 的外观签名,避免布局/旋转回调重复发同值事件。
+  private var lastAppearanceSignature = ""
 
   init() {
     // `PomeloLynx --bundle probe` selects the alignment probe page.
@@ -132,10 +134,13 @@ final class ViewController: UIViewController {
     // first frame already knows who is hosting it.
     let meta = LynxLoadMeta()
     meta.url = bundleURL
-    meta.globalProps = LynxTemplateData(dictionary: [
+    var globalProps: [String: Any] = [
       "hostName": "pomelo-host-ios",
       "isDebug": ProcessInfo.processInfo.environment["POMELO_DEBUG"] != nil,
-    ])
+    ]
+    // 首帧就带上深浅色与安全区;运行中变化由 PomeloAppearance.changed 补齐。
+    globalProps.merge(appearancePayload) { _, new in new }
+    meta.globalProps = LynxTemplateData(dictionary: globalProps)
     lynxView.loadTemplate(meta)
     Log.info("launch", "loadTemplate(\(bundleURL)) invoked")
   }
@@ -151,6 +156,43 @@ final class ViewController: UIViewController {
     if lynxView == nil {
       view.setNeedsLayout()
     }
+  }
+
+  /// 当前深浅色与安全区。globalProps 初值与变更事件共用同一形状。
+  private var appearancePayload: [String: Any] {
+    let insets = view.safeAreaInsets
+    return [
+      "colorScheme": traitCollection.userInterfaceStyle == .dark ? "dark" : "light",
+      "safeTop": Double(insets.top),
+      "safeBottom": Double(insets.bottom),
+      "safeLeft": Double(insets.left),
+      "safeRight": Double(insets.right),
+    ]
+  }
+
+  /// 只在值变化时推送;首帧值已由 globalProps 带入,首屏后再补一次。
+  private func pushAppearance() {
+    guard let lynxView else { return }
+    let payload = appearancePayload
+    let signature =
+      "\(payload["colorScheme"] ?? "")-\(payload["safeTop"] ?? 0)-"
+      + "\(payload["safeBottom"] ?? 0)-\(payload["safeLeft"] ?? 0)-"
+      + "\(payload["safeRight"] ?? 0)"
+    guard signature != lastAppearanceSignature else { return }
+    lastAppearanceSignature = signature
+    lynxView.sendGlobalEvent("PomeloAppearance.changed", withParams: [payload])
+  }
+
+  override func traitCollectionDidChange(
+    _ previousTraitCollection: UITraitCollection?
+  ) {
+    super.traitCollectionDidChange(previousTraitCollection)
+    pushAppearance()
+  }
+
+  override func viewSafeAreaInsetsDidChange() {
+    super.viewSafeAreaInsetsDidChange()
+    pushAppearance()
   }
 
   /**
@@ -179,6 +221,7 @@ final class ViewController: UIViewController {
 extension ViewController: LynxViewLifecycle {
   func lynxViewDidFirstScreen(_ view: LynxView) {
     Log.info("launch", "FIRST SCREEN reached")
+    pushAppearance()
   }
 
   /// 前台恢复(SceneDelegate sceneDidBecomeActive):推 JS 全局事件,

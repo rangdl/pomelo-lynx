@@ -1,0 +1,41 @@
+/* 语义色与安全区 token。亮色为默认,`theme-dark` 覆盖色值。
+   页面不要直接写 #hex;新颜色先在这里加 token。 */
+:root {
+  --color-bg: #f6f6f8;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f2f4f7;
+  --color-text: #111111;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
+  --color-accent: #007aff;
+  --color-accent-soft: rgba(0, 122, 255, 0.12);
+  --color-on-accent: #ffffff;
+  --color-separator: rgba(0, 0, 0, 0.08);
+  --color-nav-bg: rgba(255, 255, 255, 0.96);
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-danger: #d93025;
+  --color-warning: #b54708;
+
+  /* 默认走系统安全区;ShellLayout 会用宿主上报的 px 值覆盖。 */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+.theme-dark {
+  --color-bg: #111318;
+  --color-surface: #1c1f26;
+  --color-surface-muted: #242833;
+  --color-text: #f2f4f7;
+  --color-text-secondary: #b0b7c3;
+  --color-text-tertiary: #8a93a3;
+  --color-accent: #4da3ff;
+  --color-accent-soft: rgba(77, 163, 255, 0.18);
+  --color-on-accent: #ffffff;
+  --color-separator: rgba(255, 255, 255, 0.12);
+  --color-nav-bg: rgba(28, 31, 38, 0.96);
+  --color-shadow: rgba(0, 0, 0, 0.4);
+  --color-danger: #ff6b5e;
+  --color-warning: #fbbf24;
+}

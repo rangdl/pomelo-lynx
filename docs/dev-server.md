@@ -16,18 +16,22 @@
 
 ### 页面操作流程
 
-1. 设置页 →「开发者」区(仅 `channel === 'dev'` 显示):
+1. 设置页 →「开发者」→ 开发者子页(仅 `channel === 'dev'` 且 iOS 显示):
    粘贴 dev server URL(电脑跑 `pnpm dev`,终端打印带 IP 的 bundle URL,
-   手机与电脑同网段),点「连接并重启生效」。
-2. URL 写入 prefs(`pomelo_prefs` suite,key `dev_server_url`),
-   **重启 app 生效**——宿主启动时 `ViewController` 读取该 key 交给
-   `HostTemplateProvider`。
-3. `HostTemplateProvider.loadTemplate` 识别 http(s) 前缀走 URLSession 拉取
-   (15s 超时);**加载失败自动清除该 key 并回退内嵌 bundle**,坏 URL 不会
-   把 app 钉死在黑屏。
-4. 「断开连接」清除 key,回退内嵌 bundle。
-5. 日常循环:改代码 → rspeedy 增量编译 → 重启 app(或冷启动)拉新 bundle;
-   Inspector 由 Devtool lazy-register 自动就绪,`agent-lynx` 直接连。
+   手机与电脑同网段),点「连接并重载」。
+2. 原生先完整下载并校验 bundle(`HostTemplateProvider.fetchRemoteData`,
+   15s 超时 + Lynx bundle 头部校验),**成功后**才写入 prefs
+   (`pomelo_prefs` suite,key `dev_server_url`)并重建 LynxView。
+   下载失败时当前页面不动,不会把坏 URL 写进去;无需冷启动。
+3. 「刷新」重新下载当前 dev URL 并重建 LynxView;「断开」清配置并立即
+   回到内嵌 bundle,也不需冷启动。
+4. 开发者页每 3 秒对当前 URL 发一次 `HEAD` 健康探测。服务器重启后从
+   离线变在线时,页面会自动重新下载并重载,不再需要手动冷启动。
+5. 冷启动时如果服务器暂时不可达,`ViewController` 会回退内嵌 bundle,
+   但**保留** `dev_server_url`;开发者页仍显示该配置,服务器恢复后自动
+   重试或由「刷新」手动重试。
+6. 日常循环:改代码 → rspeedy 增量编译 → 开发者页「刷新」;Inspector 由
+   Devtool lazy-register 自动就绪,`agent-lynx` 直接连。
 
 ### 本地开发
 
@@ -75,8 +79,8 @@ Android 侧 devtool 依赖已就位(`lynx-service-devtool`,build.gradle.kts),
 
 - **首屏后出现 399/301**:日志里是 `fatal=false` 的 sourcemap/devtool 错误,
   dev bundle 实际已经渲染。宿主只在 fatal,或还没出首屏(下载/解码失败)时
-  清 URL 并回退;不要因为错误文本误判。
+  回退内嵌 bundle;`dev_server_url` 保留,开发者页可以重试。
 - **服务没起来/端口不对**:先 `curl http://localhost:3090/main.lynx.bundle`
-  确认 200,再在设置页保存 URL 并冷启动 app。
+  确认 200,再在开发者页点「刷新」(或重新连接),不需要冷启动。
 - **dev bundle 已下载但加载失败**:日志里应有 `fetched ...B → callback`,
   随后才是 Lynx 错误;区分下载失败和解码/首屏错误。

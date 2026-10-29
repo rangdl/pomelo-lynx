@@ -12,8 +12,6 @@ import {
   SettingsGroup,
   SettingsGroupDivider,
 } from '../../shared/ui/SettingsGroup.js';
-import { DebugTunnelSection } from './DebugTunnelSection.js';
-import { DevServerSection } from './DevServerSection.js';
 import './settings.css';
 
 /** 设置页:条目列表。「关于」进入关于页(含客户端更新区)。 */
@@ -22,8 +20,7 @@ export function SettingsPage() {
   const appearanceMode = useAppearanceMode();
   // dev server 与调试通道目前只有 iOS 宿主实现;Android/Web 上不展示,
   // 避免出现点了必然失败的入口。
-  const showDeveloperSections =
-    clientBuild.channel === 'dev' && isIosPlatform();
+  const showDeveloperEntry = clientBuild.channel === 'dev' && isIosPlatform();
 
   return (
     <view className="settings" data-testid="settings-page">
@@ -89,8 +86,19 @@ export function SettingsPage() {
             }
           />
         </SettingsGroup>
-        {showDeveloperSections ? <DevServerSection /> : null}
-        {showDeveloperSections ? <DebugTunnelSection /> : null}
+        {showDeveloperEntry ? (
+          <SettingsGroup title={t('settings.group.developer')}>
+            <ListRow
+              icon={<text className="list-row__icon-text">⚙</text>}
+              iconColor="#6b7280"
+              label={t('settings.developer')}
+              detail={t('settings.developerDetail')}
+              chevron
+              onTap={() => navigate({ to: '/settings/developer' })}
+              testid="settings-row-developer"
+            />
+          </SettingsGroup>
+        ) : null}
         <view className="settings__tail" />
       </scroll-view>
     </view>

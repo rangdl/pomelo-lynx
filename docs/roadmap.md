@@ -42,6 +42,15 @@
 - [ ] **Android i18n 注入(计划)**:`MainActivity` 把 `Locale.getDefault()` 写入
   `LynxLoadMeta.globalProps.language`
 
+## 开发者页与 dev server 热切换
+
+- [x] 设置页拆出独立子页 `/settings/developer`(Dev Server + 调试通道)
+- [x] iOS 连接/刷新先下载并校验 bundle,成功后才重建 LynxView,无需冷启动
+- [x] 冷启动失败回退内嵌 bundle 时保留 `dev_server_url`,开发者页可重试
+- [x] 开发者页每 3 秒 `HEAD` 探测;服务器恢复后自动重新下载并重载
+- [ ] **Android(计划,待恢复 Android 构建)**:对应 `PomeloPlatform`
+      热切换方法 + `HostTemplateProvider` http(s) 分支;复用同一套 JS 页面
+
 ## 依赖与验证边界
 
 - Android 原生:CI 的 `android` job 已注释;恢复步骤见 `docs/dev-server.md`。

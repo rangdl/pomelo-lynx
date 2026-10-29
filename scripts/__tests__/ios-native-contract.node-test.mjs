@@ -58,19 +58,63 @@ test('Any 回调不传 nil,成功用 NSNull()', () => {
   }
 });
 
-test('didRecieveError 只在 fatal 或未出首屏时回退 dev URL', () => {
+test('dev URL 加载失败回退内嵌但保留配置供开发者页重试', () => {
   const source = read('ViewController.swift');
-  const fallbackGuard = source.indexOf(
-    'guard isFatal || !firstScreenReached else { return }',
+  const fallback =
+    source.match(
+      /private func fallbackToEmbeddedBundle\(\) \{([\s\S]*?)\n {2}\}/,
+    )?.[1] ?? '';
+  assert.ok(fallback, '缺少 fallbackToEmbeddedBundle');
+  assert.match(
+    fallback,
+    /bundleURL = HostTemplateProvider\.mainBundle/,
+    '回退时必须把加载地址切回内嵌 bundle',
   );
-  const clearPref = source.indexOf(
-    'prefs.removeObject(forKey: "dev_server_url")',
+  assert.match(fallback, /reloadLynxView\(\)/, '回退后必须重建 LynxView');
+  assert.doesNotMatch(
+    fallback,
+    /removeObject\(forKey: "dev_server_url"/,
+    '服务器暂时不可达时不能清掉 dev_server_url,否则服务器恢复后无法自动重试',
   );
-  assert.ok(fallbackGuard >= 0, '缺少 fatal/firstScreenReached 守卫');
-  assert.ok(clearPref >= 0, '缺少 dev_server_url 清理');
-  assert.ok(
-    fallbackGuard < clearPref,
-    '必须先判断 fatal/首屏状态,再清 dev_server_url;否则 399/301 等首屏后非致命错误会误回退',
+
+  const errorSection = source.slice(
+    source.indexOf('didRecieveError error: Error'),
+    source.indexOf('private func fallbackToEmbeddedBundle'),
+  );
+  assert.doesNotMatch(
+    errorSection,
+    /removeObject\(forKey: "dev_server_url"/,
+    '错误处理分支不能清除 dev server 配置',
+  );
+});
+
+test('dev server 热切换先下载校验再重建 LynxView', () => {
+  const viewController = read('ViewController.swift');
+  assert.match(viewController, /func applyDevServer\(/);
+  assert.match(viewController, /func reloadCurrentBundle\(/);
+  assert.match(viewController, /func clearDevServer\(/);
+  assert.match(
+    viewController,
+    /HostTemplateProvider\.fetchRemoteData\(url\)/,
+    '连接/刷新必须复用预下载函数',
+  );
+  assert.match(
+    viewController,
+    /stageRemoteTemplate\(data, for: url\)/,
+    '下载成功后必须先暂存,避免重建时重复请求',
+  );
+
+  const provider = read('HostTemplateProvider.swift');
+  assert.match(provider, /static func fetchRemoteData\(/);
+  assert.match(
+    provider,
+    /guard Self\.isLynxBundle\(data\)/,
+    '下载后必须先校验 Lynx bundle 头部',
+  );
+  assert.match(
+    provider,
+    /takeRemoteTemplate\(for: url\)/,
+    'loadTemplate 必须消费预下载数据',
   );
 });
 

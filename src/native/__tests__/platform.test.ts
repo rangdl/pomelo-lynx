@@ -1,9 +1,14 @@
 import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
 
 import {
+  applyDevServer,
+  clearDevServer,
+  hasDevServerControl,
   hasNativePlatform,
   openURL,
   pickAndUploadFile,
+  probeDevServer,
+  reloadBundle,
   setClipboard,
   setKeepScreenOn,
   shareFile,
@@ -29,6 +34,10 @@ interface PlatformMock {
     mimeType: string,
     callback: (result: unknown) => void,
   ) => void;
+  applyDevServer?: (url: string, callback: (error: unknown) => void) => void;
+  clearDevServer?: (callback: (error: unknown) => void) => void;
+  reloadBundle?: (callback: (error: unknown) => void) => void;
+  probeDevServer?: (url: string, callback: (result: unknown) => void) => void;
 }
 
 const globals = globalThis as unknown as {
@@ -286,5 +295,127 @@ describe('native platform facade', () => {
         fieldName: 'file',
       }),
     ).rejects.toThrow('upload_cancelled');
+  });
+
+  test('dev server 能力探测要求四个方法齐全', () => {
+    globals.NativeModules = {
+      PomeloPlatform: {
+        openURL: () => {},
+        setKeepScreenOn: () => {},
+        applyDevServer: () => {},
+        clearDevServer: () => {},
+        reloadBundle: () => {},
+      } satisfies PlatformMock,
+    };
+    expect(hasDevServerControl()).toBe(false);
+
+    globals.NativeModules = {
+      PomeloPlatform: {
+        openURL: () => {},
+        setKeepScreenOn: () => {},
+        applyDevServer: () => {},
+        clearDevServer: () => {},
+        reloadBundle: () => {},
+        probeDevServer: () => {},
+      } satisfies PlatformMock,
+    };
+    expect(hasDevServerControl()).toBe(true);
+  });
+
+  test('applyDevServer 校验 URL 并把回调错误转成 rejection', async () => {
+    await expect(
+      applyDevServer('http://192.168.1.2:3090/main.lynx.bundle'),
+    ).rejects.toThrow('devserver_unsupported');
+
+    const calls: string[] = [];
+    let error: unknown = null;
+    globals.NativeModules = {
+      PomeloPlatform: {
+        openURL: () => {},
+        setKeepScreenOn: () => {},
+        applyDevServer: (url: string, callback: (value: unknown) => void) => {
+          calls.push(url);
+          callback(error);
+        },
+        clearDevServer: () => {},
+        reloadBundle: () => {},
+        probeDevServer: () => {},
+      } satisfies PlatformMock,
+    };
+
+    await expect(
+      applyDevServer('ftp://192.168.1.2/main.lynx.bundle'),
+    ).rejects.toThrow('devserver_invalid_url');
+    await expect(
+      applyDevServer('http://192.168.1.2:3090/index.html'),
+    ).rejects.toThrow('devserver_invalid_url');
+    expect(calls).toEqual([]);
+
+    await expect(
+      applyDevServer('http://192.168.1.2:3090/main.lynx.bundle?t=1'),
+    ).resolves.toBeUndefined();
+    expect(calls).toEqual(['http://192.168.1.2:3090/main.lynx.bundle?t=1']);
+
+    error = 'devserver_http_404';
+    await expect(
+      applyDevServer('http://192.168.1.2:3090/main.lynx.bundle'),
+    ).rejects.toThrow('devserver_http_404');
+  });
+
+  test('clearDevServer / reloadBundle 走回调并传播错误', async () => {
+    const calls: string[] = [];
+    globals.NativeModules = {
+      PomeloPlatform: {
+        openURL: () => {},
+        setKeepScreenOn: () => {},
+        applyDevServer: () => {},
+        clearDevServer: (callback: (error: unknown) => void) => {
+          calls.push('clear');
+          callback(null);
+        },
+        reloadBundle: (callback: (error: unknown) => void) => {
+          calls.push('reload');
+          callback('download_failed');
+        },
+        probeDevServer: () => {},
+      } satisfies PlatformMock,
+    };
+
+    await expect(clearDevServer()).resolves.toBeUndefined();
+    await expect(reloadBundle()).rejects.toThrow('download_failed');
+    expect(calls).toEqual(['clear', 'reload']);
+  });
+
+  test('probeDevServer 把原生结果转成在线/离线状态', async () => {
+    let result: unknown = [null, 200];
+    globals.NativeModules = {
+      PomeloPlatform: {
+        openURL: () => {},
+        setKeepScreenOn: () => {},
+        applyDevServer: () => {},
+        clearDevServer: () => {},
+        reloadBundle: () => {},
+        probeDevServer: (_url: string, callback: (value: unknown) => void) => {
+          callback(result);
+        },
+      } satisfies PlatformMock,
+    };
+
+    await expect(
+      probeDevServer('http://192.168.1.2:3090/main.lynx.bundle'),
+    ).resolves.toEqual({ ok: true, status: 200 });
+
+    result = ['devserver_http_503', 503];
+    await expect(
+      probeDevServer('http://192.168.1.2:3090/main.lynx.bundle'),
+    ).resolves.toEqual({
+      ok: false,
+      status: 503,
+      error: 'devserver_http_503',
+    });
+
+    await expect(
+      probeDevServer('http://192.168.1.2:3090/index.html'),
+    ).rejects.toThrow('devserver_invalid_url');
   });
 });

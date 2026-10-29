@@ -172,6 +172,106 @@ final class ViewController: UIViewController {
     }
   }
 
+  // MARK: - Dev server 热切换(PomeloPlatform 调用)
+
+  /// 连接新的 dev server:先完整下载并校验 bundle,成功后才切换来源并
+  /// 重建 LynxView。失败时当前页面保持不动,不会再把坏 URL 写进 prefs。
+  func applyDevServer(
+    _ urlString: String, completion: @escaping (String?) -> Void
+  ) {
+    let url = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard Self.isDevServerURL(url) else {
+      completion("devserver_invalid_url")
+      return
+    }
+    prepareDevServer(url) { error in
+      guard error == nil else {
+        completion(error)
+        return
+      }
+      let prefs = UserDefaults(suiteName: "pomelo_prefs") ?? .standard
+      prefs.set(url, forKey: "dev_server_url")
+      completion(nil)
+    }
+  }
+
+  /// 刷新当前来源:有已配置的 dev URL 时重新下载它(即使当前是启动失败
+  /// 后的内嵌回退),否则重建内嵌 bundle。服务器重启后无需冷启动。
+  func reloadCurrentBundle(completion: @escaping (String?) -> Void) {
+    if Self.isDevServerURL(bundleURL) {
+      prepareDevServer(bundleURL, completion: completion)
+      return
+    }
+    let prefs = UserDefaults(suiteName: "pomelo_prefs") ?? .standard
+    if let configured = prefs.string(forKey: "dev_server_url"),
+      Self.isDevServerURL(configured)
+    {
+      prepareDevServer(configured, completion: completion)
+      return
+    }
+    reloadLynxView()
+    completion(nil)
+  }
+
+  /// 断开 dev server:清配置并立即重建内嵌 bundle,无需冷启动。
+  func clearDevServer(completion: @escaping () -> Void) {
+    let prefs = UserDefaults(suiteName: "pomelo_prefs") ?? .standard
+    prefs.removeObject(forKey: "dev_server_url")
+    bundleURL = HostTemplateProvider.mainBundle
+    completion()
+    DispatchQueue.main.async { [weak self] in
+      self?.reloadLynxView()
+    }
+  }
+
+  /// 下载校验成功后再切换来源。回调先交还 JS,下一拍才拆 LynxView,
+  /// 避免 Promise 回调随旧 LynxContext 一起销毁。
+  private func prepareDevServer(
+    _ url: String, completion: @escaping (String?) -> Void
+  ) {
+    HostTemplateProvider.fetchRemoteData(url) { [weak self] data, error in
+      DispatchQueue.main.async {
+        guard let self else {
+          completion("devserver_host_gone")
+          return
+        }
+        guard let data else {
+          completion(error?.localizedDescription ?? "devserver_download_failed")
+          return
+        }
+        self.templateProvider.stageRemoteTemplate(data, for: url)
+        self.bundleURL = url
+        completion(nil)
+        DispatchQueue.main.async { [weak self] in
+          self?.reloadLynxView()
+        }
+      }
+    }
+  }
+
+  /// 只接受指向 `.lynx.bundle` 的 http(s) 地址;bundle 内容仍由
+  /// `HostTemplateProvider` 做头部校验。
+  private static func isDevServerURL(_ value: String) -> Bool {
+    guard let url = URL(string: value),
+      let scheme = url.scheme?.lowercased(),
+      scheme == "http" || scheme == "https",
+      url.host != nil
+    else { return false }
+    return url.path.hasSuffix(".lynx.bundle")
+  }
+
+  /// 拆掉当前 LynxView,让 `viewDidLayoutSubviews` 用新的 `bundleURL`
+  /// 重建。启动状态与外观签名必须一起重置,否则新实例会误判首屏/跳过推送。
+  private func reloadLynxView() {
+    firstScreenReached = false
+    lastAppearanceSignature = ""
+    if let lynxView {
+      lynxView.removeFromSuperview()
+      self.lynxView = nil
+    }
+    view.setNeedsLayout()
+  }
+
   /// 当前深浅色与安全区。globalProps 初值与变更事件共用同一形状。
   private var appearancePayload: [String: Any] {
     let insets = view.safeAreaInsets
@@ -271,18 +371,18 @@ extension ViewController: LynxViewLifecycle {
   // 显式选择器 + Error 签名两者都要。
   @objc(lynxView:didRecieveError:)
   func lynxView(_ view: LynxView, didRecieveError error: Error) {
+    // 热切换会拆掉旧 LynxView;旧实例随后上报的错误不能影响新来源。
+    guard let current = lynxView, view === current else { return }
     let lynxError = error as? LynxError
     let isFatal = lynxError?.isFatal == true
     Log.error("lynx", "error: \(error.localizedDescription) (fatal=\(isFatal))")
     // 399/301 这类 sourcemap/devtool 错误是 fatal=false,dev bundle 其实已经
-    // 渲染出首屏;不能因为它清掉 dev URL 并回退。只有 fatal,或还没出首屏
-    // (下载/解码失败)时才回退。
+    // 渲染出首屏;不能因为它回退。只有 fatal,或还没出首屏(下载/解码失败)
+    // 时才回退;配置保留,开发者页可以在服务器恢复后重试,无需冷启动。
     if bundleURL.hasPrefix("http://") || bundleURL.hasPrefix("https://") {
       guard isFatal || !firstScreenReached else { return }
-      Log.error("devserver", "dev URL load failed; clearing and falling back to embedded bundle")
-      let prefs = UserDefaults(suiteName: "pomelo_prefs") ?? .standard
-      prefs.removeObject(forKey: "dev_server_url")
-      DispatchQueue.main.async { self.reloadWithEmbeddedBundle() }
+      Log.error("devserver", "dev URL load failed; falling back to embedded bundle (pref kept for retry)")
+      fallbackToEmbeddedBundle()
       return
     }
     guard isFatal else { return }
@@ -291,14 +391,12 @@ extension ViewController: LynxViewLifecycle {
     }
   }
 
-  /// Tear down the current LynxView and rebuild against the embedded bundle.
-  private func reloadWithEmbeddedBundle() {
-    guard let lynxView else { return }
-    // 必须同时把加载地址切回内嵌 bundle;否则 viewDidLayoutSubviews 重建
-    // LynxView 时会再次使用旧的 dev URL,错误页会无限循环。
+  /// 丢掉当前 dev 来源、切回内嵌 bundle,但**不清除** `dev_server_url`。
+  /// 服务器重启期间冷启动会走这里;开发者页仍能看到配置并自动重试。
+  private func fallbackToEmbeddedBundle() {
     bundleURL = HostTemplateProvider.mainBundle
-    lynxView.removeFromSuperview()
-    self.lynxView = nil
-    view.setNeedsLayout()
+    DispatchQueue.main.async { [weak self] in
+      self?.reloadLynxView()
+    }
   }
 }

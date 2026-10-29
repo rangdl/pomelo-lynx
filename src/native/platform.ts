@@ -28,12 +28,19 @@ export interface PomeloPlatformNativeModule {
     mimeType: string,
     callback: (result: unknown) => void,
   ): void;
+  /** dev server 热切换(仅新版 iOS 宿主提供)。 */
+  applyDevServer?(url: string, callback: (error: unknown) => void): void;
+  clearDevServer?(callback: (error: unknown) => void): void;
+  reloadBundle?(callback: (error: unknown) => void): void;
+  probeDevServer?(url: string, callback: (result: unknown) => void): void;
 }
 
 /** 模块存在所必需的方法;缺一个就视为旧壳,整体降级。 */
 const REQUIRED_METHODS = ['openURL', 'setKeepScreenOn'] as const;
 
 const CALLBACK_TIMEOUT_MS = 5000;
+/** dev bundle 下载可能明显超过普通桥调用;原生下载超时是 15s。 */
+const DOWNLOAD_TIMEOUT_MS = 30_000;
 const MAX_SHARE_BYTES = 16 * 1024 * 1024;
 
 /** 读取原生模块并做能力探测;非 Lynx 宿主、旧壳或测试环境返回 null。 */
@@ -87,6 +94,7 @@ export function openURL(url: string): boolean {
 /** 把回调形状的原生方法包成带超时的 Promise;回调参数非空字符串即失败。 */
 function callbackPromise(
   invoke: (callback: (error: unknown) => void) => void,
+  timeoutMs = CALLBACK_TIMEOUT_MS,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     let settled = false;
@@ -100,7 +108,7 @@ function callbackPromise(
     };
     const timer = setTimeout(() => {
       finish('platform_timeout');
-    }, CALLBACK_TIMEOUT_MS);
+    }, timeoutMs);
     try {
       invoke(finish);
     } catch (error) {
@@ -225,6 +233,106 @@ export function pickAndUploadFile(input: PickAndUploadInput): Promise<string> {
       });
     } catch (error) {
       finish(error instanceof Error ? error.message : 'upload_failed');
+    }
+  });
+}
+
+/**
+ * 当前宿主是否支持 dev server 热切换。新版 iOS 宿主提供四个方法;
+ * 旧壳/Web 返回 false,开发者页据此提示安装新包。
+ */
+export function hasDevServerControl(): boolean {
+  const module = readPlatformModule();
+  return Boolean(
+    module?.applyDevServer &&
+      module.clearDevServer &&
+      module.reloadBundle &&
+      module.probeDevServer,
+  );
+}
+
+function isDevServerURL(value: string): boolean {
+  if (!isHttpURL(value)) return false;
+  const path = value.trim().split(/[?#]/)[0] ?? '';
+  return path.endsWith('.lynx.bundle');
+}
+
+/**
+ * 连接 dev server:原生先完整下载并校验 bundle,成功后才重建 LynxView。
+ * 返回 resolve 表示下载成功(随后页面会重载);失败时当前页面不动。
+ */
+export function applyDevServer(url: string): Promise<void> {
+  const method = readPlatformModule()?.applyDevServer;
+  if (!method) return Promise.reject(new Error('devserver_unsupported'));
+  const target = url.trim();
+  if (!isDevServerURL(target))
+    return Promise.reject(new Error('devserver_invalid_url'));
+  return callbackPromise(
+    (callback) => method(target, callback),
+    DOWNLOAD_TIMEOUT_MS,
+  );
+}
+
+/** 断开 dev server:清配置并立即重建内嵌 bundle,无需冷启动。 */
+export function clearDevServer(): Promise<void> {
+  const method = readPlatformModule()?.clearDevServer;
+  if (!method) return Promise.reject(new Error('devserver_unsupported'));
+  return callbackPromise((callback) => method(callback), DOWNLOAD_TIMEOUT_MS);
+}
+
+/** 刷新当前来源(优先已配置的 dev URL),下载成功后重建 LynxView。 */
+export function reloadBundle(): Promise<void> {
+  const method = readPlatformModule()?.reloadBundle;
+  if (!method) return Promise.reject(new Error('devserver_unsupported'));
+  return callbackPromise((callback) => method(callback), DOWNLOAD_TIMEOUT_MS);
+}
+
+export interface DevServerProbe {
+  ok: boolean;
+  status: number;
+  error?: string;
+}
+
+const PROBE_TIMEOUT_MS = 6000;
+
+/**
+ * 轻量探测 dev server 是否可达。原生发 `HEAD` 请求,不下载完整 bundle。
+ * 原生失败(超时/HTTP 错误)也 resolve 为 `ok: false`,方便页面轮询;
+ * 只有缺方法或 URL 非法才 reject。
+ */
+export function probeDevServer(url: string): Promise<DevServerProbe> {
+  const probe = readPlatformModule()?.probeDevServer;
+  if (!probe) return Promise.reject(new Error('devserver_unsupported'));
+  const target = url.trim();
+  if (!isDevServerURL(target))
+    return Promise.reject(new Error('devserver_invalid_url'));
+
+  return new Promise<DevServerProbe>((resolve) => {
+    let settled = false;
+    const finish = (error: unknown, status: unknown) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      const message =
+        typeof error === 'string' && error.length > 0 ? error : '';
+      const code = typeof status === 'number' ? status : -1;
+      resolve({
+        ok: message === '' && code >= 200 && code < 400,
+        status: code,
+        ...(message ? { error: message } : {}),
+      });
+    };
+    const timer = setTimeout(
+      () => finish('probe_timeout', -1),
+      PROBE_TIMEOUT_MS,
+    );
+    try {
+      probe(target, (result) => {
+        const pair = Array.isArray(result) ? result : [];
+        finish(pair[0], pair[1]);
+      });
+    } catch (error) {
+      finish(error instanceof Error ? error.message : 'probe_failed', -1);
     }
   });
 }

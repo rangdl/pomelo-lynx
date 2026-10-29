@@ -11,6 +11,7 @@ import { reportUpdateStartupFailure } from './core/updater/native-updater.js';
 import { UpdateStartup } from './core/updater/UpdateStartup.js';
 import { HomePage } from './features/home/HomePage.js';
 import { AboutPage } from './features/settings/AboutPage.js';
+import { DeveloperPage } from './features/settings/DeveloperPage.js';
 import { LogsPage } from './features/settings/LogsPage.js';
 import { SettingsPage } from './features/settings/SettingsPage.js';
 import { ShellLayout } from './shared/layouts/ShellLayout.js';
@@ -83,6 +84,12 @@ const aboutRoute = createRoute({
   component: AboutPage,
 });
 
+const developerRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/settings/developer',
+  component: DeveloperPage,
+});
+
 const logsRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: '/settings/about/logs',
@@ -90,7 +97,13 @@ const logsRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-  shellRoute.addChildren([homeRoute, settingsRoute, aboutRoute, logsRoute]),
+  shellRoute.addChildren([
+    homeRoute,
+    settingsRoute,
+    aboutRoute,
+    developerRoute,
+    logsRoute,
+  ]),
 ]);
 
 /**

@@ -20,6 +20,27 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
   static let mainBundle = "main.lynx"
   static let probeBundle = "probe.lynx"
 
+  // 开发者页连接/刷新时先完整下载并校验 bundle,成功后才重建 LynxView。
+  // 下载结果暂存一次,避免 loadTemplate 立即发起第二次请求。
+  private let prefetchLock = NSLock()
+  private var prefetchedRemote: (url: String, data: Data)?
+
+  /// 暂存已经过 `isLynxBundle` 校验的 dev bundle,由同 URL 的下一次
+  /// `loadTemplate` 消费一次。
+  func stageRemoteTemplate(_ data: Data, for url: String) {
+    prefetchLock.lock()
+    prefetchedRemote = (url, data)
+    prefetchLock.unlock()
+  }
+
+  private func takeRemoteTemplate(for url: String) -> Data? {
+    prefetchLock.lock()
+    defer { prefetchLock.unlock() }
+    guard let cached = prefetchedRemote, cached.url == url else { return nil }
+    prefetchedRemote = nil
+    return cached.data
+  }
+
   func fetchTemplate(
     _ request: LynxResourceRequest,
     onComplete callback: @escaping LynxTemplateResourceCompletionBlock
@@ -59,6 +80,11 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
     // rspeedy dev server 增量编译后 reload 即拿到新 bundle)。失败回落
     // 内嵌资源——坏 URL 不能让 app 永远打不开。
     if url.hasPrefix("http://") || url.hasPrefix("https://") {
+      if let staged = takeRemoteTemplate(for: url) {
+        Log.info("devserver", "using prefetched \(staged.count)B → callback")
+        callback(staged, nil)
+        return
+      }
       Self.fetchRemote(url, callback: callback)
       return
     }
@@ -106,14 +132,34 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
    * Dev-server fetch: GET the bundle over HTTP with a hard timeout. On
    * failure the error carries the underlying cause so the log page can show
    * why the dev server was unreachable (wrong IP, server down, …). No retry:
-   * the user reloads explicitly from the settings page.
+   * the user reloads explicitly from the developer page.
    */
   private static func fetchRemote(
     _ urlString: String, callback: LynxTemplateLoadBlock!
   ) {
-    guard let url = URL(string: urlString) else {
+    fetchRemoteData(urlString) { data, error in
+      if let data {
+        callback(data, nil)
+      } else {
+        callback(nil, error)
+      }
+    }
+  }
+
+  /**
+   * 下载并校验 dev bundle。开发者页的「连接 / 刷新」复用同一函数:只有这里
+   * 成功,宿主才切换 `bundleURL` 并重建 LynxView,下载失败时当前页面不受影响。
+   */
+  static func fetchRemoteData(
+    _ urlString: String, completion: @escaping (Data?, NSError?) -> Void
+  ) {
+    guard let url = URL(string: urlString),
+      let scheme = url.scheme?.lowercased(),
+      scheme == "http" || scheme == "https",
+      url.host != nil
+    else {
       Log.error("devserver", "invalid dev URL: \(urlString)")
-      callback(nil, NSError(
+      completion(nil, NSError(
         domain: "org.pomelo.lynx",
         code: 400,
         userInfo: [NSLocalizedDescriptionKey: "无效的开发服务器 URL"]
@@ -123,10 +169,11 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
     Log.info("devserver", "fetching \(urlString)")
     var request = URLRequest(url: url)
     request.timeoutInterval = 15
+    request.cachePolicy = .reloadIgnoringLocalCacheData
     URLSession.shared.dataTask(with: request) { data, response, error in
       if let error {
         Log.error("devserver", "fetch failed: \(error.localizedDescription)")
-        callback(nil, error)
+        completion(nil, error as NSError)
         return
       }
       guard let http = response as? HTTPURLResponse, http.statusCode == 200,
@@ -134,7 +181,7 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
       else {
         let status = (response as? HTTPURLResponse)?.statusCode ?? -1
         Log.error("devserver", "fetch returned status \(status)")
-        callback(nil, NSError(
+        completion(nil, NSError(
           domain: "org.pomelo.lynx",
           code: status,
           userInfo: [NSLocalizedDescriptionKey: "开发服务器返回 HTTP \(status)"]
@@ -146,7 +193,7 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
       // 一个 10204 解码错误且无法区分真正原因。
       guard Self.isLynxBundle(data) else {
         Log.error("devserver", "fetched data is not a lynx bundle (\(data.count)B)")
-        callback(nil, NSError(
+        completion(nil, NSError(
           domain: "org.pomelo.lynx",
           code: 415,
           userInfo: [NSLocalizedDescriptionKey: "开发服务器返回的不是 Lynx bundle"]
@@ -154,7 +201,7 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
         return
       }
       Log.info("devserver", "fetched \(data.count)B → callback")
-      callback(data, nil)
+      completion(data, nil)
     }.resume()
   }
 

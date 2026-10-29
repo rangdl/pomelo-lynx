@@ -15,6 +15,10 @@ export type MessageKey =
   | 'settings.group.app'
   | 'settings.aboutDetail'
   | 'settings.group.appearance'
+  | 'settings.group.developer'
+  | 'settings.developer'
+  | 'settings.developerDetail'
+  | 'developer.title'
   | 'appearance.system'
   | 'appearance.light'
   | 'appearance.dark'
@@ -47,6 +51,10 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.group.app': '应用',
     'settings.aboutDetail': '版本、更新与日志',
     'settings.group.appearance': '外观',
+    'settings.group.developer': '开发者',
+    'settings.developer': 'Dev Server 与调试通道',
+    'settings.developerDetail': '连接、刷新与调试中继',
+    'developer.title': '开发者',
     'appearance.system': '跟随系统',
     'appearance.light': '浅色',
     'appearance.dark': '深色',
@@ -76,6 +84,10 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.group.app': 'App',
     'settings.aboutDetail': 'Version, updates and logs',
     'settings.group.appearance': 'Appearance',
+    'settings.group.developer': 'Developer',
+    'settings.developer': 'Dev server & debug tunnel',
+    'settings.developerDetail': 'Connect, reload and debug relay',
+    'developer.title': 'Developer',
     'appearance.system': 'System',
     'appearance.light': 'Light',
     'appearance.dark': 'Dark',

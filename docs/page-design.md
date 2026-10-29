@@ -46,6 +46,8 @@ ShellLayout(全局唯一)
   标题 17px / 600 居中。
 - **不写 safe-top**;安全区由 `.shell__body` 统一处理。
 - 结构:根 view(100% 高) → `PageTopBar` → `scroll-view`(flex:1) → 内容 + tail spacer。
+- 开发者页(`/settings/developer`)同样遵守子页结构:设置页只保留一个
+  「开发者」入口行,Dev Server 与调试通道都放在子页内。
 
 ### 状态栏
 
@@ -86,7 +88,7 @@ ShellLayout(全局唯一)
   - 危险操作加 `danger`;禁用加 `disabled`(0.5 透明度);
   - toggle 行不要把 `onTap` 绑在整行上,避免和开关冒泡叠加。
 - 分隔线:1px,`margin-left: 64px`(与图标列对齐)。
-- 旧 `.settings-row` 只允许在未迁移的更新区/开发者区使用;
+- 旧 `.settings-row` 只允许在未迁移的更新区使用;
   新页面优先 `ListRow`。
 
 ## 5. 颜色、主题与安全区
@@ -126,4 +128,6 @@ ShellLayout(全局唯一)
 - Android `blur-view` 依赖(`xelement-blur-view`)尚未加入;
 - iOS 26 液态玻璃/折射透镜未移植;
 - >4 tab 的 More 面板代码已存在,但目前只有 2 个 tab,未在真机验收;
-- 更新区、开发者区内部仍是旧 `.settings-row` 行,未全部迁移到 `ListRow`。
+- 更新区内部仍是旧 `.settings-row` 行,未全部迁移到 `ListRow`;
+- 开发者能力已移到独立子页,但 Dev Server/调试通道内部仍是旧
+  `.dev-server__*` 行,未迁移到 `ListRow`。

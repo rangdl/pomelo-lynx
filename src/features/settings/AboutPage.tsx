@@ -3,10 +3,12 @@ import { useNavigate } from '@tanstack/react-router';
 
 import { clientBuild } from '../../core/config/constants.js';
 import { releasePage } from '../../core/updater/release-resolver.js';
+import { t } from '../../i18n/index.js';
 import { readLynxGlobal } from '../../native/native-modules.js';
 import { openURL, setClipboard } from '../../native/platform.js';
 import { isWebPlatform } from '../../native/web-platform.js';
 import { PageTopBar } from '../../shared/layouts/PageTopBar.js';
+import { ListRow } from '../../shared/ui/ListRow.js';
 import { ClientUpdateSection } from './ClientUpdateSection.js';
 import './settings.css';
 
@@ -35,79 +37,60 @@ export function AboutPage() {
   const copyVersionInfo = () => {
     'background only';
     void setClipboard(versionInfo).then(
-      () => setCopyState('已复制'),
-      () => setCopyState('复制失败'),
+      () => setCopyState(t('about.copied')),
+      () => setCopyState(t('about.copyFailed')),
     );
   };
 
   return (
     <view className="settings" data-testid="about-page">
       <PageTopBar
-        title="关于"
-        backLabel="设置"
+        title={t('about.title')}
+        backLabel={t('about.back')}
         onBack={() => navigate({ to: '/settings' })}
         testid="about-topbar"
         backTestid="about-back"
       />
 
       <scroll-view className="settings__scroll" scroll-orientation="vertical">
-        <view className="settings-row">
-          <text className="settings-row__label">宿主</text>
-          <text className="settings-row__value">{hostName}</text>
-        </view>
-        <view className="settings-row">
-          <text className="settings-row__label">Bundle 版本</text>
-          <text className="settings-row__value">{clientBuild.version}</text>
-        </view>
+        <ListRow label={t('about.host')} value={hostName} />
+        <ListRow label={t('about.bundleVersion')} value={clientBuild.version} />
         {hostVersion ? (
-          <view className="settings-row">
-            <text className="settings-row__label">宿主版本</text>
-            <text className="settings-row__value">{hostVersion}</text>
-          </view>
+          <ListRow label={t('about.hostVersion')} value={hostVersion} />
         ) : null}
 
-        <view
-          className="settings-row"
-          bindtap={copyVersionInfo}
-          data-testid="about-row-copy"
-        >
-          <text className="settings-row__label">复制版本信息</text>
-          <text className="settings-row__value">{copyState ?? '›'}</text>
-        </view>
+        <ListRow
+          label={t('about.copy')}
+          value={copyState ?? '›'}
+          onTap={copyVersionInfo}
+          testid="about-row-copy"
+        />
         {releaseUrl && !web ? (
-          <view
-            className="settings-row"
-            bindtap={() => {
+          <ListRow
+            label={t('about.release')}
+            value="›"
+            onTap={() => {
               'background only';
               openURL(releaseUrl);
             }}
-            data-testid="about-row-release"
-          >
-            <text className="settings-row__label">打开发布页</text>
-            <text className="settings-row__value">›</text>
-          </view>
+            testid="about-row-release"
+          />
         ) : null}
 
         <view className="settings__section">
           {web ? (
-            <view className="settings-row">
-              <text className="settings-row__label">
-                Web 端随部署更新,无独立热更新
-              </text>
-            </view>
+            <ListRow label={t('about.webUpdate')} />
           ) : (
             <ClientUpdateSection />
           )}
         </view>
 
-        <view
-          className="settings-row"
-          bindtap={() => navigate({ to: '/settings/about/logs' })}
-          data-testid="about-row-logs"
-        >
-          <text className="settings-row__label">日志</text>
-          <text className="settings-row__value">›</text>
-        </view>
+        <ListRow
+          label={t('about.logs')}
+          value="›"
+          onTap={() => navigate({ to: '/settings/about/logs' })}
+          testid="about-row-logs"
+        />
         <view className="settings__tail" />
       </scroll-view>
     </view>

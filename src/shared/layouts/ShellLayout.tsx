@@ -1,6 +1,7 @@
 import { useEffect, useState } from '@lynx-js/react';
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 
+import { type MessageKey, t } from '../../i18n/index.js';
 import {
   readSystemAppearance,
   subscribeSystemAppearance,
@@ -9,13 +10,13 @@ import './ShellLayout.css';
 
 interface TabItem {
   path: '/' | '/settings';
-  label: string;
+  labelKey: MessageKey;
   testid: string;
 }
 
 const TABS: TabItem[] = [
-  { path: '/', label: '首页', testid: 'nav-item-home' },
-  { path: '/settings', label: '设置', testid: 'nav-item-settings' },
+  { path: '/', labelKey: 'nav.home', testid: 'nav-item-home' },
+  { path: '/settings', labelKey: 'nav.settings', testid: 'nav-item-settings' },
 ];
 
 /**
@@ -69,7 +70,7 @@ export function ShellLayout() {
             data-testid={tab.testid}
           >
             <view className="nav-item__pill">
-              <text className="nav-item__label">{tab.label}</text>
+              <text className="nav-item__label">{t(tab.labelKey)}</text>
             </view>
           </view>
         ))}

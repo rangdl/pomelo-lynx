@@ -1,7 +1,9 @@
 import { useNavigate } from '@tanstack/react-router';
 
 import { clientBuild } from '../../core/config/constants.js';
+import { t } from '../../i18n/index.js';
 import { isIosPlatform } from '../../native/web-platform.js';
+import { ListRow } from '../../shared/ui/ListRow.js';
 import { DebugTunnelSection } from './DebugTunnelSection.js';
 import { DevServerSection } from './DevServerSection.js';
 import './settings.css';
@@ -18,16 +20,14 @@ export function SettingsPage() {
     <view className="settings" data-testid="settings-page">
       <scroll-view className="settings__scroll" scroll-orientation="vertical">
         <view className="settings__header">
-          <text className="settings__title">设置</text>
+          <text className="settings__title">{t('settings.title')}</text>
         </view>
-        <view
-          className="settings-row"
-          bindtap={() => navigate({ to: '/settings/about' })}
-          data-testid="settings-row-about"
-        >
-          <text className="settings-row__label">关于</text>
-          <text className="settings-row__value">›</text>
-        </view>
+        <ListRow
+          label={t('settings.about')}
+          value="›"
+          onTap={() => navigate({ to: '/settings/about' })}
+          testid="settings-row-about"
+        />
         {showDeveloperSections ? <DevServerSection /> : null}
         {showDeveloperSections ? <DebugTunnelSection /> : null}
         <view className="settings__tail" />

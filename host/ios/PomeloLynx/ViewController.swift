@@ -137,6 +137,7 @@ final class ViewController: UIViewController {
     var globalProps: [String: Any] = [
       "hostName": "pomelo-host-ios",
       "isDebug": ProcessInfo.processInfo.environment["POMELO_DEBUG"] != nil,
+      "language": Locale.preferredLanguages.first ?? "zh",
     ]
     // 首帧就带上深浅色与安全区;运行中变化由 PomeloAppearance.changed 补齐。
     globalProps.merge(appearancePayload) { _, new in new }

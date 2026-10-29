@@ -19,6 +19,7 @@ import {
 import type { LogLevelName } from '../../core/log/levels.js';
 import { levelLetter, levelName } from '../../core/log/levels.js';
 import type { LogEntry } from '../../core/log/types.js';
+import { t } from '../../i18n/index.js';
 import { PageTopBar } from '../../shared/layouts/PageTopBar.js';
 import './LogsPage.css';
 
@@ -158,8 +159,8 @@ export function LogsPage() {
   return (
     <view className="logs" data-testid="logs-page">
       <PageTopBar
-        title="日志"
-        backLabel="关于"
+        title={t('logs.title')}
+        backLabel={t('logs.back')}
         onBack={() => navigate({ to: '/settings/about' })}
         testid="logs-topbar"
         backTestid="logs-back"

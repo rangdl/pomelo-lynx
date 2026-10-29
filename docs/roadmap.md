@@ -30,12 +30,17 @@
 
 ## 批次 3:Android 返回键 + 通用 UI 原语
 
-- [ ] **Android 返回键(计划)**
-  - 新增 `PomeloNavigationModule` 或复用 `MainActivity.onBackPressed`
-  - 覆盖层 LIFO → 子页父级 → tab 根退出,状态由 JS 提供
+- [ ] **Android 返回键(计划,待恢复 Android 构建)**
+  - `MainActivity` 拦截 `onBackPressedDispatcher` / `KEYCODE_BACK`
+  - 新增 `PomeloNavigation` 模块或在 `MainActivity` 直接 `sendGlobalEvent`
+  - 顺序:覆盖层 LIFO → 子页父级 → tab 根退出;是否可返回由 JS 状态决定
+  - 无覆盖层且已在 tab 根时调用 `finish()`;iOS 无返回键,不实现
   - 验证:`assembleDebug` + 真机返回手势/按键
-- [ ] JS `ListRow` 原语(设置/关于页复用,统一 leading/content/trailing)
-- [ ] i18n(当前中文硬编码;先抽 key,再决定是否接宿主语言)
+- [x] JS `ListRow` 原语(设置/关于页复用,统一 leading/content/trailing)
+- [x] i18n 基础设施:`lynx.__globalProps.language` + 中英文核心文案
+  - 首版覆盖导航、设置、关于、日志标题;开发者区/更新区文案暂留中文
+- [ ] **Android i18n 注入(计划)**:`MainActivity` 把 `Locale.getDefault()` 写入
+  `LynxLoadMeta.globalProps.language`
 
 ## 依赖与验证边界
 

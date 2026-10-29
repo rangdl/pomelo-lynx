@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
 import {
   hasNativePlatform,
   openURL,
+  pickAndUploadFile,
   setClipboard,
   setKeepScreenOn,
   shareFile,
@@ -21,6 +22,12 @@ interface PlatformMock {
     fileName: string,
     mimeType: string,
     callback: (error: string | null) => void,
+  ) => void;
+  pickAndUploadFile?: (
+    uploadUrl: string,
+    fieldName: string,
+    mimeType: string,
+    callback: (result: unknown) => void,
   ) => void;
 }
 
@@ -188,5 +195,96 @@ describe('native platform facade', () => {
     await expect(
       shareFile({ base64: 'AA==', fileName: 'a.txt', mimeType: 'text/plain' }),
     ).rejects.toThrow('share_unavailable');
+  });
+
+  test('pickAndUploadFile 校验参数且缺方法时拒绝', async () => {
+    globals.NativeModules = {
+      PomeloPlatform: {
+        openURL: () => {},
+        setKeepScreenOn: () => {},
+      } satisfies PlatformMock,
+    };
+    await expect(
+      pickAndUploadFile({
+        uploadUrl: 'https://example.com/upload',
+        fieldName: 'file',
+      }),
+    ).rejects.toThrow('upload_unavailable');
+
+    const calls: unknown[] = [];
+    globals.NativeModules = {
+      PomeloPlatform: {
+        openURL: () => {},
+        setKeepScreenOn: () => {},
+        pickAndUploadFile: (...args: unknown[]) => calls.push(args),
+      } satisfies PlatformMock,
+    };
+    await expect(
+      pickAndUploadFile({
+        uploadUrl: 'ftp://example.com/upload',
+        fieldName: 'file',
+      }),
+    ).rejects.toThrow('upload_invalid_url');
+    await expect(
+      pickAndUploadFile({
+        uploadUrl: 'https://example.com/upload',
+        fieldName: 'bad field',
+      }),
+    ).rejects.toThrow('upload_invalid_field');
+    await expect(
+      pickAndUploadFile({
+        uploadUrl: 'https://example.com/upload',
+        fieldName: 'file',
+        mimeType: 'text',
+      }),
+    ).rejects.toThrow('upload_invalid_mime_type');
+    expect(calls).toEqual([]);
+  });
+
+  test('pickAndUploadFile 把 [error, body] 回调转成 Promise', async () => {
+    let result: unknown = [null, '{"ok":true}'];
+    const calls: unknown[] = [];
+    globals.NativeModules = {
+      PomeloPlatform: {
+        openURL: () => {},
+        setKeepScreenOn: () => {},
+        pickAndUploadFile: (
+          uploadUrl: string,
+          fieldName: string,
+          mimeType: string,
+          callback: (value: unknown) => void,
+        ) => {
+          calls.push([uploadUrl, fieldName, mimeType]);
+          callback(result);
+        },
+      } satisfies PlatformMock,
+    };
+
+    await expect(
+      pickAndUploadFile({
+        uploadUrl: 'https://example.com/upload',
+        fieldName: 'file',
+        mimeType: 'image/png',
+      }),
+    ).resolves.toBe('{"ok":true}');
+    expect(calls).toEqual([
+      ['https://example.com/upload', 'file', 'image/png'],
+    ]);
+
+    result = ['upload_http_500', null];
+    await expect(
+      pickAndUploadFile({
+        uploadUrl: 'https://example.com/upload',
+        fieldName: 'file',
+      }),
+    ).rejects.toThrow('upload_http_500');
+
+    result = ['upload_cancelled', null];
+    await expect(
+      pickAndUploadFile({
+        uploadUrl: 'https://example.com/upload',
+        fieldName: 'file',
+      }),
+    ).rejects.toThrow('upload_cancelled');
   });
 });

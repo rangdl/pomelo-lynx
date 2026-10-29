@@ -107,9 +107,9 @@ docs/web-debug.md   Web 端调试:症状 → 根因 → 解法
     编译与 `testDebugUnitTest`/`verify-ios-updater` 走 CI;Android/iOS 真机
     端到端(下载→冷启动生效→回退)尚未实测。
 - **平台能力**:`NativeModules.PomeloPlatform` 提供打开 URL、剪贴板(带结果)、
-  屏幕常亮与分享文件;JS facade 在 `src/native/platform.ts`,契约与降级规则见
-  [原生平台能力](docs/native-platform.md)。关于页的「复制版本信息」与
-  「打开发布页」已接入。
+  屏幕常亮、分享文件与文件选择上传(iOS);JS facade 在 `src/native/platform.ts`,
+  契约与降级规则见 [原生平台能力](docs/native-platform.md),后续批次见
+  [原生能力路线图](docs/roadmap.md)。关于页的「复制版本信息」与「打开发布页」已接入。
 
 ## 两个 entry
 

@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import UniformTypeIdentifiers
 
 /**
  * Lynx native module `NativeModules.PomeloPlatform` — iOS 侧的宿主平台基础能力。
@@ -8,11 +9,12 @@ import UIKit
  *   - `openURL` / `setKeepScreenOn`            写,fire-and-forget
  *   - `setClipboard` / `setClipboardWithResult` 剪贴板,后者用 Callback 回报结果
  *   - `shareFile`                              系统分享面板,Callback 回报结果
+ *   - `pickAndUploadFile`                      选择文件并 multipart 上传,Callback 回报 `[error, body]`
  *
  * Lynx 模块方法可能运行在 JS 线程,所有 UIKit / 剪贴板 / 分享面板操作都
  * 切到主线程。回调约定与 JS facade 一致:成功 `nil`,失败为非空字符串错误码。
  */
-final class PomeloPlatformModule: NSObject, LynxModule {
+final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate {
   @objc static var name: String { "PomeloPlatform" }
 
   @objc static var methodLookup: [String: String] {
@@ -26,6 +28,10 @@ final class PomeloPlatformModule: NSObject, LynxModule {
         #selector(PomeloPlatformModule.setClipboardWithResult(_:callback:))),
       "shareFile": NSStringFromSelector(
         #selector(PomeloPlatformModule.shareFile(_:fileName:mimeType:callback:))),
+      "pickAndUploadFile": NSStringFromSelector(
+        #selector(
+          PomeloPlatformModule.pickAndUploadFile(
+            _:fieldName:mimeType:callback:))),
     ]
   }
 
@@ -144,9 +150,173 @@ final class PomeloPlatformModule: NSObject, LynxModule {
     }
   }
 
+  // MARK: - 选择文件并上传
+
+  /// 单次上传请求:选择器关闭后仍需要它把结果送回 JS。
+  private struct PendingUpload {
+    let uploadUrl: String
+    let fieldName: String
+    let mimeType: String
+    let callback: (Any) -> Void
+  }
+
+  private var pendingUpload: PendingUpload?
+
+  /// 回调形状固定为 `[error, body]`(与 Android 后续实现、JS facade 逐字对齐)。
+  /// 空 error 表示成功;body 是服务器响应文本。
+  @objc func pickAndUploadFile(
+    _ uploadUrl: String,
+    fieldName: String,
+    mimeType: String,
+    callback: @escaping (Any) -> Void
+  ) {
+    guard Self.isHTTPURL(uploadUrl) else {
+      callback(["upload_invalid_url", NSNull()] as NSArray)
+      return
+    }
+    guard fieldName.range(
+      of: "^[A-Za-z0-9_-]{1,64}$", options: .regularExpression) != nil
+    else {
+      callback(["upload_invalid_field", NSNull()] as NSArray)
+      return
+    }
+    guard mimeType.range(
+      of: "^[A-Za-z0-9.+-]+/[A-Za-z0-9.+-]+$", options: .regularExpression) != nil
+    else {
+      callback(["upload_invalid_mime_type", NSNull()] as NSArray)
+      return
+    }
+
+    DispatchQueue.main.async {
+      guard let presenter = Self.topViewController() else {
+        callback(["upload_unavailable", NSNull()] as NSArray)
+        return
+      }
+      // 新请求覆盖旧请求;旧请求按取消回调,避免 JS 永远等待。
+      self.pendingUpload?.callback(["upload_cancelled", NSNull()] as NSArray)
+      self.pendingUpload = PendingUpload(
+        uploadUrl: uploadUrl,
+        fieldName: fieldName,
+        mimeType: mimeType,
+        callback: callback)
+
+      let type = UTType(mimeType: mimeType) ?? .data
+      let picker = UIDocumentPickerViewController(
+        forOpeningContentTypes: [type], asCopy: true)
+      picker.allowsMultipleSelection = false
+      picker.delegate = self
+      presenter.present(picker, animated: true)
+    }
+  }
+
+  func documentPicker(
+    _ controller: UIDocumentPickerViewController,
+    didPickDocumentsAt urls: [URL]
+  ) {
+    guard let request = pendingUpload else { return }
+    pendingUpload = nil
+    guard let url = urls.first else {
+      request.callback(["upload_read_failed", NSNull()] as NSArray)
+      return
+    }
+    let accessed = url.startAccessingSecurityScopedResource()
+    defer {
+      if accessed { url.stopAccessingSecurityScopedResource() }
+    }
+    do {
+      let data = try Data(contentsOf: url)
+      guard !data.isEmpty else {
+        request.callback(["upload_empty_file", NSNull()] as NSArray)
+        return
+      }
+      guard data.count <= Self.maxUploadBytes else {
+        request.callback(["upload_too_large", NSNull()] as NSArray)
+        return
+      }
+      upload(data: data, fileName: url.lastPathComponent, request: request)
+    } catch {
+      request.callback(["upload_read_failed", NSNull()] as NSArray)
+    }
+  }
+
+  func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+    pendingUpload?.callback(["upload_cancelled", NSNull()] as NSArray)
+    pendingUpload = nil
+  }
+
+  private func upload(data: Data, fileName: String, request: PendingUpload) {
+    guard let url = URL(string: request.uploadUrl) else {
+      request.callback(["upload_invalid_url", NSNull()] as NSArray)
+      return
+    }
+    let boundary = "----PomeloBoundary\(UUID().uuidString)"
+    let safeName = Self.safeFileName(fileName)
+    var body = Data()
+    Self.appendUTF8("--\(boundary)\r\n", to: &body)
+    Self.appendUTF8(
+      "Content-Disposition: form-data; name=\"\(request.fieldName)\"; filename=\"\(safeName)\"\r\n",
+      to: &body)
+    Self.appendUTF8("Content-Type: \(request.mimeType)\r\n\r\n", to: &body)
+    body.append(data)
+    Self.appendUTF8("\r\n--\(boundary)--\r\n", to: &body)
+
+    var http = URLRequest(url: url)
+    http.httpMethod = "POST"
+    http.timeoutInterval = 60
+    http.setValue(
+      "multipart/form-data; boundary=\(boundary)",
+      forHTTPHeaderField: "Content-Type")
+    http.httpBody = body
+
+    URLSession.shared.dataTask(with: http) { responseData, response, error in
+      DispatchQueue.main.async {
+        if let error {
+          request.callback([error.localizedDescription, NSNull()] as NSArray)
+          return
+        }
+        guard let httpResponse = response as? HTTPURLResponse else {
+          request.callback(["upload_no_response", NSNull()] as NSArray)
+          return
+        }
+        guard (200...299).contains(httpResponse.statusCode) else {
+          request.callback(
+            ["upload_http_\(httpResponse.statusCode)", NSNull()] as NSArray)
+          return
+        }
+        let responseBody =
+          responseData.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+        guard responseBody.utf8.count <= Self.maxResponseBytes else {
+          request.callback(["upload_response_too_large", NSNull()] as NSArray)
+          return
+        }
+        request.callback([NSNull(), responseBody] as NSArray)
+      }
+    }.resume()
+  }
+
+  private static func isHTTPURL(_ value: String) -> Bool {
+    guard let parsed = URL(string: value),
+      let scheme = parsed.scheme?.lowercased(),
+      scheme == "http" || scheme == "https",
+      parsed.host != nil
+    else { return false }
+    return true
+  }
+
+  /// multipart 头部里的文件名只保留安全字符,避免引号/换行破坏请求体。
+  private static func safeFileName(_ value: String) -> String {
+    let cleaned = value.replacingOccurrences(
+      of: "[^A-Za-z0-9._-]", with: "_", options: .regularExpression)
+    let name = String(cleaned.prefix(128))
+    return name.isEmpty ? "upload.bin" : name
+  }
+
+  private static func appendUTF8(_ value: String, to data: inout Data) {
+    if let encoded = value.data(using: .utf8) { data.append(encoded) }
+  }
+
   /// 当前 key window 上最顶层的控制器;分享面板必须挂在它上面。
-  private static func topViewController() -> UIViewController? {
-    let scenes = UIApplication.shared.connectedScenes.compactMap {
+  private static func topViewController() -> UIViewController? {    let scenes = UIApplication.shared.connectedScenes.compactMap {
       $0 as? UIWindowScene
     }
     let window = scenes.flatMap { $0.windows }.first { $0.isKeyWindow }
@@ -158,4 +328,6 @@ final class PomeloPlatformModule: NSObject, LynxModule {
   }
 
   private static let maxBase64Chars = 16 * 1024 * 1024 * 4 / 3 + 4
+  private static let maxUploadBytes = 32 * 1024 * 1024
+  private static let maxResponseBytes = 1024 * 1024
 }

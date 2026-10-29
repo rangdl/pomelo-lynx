@@ -22,6 +22,12 @@ export interface PomeloPlatformNativeModule {
     mimeType: string,
     callback: (error: string | null) => void,
   ): void;
+  pickAndUploadFile?(
+    uploadUrl: string,
+    fieldName: string,
+    mimeType: string,
+    callback: (result: unknown) => void,
+  ): void;
 }
 
 /** 模块存在所必需的方法;缺一个就视为旧壳,整体降级。 */
@@ -171,4 +177,54 @@ export function shareFile(input: ShareFileInput): Promise<void> {
   return callbackPromise((callback) =>
     share(input.base64, input.fileName, input.mimeType, callback),
   );
+}
+
+/** pickAndUploadFile 的入参。mimeType 默认 application/octet-stream。 */
+export interface PickAndUploadInput {
+  uploadUrl: string;
+  fieldName: string;
+  mimeType?: string;
+}
+
+const UPLOAD_TIMEOUT_MS = 120_000;
+
+/**
+ * 选择文件并 multipart 上传。原生回调形状固定为 `[error, body]`:
+ * error 为空表示成功,body 是服务器响应文本。文件选择可能超过普通回调的
+ * 5 秒窗口,这里单独给 120 秒。
+ */
+export function pickAndUploadFile(input: PickAndUploadInput): Promise<string> {
+  const pick = readPlatformModule()?.pickAndUploadFile;
+  if (!pick) return Promise.reject(new Error('upload_unavailable'));
+  const uploadUrl = input.uploadUrl.trim();
+  if (!isHttpURL(uploadUrl))
+    return Promise.reject(new Error('upload_invalid_url'));
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(input.fieldName))
+    return Promise.reject(new Error('upload_invalid_field'));
+  const mimeType = (input.mimeType ?? 'application/octet-stream').trim();
+  if (!/^[A-Za-z0-9.+-]+\/[A-Za-z0-9.+-]+$/.test(mimeType))
+    return Promise.reject(new Error('upload_invalid_mime_type'));
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (error: unknown, body?: unknown) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (typeof error === 'string' && error.length > 0)
+        reject(new Error(error));
+      else resolve(typeof body === 'string' ? body : '');
+    };
+    const timer = setTimeout(() => {
+      finish('upload_timeout');
+    }, UPLOAD_TIMEOUT_MS);
+    try {
+      pick(uploadUrl, input.fieldName, mimeType, (result) => {
+        const pair = Array.isArray(result) ? result : [];
+        finish(pair[0], pair[1]);
+      });
+    } catch (error) {
+      finish(error instanceof Error ? error.message : 'upload_failed');
+    }
+  });
 }

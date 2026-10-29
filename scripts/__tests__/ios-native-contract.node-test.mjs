@@ -102,6 +102,27 @@ test('系统主题变化不因 inactive 被丢弃', () => {
   );
 });
 
+test('iOS 左边缘手势通过全局事件请求返回', () => {
+  const viewController = read('ViewController.swift');
+  assert.match(
+    viewController,
+    /UIScreenEdgePanGestureRecognizer/,
+    '缺少左边缘返回手势',
+  );
+  assert.match(
+    viewController,
+    /PomeloNavigation\.back/,
+    '手势必须发送 PomeloNavigation.back 给 JS 路由',
+  );
+  assert.match(viewController, /func handleEdgePan\(/);
+
+  const navigation = readFileSync(
+    join(ROOT, 'src/native/navigation.ts'),
+    'utf8',
+  );
+  assert.match(navigation, /PomeloNavigation\.back/);
+});
+
 test('应用外观偏好同步 UIKit 并在冷启动读取 prefs', () => {
   const viewController = read('ViewController.swift');
   assert.match(

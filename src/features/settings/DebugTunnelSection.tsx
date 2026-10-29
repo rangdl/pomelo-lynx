@@ -257,6 +257,9 @@ export function DebugTunnelSection() {
           placeholder="ws://your-relay-ip:21783"
           placeholder-class="dev-server__placeholder"
           maxlength={1000}
+          avoid-keyboard={true}
+          avoid-keyboard-spacing="12px"
+          set-soft-input-mode="resize"
           style={{
             // Lynx 要求长度带单位:无单位数字会抛
             // "CSS length need units (except 0)"(真机 DevTool 报 130300)。

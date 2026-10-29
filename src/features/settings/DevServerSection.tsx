@@ -256,6 +256,9 @@ export function DevServerSection() {
           placeholder="http://192.168.x.x:3090/main.lynx.bundle"
           placeholder-class="dev-server__placeholder"
           maxlength={1000}
+          avoid-keyboard={true}
+          avoid-keyboard-spacing="12px"
+          set-soft-input-mode="resize"
           style={{
             // Lynx 要求长度带单位:无单位数字会抛
             // "CSS length need units (except 0)"(真机 DevTool 报 130300)。

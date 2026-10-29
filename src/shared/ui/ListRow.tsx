@@ -20,6 +20,8 @@ interface ListRowProps {
   iconColor?: string;
   /** 显示右侧箭头。 */
   chevron?: boolean;
+  /** 读屏文案;省略时用 label。 */
+  accessibilityLabel?: string;
 }
 
 /**
@@ -38,6 +40,7 @@ export function ListRow({
   icon,
   iconColor,
   chevron,
+  accessibilityLabel,
 }: ListRowProps) {
   const classes = ['list-row'];
   if (icon) classes.push('list-row--with-icon');
@@ -49,6 +52,9 @@ export function ListRow({
       className={classes.join(' ')}
       bindtap={disabled ? undefined : onTap}
       data-testid={testid}
+      accessibility-element={onTap ? true : undefined}
+      accessibility-label={onTap ? (accessibilityLabel ?? label) : undefined}
+      accessibility-traits={onTap ? 'button' : undefined}
     >
       {icon ? (
         <view

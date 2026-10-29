@@ -80,6 +80,28 @@ final class ViewController: UIViewController {
   override func viewDidLoad() {
     super.viewDidLoad()
     view.backgroundColor = .systemBackground
+    // Lynx 页面没有 UINavigationController,系统不会自带 interactivePop。
+    // 左边缘手势只负责告诉 JS“用户想返回”,由 JS 路由决定是否 pop。
+    let edgePan = UIScreenEdgePanGestureRecognizer(
+      target: self, action: #selector(handleEdgePan(_:)))
+    edgePan.edges = .left
+    edgePan.cancelsTouchesInView = false
+    edgePan.delegate = self
+    view.addGestureRecognizer(edgePan)
+  }
+
+  /// 左边缘向右滑动超过阈值时发事件;根 tab 由 JS 忽略。
+  @objc private func handleEdgePan(
+    _ gesture: UIScreenEdgePanGestureRecognizer
+  ) {
+    guard gesture.state == .ended else { return }
+    let translation = gesture.translation(in: view)
+    let velocity = gesture.velocity(in: view)
+    guard translation.x > 60, velocity.x > 0 else { return }
+    Log.debug("navigation", "edge swipe back")
+    lynxView?.sendGlobalEvent(
+      "PomeloNavigation.back",
+      withParams: [["source": "edge"]])
   }
 
   override func viewDidLayoutSubviews() {
@@ -431,5 +453,16 @@ extension ViewController: LynxViewLifecycle {
     DispatchQueue.main.async { [weak self] in
       self?.reloadLynxView()
     }
+  }
+}
+
+
+extension ViewController: UIGestureRecognizerDelegate {
+  /// 边缘手势与 Lynx 内部手势可同时识别,避免页面内可滚动区域吞掉返回手势。
+  func gestureRecognizer(
+    _ gestureRecognizer: UIGestureRecognizer,
+    shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+  ) -> Bool {
+    true
   }
 }

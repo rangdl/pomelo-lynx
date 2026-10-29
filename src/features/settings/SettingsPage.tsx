@@ -1,23 +1,36 @@
+import { useState } from '@lynx-js/react';
 import { useNavigate } from '@tanstack/react-router';
 
 import { clientBuild } from '../../core/config/constants.js';
 import { t } from '../../i18n/index.js';
 import { isIosPlatform } from '../../native/web-platform.js';
 import {
+  type AppearanceMode,
   appearancePreference,
   useAppearanceMode,
 } from '../../shared/theme/appearance-preference.js';
 import { ListRow } from '../../shared/ui/ListRow.js';
-import {
-  SettingsGroup,
-  SettingsGroupDivider,
-} from '../../shared/ui/SettingsGroup.js';
+import { SettingsGroup } from '../../shared/ui/SettingsGroup.js';
 import './settings.css';
+
+const APPEARANCE_OPTIONS: readonly {
+  mode: AppearanceMode;
+  labelKey: 'appearance.system' | 'appearance.light' | 'appearance.dark';
+}[] = [
+  { mode: 'system', labelKey: 'appearance.system' },
+  { mode: 'light', labelKey: 'appearance.light' },
+  { mode: 'dark', labelKey: 'appearance.dark' },
+];
 
 /** 设置页:条目列表。「关于」进入关于页(含客户端更新区)。 */
 export function SettingsPage() {
   const navigate = useNavigate();
   const appearanceMode = useAppearanceMode();
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const appearanceLabel = t(
+    APPEARANCE_OPTIONS.find((option) => option.mode === appearanceMode)
+      ?.labelKey ?? 'appearance.system',
+  );
   // dev server 与调试通道目前只有 iOS 宿主实现;Android/Web 上不展示,
   // 避免出现点了必然失败的入口。
   const showDeveloperEntry = clientBuild.channel === 'dev' && isIosPlatform();
@@ -44,47 +57,53 @@ export function SettingsPage() {
           <ListRow
             icon={<text className="list-row__icon-text">◐</text>}
             iconColor="#0ea5e9"
-            label={t('appearance.system')}
-            onTap={() => {
-              void appearancePreference.setMode('system');
-            }}
-            testid="appearance-system"
+            label={t('appearance.theme')}
+            onTap={() => setAppearanceOpen((open) => !open)}
+            testid="appearance-row"
+            accessibilityLabel={`${t('appearance.theme')}, ${appearanceLabel}`}
             trailing={
-              appearanceMode === 'system' ? (
-                <text className="appearance-check">✓</text>
-              ) : undefined
+              <view className="appearance-select">
+                <text className="appearance-select__value">
+                  {appearanceLabel}
+                </text>
+                <text className="appearance-select__caret">
+                  {appearanceOpen ? '▴' : '▾'}
+                </text>
+              </view>
             }
           />
-          <SettingsGroupDivider />
-          <ListRow
-            icon={<text className="list-row__icon-text">☀</text>}
-            iconColor="#f59e0b"
-            label={t('appearance.light')}
-            onTap={() => {
-              void appearancePreference.setMode('light');
-            }}
-            testid="appearance-light"
-            trailing={
-              appearanceMode === 'light' ? (
-                <text className="appearance-check">✓</text>
-              ) : undefined
-            }
-          />
-          <SettingsGroupDivider />
-          <ListRow
-            icon={<text className="list-row__icon-text">☾</text>}
-            iconColor="#6366f1"
-            label={t('appearance.dark')}
-            onTap={() => {
-              void appearancePreference.setMode('dark');
-            }}
-            testid="appearance-dark"
-            trailing={
-              appearanceMode === 'dark' ? (
-                <text className="appearance-check">✓</text>
-              ) : undefined
-            }
-          />
+          {appearanceOpen ? (
+            <view className="appearance-menu" data-testid="appearance-menu">
+              {APPEARANCE_OPTIONS.map((option) => {
+                const selected = appearanceMode === option.mode;
+                return (
+                  <view
+                    key={option.mode}
+                    className={
+                      selected
+                        ? 'appearance-option appearance-option--selected'
+                        : 'appearance-option'
+                    }
+                    bindtap={() => {
+                      void appearancePreference.setMode(option.mode);
+                      setAppearanceOpen(false);
+                    }}
+                    accessibility-element={true}
+                    accessibility-label={t(option.labelKey)}
+                    accessibility-traits="button"
+                    data-testid={`appearance-${option.mode}`}
+                  >
+                    <text className="appearance-option__label">
+                      {t(option.labelKey)}
+                    </text>
+                    {selected ? (
+                      <text className="appearance-check">✓</text>
+                    ) : null}
+                  </view>
+                );
+              })}
+            </view>
+          ) : null}
         </SettingsGroup>
         {showDeveloperEntry ? (
           <SettingsGroup title={t('settings.group.developer')}>

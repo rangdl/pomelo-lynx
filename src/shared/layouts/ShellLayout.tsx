@@ -6,9 +6,15 @@ import {
   useState,
 } from '@lynx-js/react';
 import type { MainThread } from '@lynx-js/types';
-import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
+import {
+  Outlet,
+  useNavigate,
+  useRouter,
+  useRouterState,
+} from '@tanstack/react-router';
 
 import { type MessageKey, t } from '../../i18n/index.js';
+import { subscribeNavigationBack } from '../../native/navigation.js';
 import {
   readSystemAppearance,
   subscribeSystemAppearance,
@@ -50,6 +56,7 @@ const BAR_EXTRA_WIDTH = 8;
  */
 export function ShellLayout() {
   const navigate = useNavigate();
+  const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [appearance, setAppearance] = useState(readSystemAppearance);
   const appearanceMode = useAppearanceMode();
@@ -59,6 +66,22 @@ export function ShellLayout() {
     setAppearance(readSystemAppearance());
     return subscribeSystemAppearance(setAppearance);
   }, []);
+
+  // iOS 左边缘侧滑:只有子页响应;有历史就 pop,否则回设置根页。
+  // 根 tab(首页/设置)不响应,避免把 tab 当成导航栈。
+  useEffect(() => {
+    if (!pathname.startsWith('/settings/')) return;
+    return subscribeNavigationBack(() => {
+      if (router.history.canGoBack()) {
+        router.history.back();
+        return;
+      }
+      navigate({
+        to:
+          pathname === '/settings/about/logs' ? '/settings/about' : '/settings',
+      });
+    });
+  }, [navigate, pathname, router]);
 
   const activePath = pathname.startsWith('/settings') ? '/settings' : '/';
   const rawActiveIndex = TABS.findIndex((tab) => tab.path === activePath);

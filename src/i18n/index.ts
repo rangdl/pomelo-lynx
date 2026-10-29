@@ -19,6 +19,7 @@ export type MessageKey =
   | 'settings.developer'
   | 'settings.developerDetail'
   | 'developer.title'
+  | 'appearance.theme'
   | 'appearance.system'
   | 'appearance.light'
   | 'appearance.dark'
@@ -55,6 +56,7 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.developer': 'Dev Server 与调试通道',
     'settings.developerDetail': '连接、刷新与调试中继',
     'developer.title': '开发者',
+    'appearance.theme': '主题',
     'appearance.system': '跟随系统',
     'appearance.light': '浅色',
     'appearance.dark': '深色',
@@ -88,6 +90,7 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.developer': 'Dev server & debug tunnel',
     'settings.developerDetail': 'Connect, reload and debug relay',
     'developer.title': 'Developer',
+    'appearance.theme': 'Theme',
     'appearance.system': 'System',
     'appearance.light': 'Light',
     'appearance.dark': 'Dark',

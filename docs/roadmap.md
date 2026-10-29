@@ -50,3 +50,23 @@
   的 `iOS IPA` job 为准。
 - 媒体(音频/视频/缓存/DLNA/歌词/Live Activity/EQ)不在本路线图,待单独确认
   播放源、平台顺序、后台播放与 UI 位置。
+
+## 底栏材质与动画
+
+- [x] 主线程 spring/jelly 指示器(`TabIndicator`:350ms spring、travel + jelly)
+- [x] iOS 真背景模糊:`<blur-view>` + `XElement/BlurView`(`blur-radius=24px`,
+      `blur-effect=extra-light/dark`),tint 在其上着色(真机已验证)
+- [x] 无 blur-view 平台兜底:半透明渐变 + 内高光 + 外阴影
+- [x] Web:web-core 将 `blur-view` 映射为 `x-blur-view`;ShellLayout 在 Web
+      渲染 `<blur-view>`。已验证 `backdrop-filter: blur(24px)` 生效
+      (web-shell 的别名保留,web-core 以后不映射时兜底)
+- [ ] **Android(计划,待恢复 Android 构建)**
+  - `host/android/app/build.gradle.kts` 增加
+    `implementation("org.lynxsdk.lynx:xelement-blur-view:4.0.0")`
+  - ShellLayout 在 Android 也渲染 `<blur-view>`,并用
+    `android-capture-target` 指定底栏背景源
+  - 验证:`assembleDebug` + 真机滚动页面上方的模糊/性能
+- [ ] **可选:折射透镜(对齐 songloft 的液态玻璃)**
+  - iOS 26(计划):`SongloftTabGlassUI` 的 `UIGlassEffect` 路径;需要 iOS 26 设备/SDK 验收
+  - Android:`TabGlassRefraction` 的 `RenderNode` + `RuntimeShader`(AGSL)
+  - 需要原生能力位与真机验收;未实现前保持 blur-view + tint

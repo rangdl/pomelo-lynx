@@ -47,6 +47,14 @@
     }
   </script>
   <script type="module">
+    // web-elements 把实现注册为 x-blur-view;Lynx 页面用的是 blur-view。
+    // 等实现就绪后做一次幂等别名,web-core 以后自己注册 blur-view 时自动跳过。
+    customElements.whenDefined('x-blur-view').then((base) => {
+      if (!base || customElements.get('blur-view')) return;
+      customElements.define('blur-view', class extends base {});
+    });
+  </script>
+  <script type="module">
     import '@lynx-js/web-core/client';
 
     const view = document.getElementById('view');

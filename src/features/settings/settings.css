@@ -14,7 +14,8 @@
 }
 
 .settings__tail {
-  height: 16px;
+  /* 底栏 60 + 底部间距 8 + 安全区;让最后一行能滚到胶囊上方。 */
+  height: calc(84px + env(safe-area-inset-bottom));
 }
 
 .settings__header {

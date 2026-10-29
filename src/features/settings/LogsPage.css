@@ -85,6 +85,10 @@
   background-color: var(--color-surface);
 }
 
+.logs__tail {
+  height: calc(84px + env(safe-area-inset-bottom));
+}
+
 .logs__empty {
   display: flex;
   align-items: center;

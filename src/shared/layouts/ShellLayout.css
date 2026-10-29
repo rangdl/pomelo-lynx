@@ -1,4 +1,4 @@
-/* 底部导航外壳:浮动胶囊 + 选中 pill(仿 songloft 窄屏样式,暂不做宽屏侧栏)。 */
+/* 底部导航外壳:浮动胶囊 + 滑动选中指示器(对齐 songloft 的窄屏底栏)。 */
 
 .shell {
   display: flex;
@@ -16,32 +16,104 @@
 .shell__body {
   flex: 1;
   min-height: 0;
-  /* 给浮动胶囊 + 底部安全区留出尾部空间,页面内容不会停在胶囊下面。 */
-  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  /* 不在这里留底栏高度的 padding:页面内容要能从浮动胶囊下方滚过,
+     模糊/玻璃才看得见。每个可滚动页面自己加尾部 spacer。 */
 }
 
 .shell__bottombar {
   position: fixed;
-  left: calc(12px + env(safe-area-inset-left));
-  right: calc(12px + env(safe-area-inset-right));
+  /* 宽度由 JS 按 tab 数量设置,水平居中;窄屏用 max-width 兜底。 */
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  max-width: calc(
+    100% -
+    24px -
+    env(safe-area-inset-left) -
+    env(safe-area-inset-right)
+  );
   bottom: calc(8px + env(safe-area-inset-bottom));
-  height: 56px;
+  height: 60px;
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding-left: 6px;
-  padding-right: 6px;
-  border-radius: 28px;
-  /* 半透明浅色胶囊:不用 backdrop-filter,避免跨端渲染差异;
-     悬浮感由不透明度和阴影承担。 */
-  background-color: var(--color-nav-bg);
+  border-radius: 30px;
+  /* 玻璃材质:blur-view 在底层采样背景,tint 在上层着色;
+     无 blur-view 的平台(Android/Web)仍保留 tint + 边框 + 阴影。 */
+  background-color: transparent;
   border-width: 1px;
   border-color: var(--color-separator);
-  box-shadow: 0 6px 24px var(--color-shadow);
+  box-shadow:
+    inset 0 1px 0 var(--color-nav-highlight),
+    0 8px 28px var(--color-nav-shadow);
   z-index: 90;
 }
 
+.shell__bottombar-glass {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 30px;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.shell__bottombar-tint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 30px;
+  background-image: linear-gradient(
+    180deg,
+    var(--color-nav-bg-top),
+    var(--color-nav-bg-bottom)
+  );
+  z-index: 1;
+}
+
+/* iOS blur-view 已经提供真实模糊,tint 只做轻微着色。 */
+.shell__bottombar-tint--glass {
+  background-image: linear-gradient(
+    180deg,
+    var(--color-nav-glass-top),
+    var(--color-nav-glass-bottom)
+  );
+}
+
+/* 单个滑动胶囊:绝对定位在底栏内容区,宽度由 JS 按 tab 数设置,
+   translateX(index * 100%) 在槽位之间移动。 */
+.nav-indicator {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.nav-indicator__pill {
+  width: calc(100% - 8px);
+  height: 100%;
+  margin-left: 4px;
+  margin-right: 4px;
+  border-radius: 24px;
+  background-color: var(--color-accent-soft);
+  box-shadow:
+    inset 0 1px 0 var(--color-nav-highlight),
+    0 2px 8px var(--color-accent-soft);
+  transform-origin: center;
+}
+
 .nav-item {
+  position: relative;
+  z-index: 3;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -50,31 +122,87 @@
   height: 100%;
 }
 
-/* 选中态胶囊:高度 44px(56 - 上下各 6),宽度铺满 tab 并留 4px 间距。 */
-.nav-item__pill {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  align-self: stretch;
-  margin-left: 4px;
-  margin-right: 4px;
-  margin-top: 6px;
-  margin-bottom: 6px;
-  border-radius: 22px;
+.nav-item:active {
+  opacity: 0.6;
 }
 
-.nav-item--active .nav-item__pill {
-  background-color: var(--color-accent-soft);
+/* Tab 内容:图标在上、文字在下的竖向排列。 */
+.nav-item__pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 24px;
+}
+
+.nav-item__icon {
+  width: 24px;
+  height: 24px;
 }
 
 .nav-item__label {
-  font-size: 13px;
+  font-size: 10px;
+  font-weight: 500;
   color: var(--color-text-secondary);
+  margin-top: 3px;
 }
 
 .nav-item--active .nav-item__label {
   color: var(--color-accent);
-  font-weight: 600;
+}
+
+/* 「更多」溢出面板:点遮罩关闭,点面板自身不冒泡。 */
+.more-sheet {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background-color: rgba(0, 0, 0, 0.32);
+  z-index: 100;
+}
+
+.more-sheet__panel {
+  display: flex;
+  flex-direction: column;
+  margin-left: 16px;
+  margin-right: 16px;
+  margin-bottom: calc(84px + env(safe-area-inset-bottom));
+  padding-top: 8px;
+  padding-bottom: 8px;
+  background-color: var(--color-surface);
+  border-radius: 16px;
+}
+
+.more-sheet__title {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-top: 8px;
+  padding-bottom: 4px;
+}
+
+.more-sheet__row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.more-sheet__row .nav-item__icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
+}
+
+.more-sheet__label {
+  font-size: 16px;
+  color: var(--color-text);
 }

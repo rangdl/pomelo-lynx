@@ -12,6 +12,13 @@
   --color-on-accent: #ffffff;
   --color-separator: rgba(0, 0, 0, 0.08);
   --color-nav-bg: rgba(255, 255, 255, 0.96);
+  --color-nav-bg-top: rgba(255, 255, 255, 0.98);
+  --color-nav-bg-bottom: rgba(255, 255, 255, 0.84);
+  --color-nav-highlight: rgba(255, 255, 255, 0.72);
+  --color-nav-shadow: rgba(0, 0, 0, 0.14);
+  /* 有原生 blur-view 时用更低的 tint 透明度,让背后的内容透出来。 */
+  --color-nav-glass-top: rgba(255, 255, 255, 0.58);
+  --color-nav-glass-bottom: rgba(255, 255, 255, 0.34);
   --color-shadow: rgba(0, 0, 0, 0.1);
   --color-danger: #d93025;
   --color-warning: #b54708;
@@ -36,6 +43,12 @@
   --color-on-accent: #ffffff;
   --color-separator: rgba(255, 255, 255, 0.12);
   --color-nav-bg: rgba(28, 31, 38, 0.96);
+  --color-nav-bg-top: rgba(38, 42, 51, 0.98);
+  --color-nav-bg-bottom: rgba(24, 27, 34, 0.86);
+  --color-nav-highlight: rgba(255, 255, 255, 0.1);
+  --color-nav-shadow: rgba(0, 0, 0, 0.55);
+  --color-nav-glass-top: rgba(36, 40, 49, 0.6);
+  --color-nav-glass-bottom: rgba(20, 23, 29, 0.42);
   --color-shadow: rgba(0, 0, 0, 0.4);
   --color-danger: #ff6b5e;
   --color-warning: #fbbf24;

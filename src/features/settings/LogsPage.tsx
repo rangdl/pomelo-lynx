@@ -269,6 +269,7 @@ export function LogsPage() {
             </view>
           ))
         )}
+        <view className="logs__tail" />
       </scroll-view>
     </view>
   );

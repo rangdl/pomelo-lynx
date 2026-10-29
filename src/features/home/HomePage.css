@@ -1,6 +1,8 @@
 /* 首页作用域:不要用 :root,否则黑色背景和文字色会污染其它页面。 */
 .Home {
   height: 100%;
+  /* 首页不滚动:把内容整体抬到底栏上方,避免被胶囊覆盖。 */
+  padding-bottom: calc(68px + env(safe-area-inset-bottom));
   background-color: #000;
   --color-text: #fff;
 }

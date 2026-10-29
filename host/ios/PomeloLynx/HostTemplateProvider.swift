@@ -141,8 +141,30 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
         ))
         return
       }
+      // 200 也可能是一个 HTML 错误页/代理页。Lynx bundle 头部前 4 字节是
+      // 小端总长度,与文件大小不符时必须在进解码器前拒绝,否则只会得到
+      // 一个 10204 解码错误且无法区分真正原因。
+      guard Self.isLynxBundle(data) else {
+        Log.error("devserver", "fetched data is not a lynx bundle (\(data.count)B)")
+        callback(nil, NSError(
+          domain: "org.pomelo.lynx",
+          code: 415,
+          userInfo: [NSLocalizedDescriptionKey: "开发服务器返回的不是 Lynx bundle"]
+        ))
+        return
+      }
       Log.info("devserver", "fetched \(data.count)B → callback")
       callback(data, nil)
     }.resume()
+  }
+
+  /// Lynx bundle 头部:前 4 字节小端声明文件总长度。
+  private static func isLynxBundle(_ data: Data) -> Bool {
+    guard data.count >= 4 else { return false }
+    var declared: UInt32 = 0
+    for (index, byte) in data.prefix(4).enumerated() {
+      declared |= UInt32(byte) << (8 * UInt32(index))
+    }
+    return declared == UInt32(data.count)
   }
 }

@@ -210,6 +210,9 @@ extension ViewController: LynxViewLifecycle {
   /// Tear down the current LynxView and rebuild against the embedded bundle.
   private func reloadWithEmbeddedBundle() {
     guard let lynxView else { return }
+    // 必须同时把加载地址切回内嵌 bundle;否则 viewDidLayoutSubviews 重建
+    // LynxView 时会再次使用旧的 dev URL,错误页会无限循环。
+    bundleURL = HostTemplateProvider.mainBundle
     lynxView.removeFromSuperview()
     self.lynxView = nil
     view.setNeedsLayout()

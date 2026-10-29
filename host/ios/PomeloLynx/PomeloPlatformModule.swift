@@ -73,7 +73,7 @@ final class PomeloPlatformModule: NSObject, LynxModule {
   private func writeClipboard(_ text: String, callback: ((Any) -> Void)?) {
     DispatchQueue.main.async {
       UIPasteboard.general.string = text
-      callback?(nil)
+      callback?(NSNull())
     }
   }
 
@@ -125,7 +125,11 @@ final class PomeloPlatformModule: NSObject, LynxModule {
         activityItems: [url], applicationActivities: nil)
       activity.completionWithItemsHandler = { _, _, _, error in
         try? FileManager.default.removeItem(at: url)
-        callback(error?.localizedDescription)
+        if let error {
+          callback(error.localizedDescription)
+        } else {
+          callback(NSNull())
+        }
       }
       if let popover = activity.popoverPresentationController {
         popover.sourceView = presenter.view

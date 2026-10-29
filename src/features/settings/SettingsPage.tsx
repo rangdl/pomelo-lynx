@@ -16,19 +16,22 @@ export function SettingsPage() {
 
   return (
     <view className="settings" data-testid="settings-page">
-      <view className="settings__header">
-        <text className="settings__title">设置</text>
-      </view>
-      <view
-        className="settings-row"
-        bindtap={() => navigate({ to: '/settings/about' })}
-        data-testid="settings-row-about"
-      >
-        <text className="settings-row__label">关于</text>
-        <text className="settings-row__value">›</text>
-      </view>
-      {showDeveloperSections ? <DevServerSection /> : null}
-      {showDeveloperSections ? <DebugTunnelSection /> : null}
+      <scroll-view className="settings__scroll" scroll-orientation="vertical">
+        <view className="settings__header">
+          <text className="settings__title">设置</text>
+        </view>
+        <view
+          className="settings-row"
+          bindtap={() => navigate({ to: '/settings/about' })}
+          data-testid="settings-row-about"
+        >
+          <text className="settings-row__label">关于</text>
+          <text className="settings-row__value">›</text>
+        </view>
+        {showDeveloperSections ? <DevServerSection /> : null}
+        {showDeveloperSections ? <DebugTunnelSection /> : null}
+        <view className="settings__tail" />
+      </scroll-view>
     </view>
   );
 }

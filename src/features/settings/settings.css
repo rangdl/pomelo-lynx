@@ -6,6 +6,17 @@
   background-color: #f6f6f8;
 }
 
+/* 页面内容滚动区:设置页/关于页内容可能超过一屏,必须滚动而不是被
+   浮动底栏裁掉。 */
+.settings__scroll {
+  flex: 1;
+  min-height: 0;
+}
+
+.settings__tail {
+  height: 16px;
+}
+
 .settings__header {
   padding-top: env(safe-area-inset-top);
   padding-left: 20px;

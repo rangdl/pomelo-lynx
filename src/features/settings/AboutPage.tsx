@@ -50,63 +50,66 @@ export function AboutPage() {
         backTestid="about-back"
       />
 
-      <view className="settings-row">
-        <text className="settings-row__label">宿主</text>
-        <text className="settings-row__value">{hostName}</text>
-      </view>
-      <view className="settings-row">
-        <text className="settings-row__label">Bundle 版本</text>
-        <text className="settings-row__value">{clientBuild.version}</text>
-      </view>
-      {hostVersion ? (
+      <scroll-view className="settings__scroll" scroll-orientation="vertical">
         <view className="settings-row">
-          <text className="settings-row__label">宿主版本</text>
-          <text className="settings-row__value">{hostVersion}</text>
+          <text className="settings-row__label">宿主</text>
+          <text className="settings-row__value">{hostName}</text>
         </view>
-      ) : null}
+        <view className="settings-row">
+          <text className="settings-row__label">Bundle 版本</text>
+          <text className="settings-row__value">{clientBuild.version}</text>
+        </view>
+        {hostVersion ? (
+          <view className="settings-row">
+            <text className="settings-row__label">宿主版本</text>
+            <text className="settings-row__value">{hostVersion}</text>
+          </view>
+        ) : null}
 
-      <view
-        className="settings-row"
-        bindtap={copyVersionInfo}
-        data-testid="about-row-copy"
-      >
-        <text className="settings-row__label">复制版本信息</text>
-        <text className="settings-row__value">{copyState ?? '›'}</text>
-      </view>
-      {releaseUrl && !web ? (
         <view
           className="settings-row"
-          bindtap={() => {
-            'background only';
-            openURL(releaseUrl);
-          }}
-          data-testid="about-row-release"
+          bindtap={copyVersionInfo}
+          data-testid="about-row-copy"
         >
-          <text className="settings-row__label">打开发布页</text>
+          <text className="settings-row__label">复制版本信息</text>
+          <text className="settings-row__value">{copyState ?? '›'}</text>
+        </view>
+        {releaseUrl && !web ? (
+          <view
+            className="settings-row"
+            bindtap={() => {
+              'background only';
+              openURL(releaseUrl);
+            }}
+            data-testid="about-row-release"
+          >
+            <text className="settings-row__label">打开发布页</text>
+            <text className="settings-row__value">›</text>
+          </view>
+        ) : null}
+
+        <view className="settings__section">
+          {web ? (
+            <view className="settings-row">
+              <text className="settings-row__label">
+                Web 端随部署更新,无独立热更新
+              </text>
+            </view>
+          ) : (
+            <ClientUpdateSection />
+          )}
+        </view>
+
+        <view
+          className="settings-row"
+          bindtap={() => navigate({ to: '/settings/about/logs' })}
+          data-testid="about-row-logs"
+        >
+          <text className="settings-row__label">日志</text>
           <text className="settings-row__value">›</text>
         </view>
-      ) : null}
-
-      <view className="settings__section">
-        {web ? (
-          <view className="settings-row">
-            <text className="settings-row__label">
-              Web 端随部署更新,无独立热更新
-            </text>
-          </view>
-        ) : (
-          <ClientUpdateSection />
-        )}
-      </view>
-
-      <view
-        className="settings-row"
-        bindtap={() => navigate({ to: '/settings/about/logs' })}
-        data-testid="about-row-logs"
-      >
-        <text className="settings-row__label">日志</text>
-        <text className="settings-row__value">›</text>
-      </view>
+        <view className="settings__tail" />
+      </scroll-view>
     </view>
   );
 }

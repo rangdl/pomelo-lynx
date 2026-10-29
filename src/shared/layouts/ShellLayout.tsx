@@ -25,7 +25,10 @@ export function ShellLayout() {
   const activePath = pathname.startsWith('/settings') ? '/settings' : '/';
 
   return (
-    <view className="shell" data-testid="shell-root">
+    <view
+      className={pathname === '/' ? 'shell shell--home' : 'shell'}
+      data-testid="shell-root"
+    >
       <view className="shell__body">
         <Outlet />
       </view>

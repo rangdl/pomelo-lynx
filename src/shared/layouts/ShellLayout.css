@@ -1,4 +1,4 @@
-/* 底部导航外壳(仿 songloft-player-lynx 窄屏样式,精简版)。 */
+/* 底部导航外壳:浮动胶囊 + 选中 pill(仿 songloft 窄屏样式,暂不做宽屏侧栏)。 */
 
 .shell {
   display: flex;
@@ -10,38 +10,53 @@
 .shell__body {
   flex: 1;
   min-height: 0;
+  /* 给浮动胶囊 + 底部安全区留出尾部空间,页面内容不会停在胶囊下面。 */
+  padding-bottom: calc(64px + env(safe-area-inset-bottom));
 }
 
 .shell__bottombar {
+  position: fixed;
+  left: calc(12px + env(safe-area-inset-left));
+  right: calc(12px + env(safe-area-inset-right));
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  height: 56px;
   display: flex;
   flex-direction: row;
   align-items: center;
-  /* iOS standard tab bar: 49pt content + real bottom safe area (34pt on
-     home-indicator iPhones). Border-box, so add the inset back explicitly. */
-  height: calc(49px + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
-  border-top-width: 1px;
-  border-top-color: rgba(0, 0, 0, 0.08);
-  background-color: #ffffff;
+  padding-left: 6px;
+  padding-right: 6px;
+  border-radius: 28px;
+  /* 半透明浅色胶囊:不用 backdrop-filter,避免跨端渲染差异;
+     悬浮感由不透明度和阴影承担。 */
+  background-color: rgba(255, 255, 255, 0.96);
+  border-width: 1px;
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+  z-index: 90;
 }
 
 .nav-item {
-  flex: 1;
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
+  flex: 1;
   height: 100%;
 }
 
+/* 选中态胶囊:高度 44px(56 - 上下各 6),宽度铺满 tab 并留 4px 间距。 */
 .nav-item__pill {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  padding-left: 24px;
-  padding-right: 24px;
-  padding-top: 8px;
-  padding-bottom: 8px;
-  border-radius: 999px;
+  flex: 1;
+  align-self: stretch;
+  margin-left: 4px;
+  margin-right: 4px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  border-radius: 22px;
 }
 
 .nav-item--active .nav-item__pill {
@@ -49,7 +64,7 @@
 }
 
 .nav-item__label {
-  font-size: 15px;
+  font-size: 13px;
   color: #666666;
 }
 

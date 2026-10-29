@@ -1,8 +1,12 @@
+import { useState } from '@lynx-js/react';
 import { useNavigate } from '@tanstack/react-router';
 
 import { clientBuild } from '../../core/config/constants.js';
+import { releasePage } from '../../core/updater/release-resolver.js';
 import { readLynxGlobal } from '../../native/native-modules.js';
+import { openURL, setClipboard } from '../../native/platform.js';
 import { isWebPlatform } from '../../native/web-platform.js';
+import { PageTopBar } from '../../shared/layouts/PageTopBar.js';
 import { ClientUpdateSection } from './ClientUpdateSection.js';
 import './settings.css';
 
@@ -12,26 +16,39 @@ import './settings.css';
  */
 export function AboutPage() {
   const navigate = useNavigate();
+  const [copyState, setCopyState] = useState<string | null>(null);
   const props: Record<string, unknown> = readLynxGlobal()?.__globalProps ?? {};
   const hostName =
     typeof props.hostName === 'string' ? props.hostName : 'pomelo-host';
   const hostVersion =
     typeof props.hostVersion === 'string' ? props.hostVersion : '';
   const web = isWebPlatform();
+  const releaseUrl = releasePage(clientBuild.channel);
+  const versionInfo = [
+    `PomeloLynx ${clientBuild.version}`,
+    `channel=${clientBuild.channel}`,
+    `commit=${clientBuild.git_commit}`,
+    `host=${hostName}`,
+    ...(hostVersion ? [`hostVersion=${hostVersion}`] : []),
+  ].join(' ');
+
+  const copyVersionInfo = () => {
+    'background only';
+    void setClipboard(versionInfo).then(
+      () => setCopyState('已复制'),
+      () => setCopyState('复制失败'),
+    );
+  };
 
   return (
     <view className="settings" data-testid="about-page">
-      <view className="settings__navbar">
-        <view
-          className="settings__back"
-          bindtap={() => navigate({ to: '/settings' })}
-          data-testid="about-back"
-        >
-          <text className="settings__back-text">‹ 设置</text>
-        </view>
-        <text className="settings__nav-title">关于</text>
-        <view className="settings__nav-spacer" />
-      </view>
+      <PageTopBar
+        title="关于"
+        backLabel="设置"
+        onBack={() => navigate({ to: '/settings' })}
+        testid="about-topbar"
+        backTestid="about-back"
+      />
 
       <view className="settings-row">
         <text className="settings-row__label">宿主</text>
@@ -45,6 +62,28 @@ export function AboutPage() {
         <view className="settings-row">
           <text className="settings-row__label">宿主版本</text>
           <text className="settings-row__value">{hostVersion}</text>
+        </view>
+      ) : null}
+
+      <view
+        className="settings-row"
+        bindtap={copyVersionInfo}
+        data-testid="about-row-copy"
+      >
+        <text className="settings-row__label">复制版本信息</text>
+        <text className="settings-row__value">{copyState ?? '›'}</text>
+      </view>
+      {releaseUrl && !web ? (
+        <view
+          className="settings-row"
+          bindtap={() => {
+            'background only';
+            openURL(releaseUrl);
+          }}
+          data-testid="about-row-release"
+        >
+          <text className="settings-row__label">打开发布页</text>
+          <text className="settings-row__value">›</text>
         </view>
       ) : null}
 

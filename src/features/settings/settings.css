@@ -45,44 +45,6 @@
 }
 
 /* iOS standard navigation bar: 44pt content height + real top safe area. */
-.settings__navbar {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  height: calc(44px + env(safe-area-inset-top));
-  padding-top: env(safe-area-inset-top);
-  border-bottom-width: 1px;
-  border-bottom-color: rgba(0, 0, 0, 0.08);
-  background-color: #f6f6f8;
-}
-
-.settings__back {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  width: 88px;
-  height: 44px;
-  padding-left: 16px;
-}
-
-.settings__back-text {
-  font-size: 17px;
-  color: #007aff;
-}
-
-.settings__nav-title {
-  flex: 1;
-  font-size: 17px;
-  font-weight: 600;
-  color: #111111;
-  text-align: center;
-}
-
-.settings__nav-spacer {
-  width: 88px;
-  height: 44px;
-}
-
 .settings__section {
   margin-top: 24px;
 }

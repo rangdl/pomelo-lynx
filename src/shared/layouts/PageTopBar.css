@@ -1,0 +1,45 @@
+/* 标准子页导航栏:44px 内容高度 + 顶部安全区。 */
+.page-topbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: calc(44px + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+  border-bottom-width: 1px;
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+  background-color: #f6f6f8;
+}
+
+.page-topbar__side {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 88px;
+  height: 44px;
+}
+
+.page-topbar__side--right {
+  justify-content: flex-end;
+}
+
+.page-topbar__back {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 44px;
+  padding-left: 16px;
+  padding-right: 8px;
+}
+
+.page-topbar__back-text {
+  font-size: 17px;
+  color: #007aff;
+}
+
+.page-topbar__title {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 600;
+  color: #111111;
+  text-align: center;
+}

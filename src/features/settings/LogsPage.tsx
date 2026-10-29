@@ -19,6 +19,7 @@ import {
 import type { LogLevelName } from '../../core/log/levels.js';
 import { levelLetter, levelName } from '../../core/log/levels.js';
 import type { LogEntry } from '../../core/log/types.js';
+import { PageTopBar } from '../../shared/layouts/PageTopBar.js';
 import './LogsPage.css';
 
 /**
@@ -156,17 +157,13 @@ export function LogsPage() {
 
   return (
     <view className="logs" data-testid="logs-page">
-      <view className="logs__navbar">
-        <view
-          className="logs__back"
-          bindtap={() => navigate({ to: '/settings/about' })}
-          data-testid="logs-back"
-        >
-          <text className="logs__back-text">‹ 关于</text>
-        </view>
-        <text className="logs__title">日志</text>
-        <view className="logs__nav-spacer" />
-      </view>
+      <PageTopBar
+        title="日志"
+        backLabel="关于"
+        onBack={() => navigate({ to: '/settings/about' })}
+        testid="logs-topbar"
+        backTestid="logs-back"
+      />
       <text className="logs__summary">
         {entries.length} 条 / 显示 {rows.length}
       </text>

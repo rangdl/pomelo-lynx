@@ -21,7 +21,7 @@ export function HomePage() {
   }, []);
 
   return (
-    <view bindtap={jump}>
+    <view className="Home" bindtap={jump}>
       <view className="Background" />
       <view className="App">
         <view className="Banner">

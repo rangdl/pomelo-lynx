@@ -20,9 +20,15 @@
   transform: rotate(15.25deg);
 }
 
+/* 首页根节点必须占满 shell 的可用高度,否则 .App 的 100vh 会溢出到
+   浮动底栏下面(底栏覆盖内容)。 */
+.Home {
+  height: 100%;
+}
+
 .App {
   position: relative;
-  min-height: 100vh;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;

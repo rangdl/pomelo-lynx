@@ -29,6 +29,7 @@
 | `pnpm verify:web` | 一键回归:`build` + `e2e:web` |
 | `pnpm typecheck` | `tsc -b` 全量类型检查 |
 | `pnpm run check` | Biome 检查并自动修复 |
+| `pnpm run lint` | Biome 只读检查(告警即失败,CI 用) |
 | `pnpm run format` | Biome 格式化 |
 
 ## 目录结构
@@ -36,8 +37,12 @@
 ```
 src/
   index.tsx          入口(main 环境)
-  App.tsx            示例应用
-  App.css
+  router.tsx         路由、错误边界与更新启动确认
+  features/home      示例首页
+  features/settings  设置、关于、日志页
+  core/              日志、存储、热更新等与 UI 无关的能力
+  native/            原生能力 facade(存储、更新、平台能力)
+  shared/layouts/    ShellLayout(浮动底部导航)与 PageTopBar(标准子页导航栏)
   lib/flappy.ts      与框架无关的小游戏物理引擎
   useFlappy.ts       对应的 React Hook
   probe/             跨端对齐探针页(节点带 data-testid)
@@ -100,6 +105,10 @@ docs/web-debug.md   Web 端调试:症状 → 根因 → 解法
   - **验证状态**:JS 侧测试/构建/e2e:web 与 node 签名回归本地全绿;Android/iOS
     编译与 `testDebugUnitTest`/`verify-ios-updater` 走 CI;Android/iOS 真机
     端到端(下载→冷启动生效→回退)尚未实测。
+- **平台能力**:`NativeModules.PomeloPlatform` 提供打开 URL、剪贴板(带结果)、
+  屏幕常亮与分享文件;JS facade 在 `src/native/platform.ts`,契约与降级规则见
+  [原生平台能力](docs/native-platform.md)。关于页的「复制版本信息」与
+  「打开发布页」已接入。
 
 ## 两个 entry
 

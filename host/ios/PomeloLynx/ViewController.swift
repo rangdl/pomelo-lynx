@@ -22,7 +22,7 @@ final class ViewController: UIViewController {
   /// Resource base name. `HostTemplateProvider` appends the `.bundle`
   /// extension, so this resolves to `main.lynx.bundle` / `probe.lynx.bundle`
   /// in app resources — the same files the Android host reads from `assets/`.
-  private let bundleURL: String
+  private var bundleURL: String
 
   private var lynxView: LynxView?
   private let templateProvider = HostTemplateProvider()
@@ -189,9 +189,14 @@ extension ViewController: LynxViewLifecycle {
     lynxView?.sendGlobalEvent("PomeloLifecycle.resumed", withParams: params)
   }
 
-  func lynxView(_ view: LynxView, didRecieveError error: NSError) {
+  // LynxViewLifecycle 的可选方法要求 `Error`,写成 NSError 时 Swift 只会
+  // 产生 "nearly matches" 警告而不会进 ObjC 分发表——回退逻辑从未执行。
+  // 显式选择器 + Error 签名两者都要。
+  @objc(lynxView:didRecieveError:)
+  func lynxView(_ view: LynxView, didRecieveError error: Error) {
+    let lynxError = error as? LynxError
     Log.error(
-      "lynx", "error: \(error.localizedDescription) (fatal=\((error as? LynxError)?.isFatal ?? false))")
+      "lynx", "error: \(error.localizedDescription) (fatal=\(lynxError?.isFatal ?? false))")
     // Dev-server 加载失败:清掉存储的 URL 并回退内嵌 bundle,坏 URL 不能
     // 把 app 钉死在黑屏。用户下次在设置页重新连接即可。
     if bundleURL.hasPrefix("http://") || bundleURL.hasPrefix("https://") {
@@ -201,7 +206,7 @@ extension ViewController: LynxViewLifecycle {
       DispatchQueue.main.async { self.reloadWithEmbeddedBundle() }
       return
     }
-    guard (error as? LynxError)?.isFatal == true else { return }
+    guard lynxError?.isFatal == true else { return }
     DispatchQueue.global(qos: .utility).async {
       try? BundleUpdateStore.shared?.failStartup()
     }

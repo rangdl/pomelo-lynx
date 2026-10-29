@@ -47,7 +47,11 @@ function reasonText(reason: string): string {
  * 客户端热更新区:版本行、通道、自动更新开关、手动检查、下载进度、
  * 恢复内置。已准备好的包在下次冷启动生效(不替换正在运行的根视图)。
  */
-export function ClientUpdateSection() {
+export function ClientUpdateSection({
+  showTitle = true,
+}: {
+  showTitle?: boolean;
+} = {}) {
   const [session, setSession] = useState(updateSession.getState());
   const [automatic, setAutomatic] = useState(
     automaticUpdatePolicy.store.getState(),
@@ -112,7 +116,9 @@ export function ClientUpdateSection() {
 
   return (
     <view className="client-update" data-testid="client-update-section">
-      <text className="client-update__section-title">客户端更新</text>
+      {showTitle ? (
+        <text className="client-update__section-title">客户端更新</text>
+      ) : null}
 
       <view className="settings-row client-update__row">
         <text className="settings-row__label">Bundle 版本</text>

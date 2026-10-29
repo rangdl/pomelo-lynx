@@ -11,8 +11,13 @@ export type MessageKey =
   | 'nav.settings'
   | 'settings.title'
   | 'settings.about'
+  | 'settings.group.app'
+  | 'settings.aboutDetail'
   | 'about.title'
   | 'about.back'
+  | 'about.group.app'
+  | 'about.group.update'
+  | 'about.group.support'
   | 'about.host'
   | 'about.bundleVersion'
   | 'about.hostVersion'
@@ -33,8 +38,13 @@ const MESSAGES: Record<Locale, Messages> = {
     'nav.settings': '设置',
     'settings.title': '设置',
     'settings.about': '关于',
+    'settings.group.app': '应用',
+    'settings.aboutDetail': '版本、更新与日志',
     'about.title': '关于',
     'about.back': '设置',
+    'about.group.app': '应用',
+    'about.group.update': '更新',
+    'about.group.support': '支持',
     'about.host': '宿主',
     'about.bundleVersion': 'Bundle 版本',
     'about.hostVersion': '宿主版本',
@@ -52,8 +62,13 @@ const MESSAGES: Record<Locale, Messages> = {
     'nav.settings': 'Settings',
     'settings.title': 'Settings',
     'settings.about': 'About',
+    'settings.group.app': 'App',
+    'settings.aboutDetail': 'Version, updates and logs',
     'about.title': 'About',
     'about.back': 'Settings',
+    'about.group.app': 'App',
+    'about.group.update': 'Updates',
+    'about.group.support': 'Support',
     'about.host': 'Host',
     'about.bundleVersion': 'Bundle version',
     'about.hostVersion': 'Host version',

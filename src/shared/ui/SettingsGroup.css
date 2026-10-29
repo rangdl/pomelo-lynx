@@ -1,0 +1,33 @@
+.settings-group {
+  margin: 0 16px 8px 16px;
+}
+
+.settings-group__title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 14px 4px 8px 4px;
+}
+
+.settings-group__body {
+  background-color: var(--color-surface);
+  border-radius: 14px;
+  padding: 4px 0;
+}
+
+.settings-group__divider {
+  height: 1px;
+  background-color: var(--color-separator);
+  margin-left: 64px;
+}
+
+/* 更新区等仍用 .settings-row 的旧组件嵌入分组卡片时,去掉独立卡片
+   的外边距和背景,保持与 ListRow 同一行高。 */
+.settings-group__body .settings-row {
+  margin-top: 0;
+  background-color: transparent;
+  padding-left: 14px;
+  padding-right: 14px;
+  padding-top: 11px;
+  padding-bottom: 11px;
+}

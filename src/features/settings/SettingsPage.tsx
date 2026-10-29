@@ -4,6 +4,7 @@ import { clientBuild } from '../../core/config/constants.js';
 import { t } from '../../i18n/index.js';
 import { isIosPlatform } from '../../native/web-platform.js';
 import { ListRow } from '../../shared/ui/ListRow.js';
+import { SettingsGroup } from '../../shared/ui/SettingsGroup.js';
 import { DebugTunnelSection } from './DebugTunnelSection.js';
 import { DevServerSection } from './DevServerSection.js';
 import './settings.css';
@@ -22,12 +23,17 @@ export function SettingsPage() {
         <view className="settings__header">
           <text className="settings__title">{t('settings.title')}</text>
         </view>
-        <ListRow
-          label={t('settings.about')}
-          value="›"
-          onTap={() => navigate({ to: '/settings/about' })}
-          testid="settings-row-about"
-        />
+        <SettingsGroup title={t('settings.group.app')}>
+          <ListRow
+            icon={<text className="list-row__icon-text">ⓘ</text>}
+            iconColor="#5a5ad6"
+            label={t('settings.about')}
+            detail={t('settings.aboutDetail')}
+            chevron
+            onTap={() => navigate({ to: '/settings/about' })}
+            testid="settings-row-about"
+          />
+        </SettingsGroup>
         {showDeveloperSections ? <DevServerSection /> : null}
         {showDeveloperSections ? <DebugTunnelSection /> : null}
         <view className="settings__tail" />

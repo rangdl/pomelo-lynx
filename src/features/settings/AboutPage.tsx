@@ -9,6 +9,10 @@ import { openURL, setClipboard } from '../../native/platform.js';
 import { isWebPlatform } from '../../native/web-platform.js';
 import { PageTopBar } from '../../shared/layouts/PageTopBar.js';
 import { ListRow } from '../../shared/ui/ListRow.js';
+import {
+  SettingsGroup,
+  SettingsGroupDivider,
+} from '../../shared/ui/SettingsGroup.js';
 import { ClientUpdateSection } from './ClientUpdateSection.js';
 import './settings.css';
 
@@ -53,44 +57,81 @@ export function AboutPage() {
       />
 
       <scroll-view className="settings__scroll" scroll-orientation="vertical">
-        <ListRow label={t('about.host')} value={hostName} />
-        <ListRow label={t('about.bundleVersion')} value={clientBuild.version} />
-        {hostVersion ? (
-          <ListRow label={t('about.hostVersion')} value={hostVersion} />
-        ) : null}
-
-        <ListRow
-          label={t('about.copy')}
-          value={copyState ?? '›'}
-          onTap={copyVersionInfo}
-          testid="about-row-copy"
-        />
-        {releaseUrl && !web ? (
+        <SettingsGroup title={t('about.group.app')}>
           <ListRow
-            label={t('about.release')}
-            value="›"
-            onTap={() => {
-              'background only';
-              openURL(releaseUrl);
-            }}
-            testid="about-row-release"
+            icon={<text className="list-row__icon-text">⌂</text>}
+            iconColor="#3b82f6"
+            label={t('about.host')}
+            value={hostName}
           />
-        ) : null}
+          <SettingsGroupDivider />
+          <ListRow
+            icon={<text className="list-row__icon-text">#</text>}
+            iconColor="#8e8e93"
+            label={t('about.bundleVersion')}
+            value={clientBuild.version}
+          />
+          {hostVersion ? (
+            <>
+              <SettingsGroupDivider />
+              <ListRow
+                icon={<text className="list-row__icon-text">#</text>}
+                iconColor="#8e8e93"
+                label={t('about.hostVersion')}
+                value={hostVersion}
+              />
+            </>
+          ) : null}
+          <SettingsGroupDivider />
+          <ListRow
+            icon={<text className="list-row__icon-text">⧉</text>}
+            iconColor="#5a5ad6"
+            label={t('about.copy')}
+            value={copyState ?? undefined}
+            chevron={!copyState}
+            onTap={copyVersionInfo}
+            testid="about-row-copy"
+          />
+          {releaseUrl && !web ? (
+            <>
+              <SettingsGroupDivider />
+              <ListRow
+                icon={<text className="list-row__icon-text">↗</text>}
+                iconColor="#e5484d"
+                label={t('about.release')}
+                chevron
+                onTap={() => {
+                  'background only';
+                  openURL(releaseUrl);
+                }}
+                testid="about-row-release"
+              />
+            </>
+          ) : null}
+        </SettingsGroup>
 
-        <view className="settings__section">
+        <SettingsGroup title={t('about.group.update')}>
           {web ? (
-            <ListRow label={t('about.webUpdate')} />
+            <ListRow
+              icon={<text className="list-row__icon-text">↻</text>}
+              iconColor="#0ea5e9"
+              label={t('about.webUpdate')}
+            />
           ) : (
-            <ClientUpdateSection />
+            <ClientUpdateSection showTitle={false} />
           )}
-        </view>
+        </SettingsGroup>
 
-        <ListRow
-          label={t('about.logs')}
-          value="›"
-          onTap={() => navigate({ to: '/settings/about/logs' })}
-          testid="about-row-logs"
-        />
+        <SettingsGroup title={t('about.group.support')}>
+          <ListRow
+            icon={<text className="list-row__icon-text">≡</text>}
+            iconColor="#6b7280"
+            label={t('about.logs')}
+            chevron
+            onTap={() => navigate({ to: '/settings/about/logs' })}
+            testid="about-row-logs"
+          />
+        </SettingsGroup>
         <view className="settings__tail" />
       </scroll-view>
     </view>

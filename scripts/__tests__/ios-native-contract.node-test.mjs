@@ -115,6 +115,13 @@ test('iOS 左边缘手势通过全局事件请求返回', () => {
     '手势必须发送 PomeloNavigation.back 给 JS 路由',
   );
   assert.match(viewController, /func handleEdgePan\(/);
+  assert.match(
+    viewController,
+    /cancelsTouchesInView = true/,
+    '侧滑识别后必须取消 LynxView 触摸,否则页面会跟着滚动',
+  );
+  assert.match(viewController, /gestureRecognizerShouldBegin/);
+  assert.match(viewController, /isUserInteractionEnabled = false/);
 
   const navigation = readFileSync(
     join(ROOT, 'src/native/navigation.ts'),

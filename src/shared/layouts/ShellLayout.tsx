@@ -3,6 +3,7 @@ import {
   useEffect,
   useMainThreadRef,
   useMemo,
+  useRef,
   useState,
 } from '@lynx-js/react';
 import type { MainThread } from '@lynx-js/types';
@@ -49,6 +50,24 @@ const MAX_VISIBLE_SLOTS = 4;
 const SLOT_WIDTH = 84;
 const BAR_EXTRA_WIDTH = 8;
 
+type PageDirection = 'push' | 'pop' | 'fade';
+
+const ROUTE_DEPTH: Record<string, number> = {
+  '/': 0,
+  '/settings': 1,
+  '/settings/about': 2,
+  '/settings/developer': 2,
+  '/settings/about/logs': 3,
+};
+
+function routeDepth(pathname: string): number {
+  return ROUTE_DEPTH[pathname] ?? 2;
+}
+
+function isTabRoot(pathname: string): boolean {
+  return pathname === '/' || pathname === '/settings';
+}
+
 /**
  * 底部导航外壳(仿 songloft-player-lynx 的窄屏底部导航样式,精简为双 tab)。
  * 当前激活项按路由前缀归属判断:/settings 及其子页(如 /settings/about)
@@ -61,6 +80,27 @@ export function ShellLayout() {
   const [appearance, setAppearance] = useState(readSystemAppearance);
   const appearanceMode = useAppearanceMode();
   const [showMore, setShowMore] = useState(false);
+
+  // 单 LynxView 没有原生导航栈;用页面挂载动画模拟 push/pop。
+  // ref 只在 pathname 真正变化时更新,避免普通重渲染重播动画。
+  const lastPathRef = useRef(pathname);
+  const lastDepthRef = useRef(routeDepth(pathname));
+  const pageDirectionRef = useRef<PageDirection>('fade');
+  if (lastPathRef.current !== pathname) {
+    const nextDepth = routeDepth(pathname);
+    if (isTabRoot(lastPathRef.current) && isTabRoot(pathname)) {
+      pageDirectionRef.current = 'fade';
+    } else if (nextDepth > lastDepthRef.current) {
+      pageDirectionRef.current = 'push';
+    } else if (nextDepth < lastDepthRef.current) {
+      pageDirectionRef.current = 'pop';
+    } else {
+      pageDirectionRef.current = 'fade';
+    }
+    lastPathRef.current = pathname;
+    lastDepthRef.current = nextDepth;
+  }
+  const pageDirection = pageDirectionRef.current;
 
   useEffect(() => {
     setAppearance(readSystemAppearance());
@@ -116,7 +156,13 @@ export function ShellLayout() {
       data-testid="shell-root"
     >
       <view className="shell__body">
-        <Outlet />
+        <view
+          key={pathname}
+          className={`shell__page shell__page--${pageDirection}`}
+          data-testid="shell-page"
+        >
+          <Outlet />
+        </view>
       </view>
       <view className="shell__bottombar" style={{ width: `${barWidth}px` }}>
         {/* iOS 用 XElement/BlurView 采样底栏背后的内容;tint 在其上做

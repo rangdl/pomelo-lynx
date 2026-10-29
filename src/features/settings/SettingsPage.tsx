@@ -35,8 +35,17 @@ export function SettingsPage() {
   // 避免出现点了必然失败的入口。
   const showDeveloperEntry = clientBuild.channel === 'dev' && isIosPlatform();
 
+  const toggleAppearanceMenu = () => {
+    'background only';
+    setAppearanceOpen((open) => !open);
+  };
+
   return (
-    <view className="settings" data-testid="settings-page">
+    <view
+      className="settings"
+      bindtap={appearanceOpen ? () => setAppearanceOpen(false) : undefined}
+      data-testid="settings-page"
+    >
       <view className="settings__header">
         <text className="settings__title">{t('settings.title')}</text>
       </view>
@@ -54,56 +63,61 @@ export function SettingsPage() {
         </SettingsGroup>
 
         <SettingsGroup title={t('settings.group.appearance')}>
-          <ListRow
-            icon={<text className="list-row__icon-text">◐</text>}
-            iconColor="#0ea5e9"
-            label={t('appearance.theme')}
-            onTap={() => setAppearanceOpen((open) => !open)}
-            testid="appearance-row"
-            accessibilityLabel={`${t('appearance.theme')}, ${appearanceLabel}`}
-            trailing={
-              <view className="appearance-select">
-                <text className="appearance-select__value">
-                  {appearanceLabel}
-                </text>
-                <text className="appearance-select__caret">
-                  {appearanceOpen ? '▴' : '▾'}
-                </text>
+          <view className="appearance-anchor" catchtap={() => {}}>
+            <ListRow
+              icon={<text className="list-row__icon-text">◐</text>}
+              iconColor="#0ea5e9"
+              label={t('appearance.theme')}
+              onTap={toggleAppearanceMenu}
+              testid="appearance-row"
+              accessibilityLabel={`${t('appearance.theme')}, ${appearanceLabel}`}
+              trailing={
+                <view className="appearance-select">
+                  <text className="appearance-select__value">
+                    {appearanceLabel}
+                  </text>
+                  <text className="appearance-select__caret">
+                    {appearanceOpen ? '▴' : '▾'}
+                  </text>
+                </view>
+              }
+            />
+            {appearanceOpen ? (
+              <view
+                className="appearance-popover"
+                data-testid="appearance-menu"
+              >
+                {APPEARANCE_OPTIONS.map((option) => {
+                  const selected = appearanceMode === option.mode;
+                  return (
+                    <view
+                      key={option.mode}
+                      className={
+                        selected
+                          ? 'appearance-option appearance-option--selected'
+                          : 'appearance-option'
+                      }
+                      bindtap={() => {
+                        void appearancePreference.setMode(option.mode);
+                        setAppearanceOpen(false);
+                      }}
+                      accessibility-element={true}
+                      accessibility-label={t(option.labelKey)}
+                      accessibility-traits="button"
+                      data-testid={`appearance-${option.mode}`}
+                    >
+                      <text className="appearance-option__label">
+                        {t(option.labelKey)}
+                      </text>
+                      {selected ? (
+                        <text className="appearance-check">✓</text>
+                      ) : null}
+                    </view>
+                  );
+                })}
               </view>
-            }
-          />
-          {appearanceOpen ? (
-            <view className="appearance-menu" data-testid="appearance-menu">
-              {APPEARANCE_OPTIONS.map((option) => {
-                const selected = appearanceMode === option.mode;
-                return (
-                  <view
-                    key={option.mode}
-                    className={
-                      selected
-                        ? 'appearance-option appearance-option--selected'
-                        : 'appearance-option'
-                    }
-                    bindtap={() => {
-                      void appearancePreference.setMode(option.mode);
-                      setAppearanceOpen(false);
-                    }}
-                    accessibility-element={true}
-                    accessibility-label={t(option.labelKey)}
-                    accessibility-traits="button"
-                    data-testid={`appearance-${option.mode}`}
-                  >
-                    <text className="appearance-option__label">
-                      {t(option.labelKey)}
-                    </text>
-                    {selected ? (
-                      <text className="appearance-check">✓</text>
-                    ) : null}
-                  </view>
-                );
-              })}
-            </view>
-          ) : null}
+            ) : null}
+          </view>
         </SettingsGroup>
         {showDeveloperEntry ? (
           <SettingsGroup title={t('settings.group.developer')}>

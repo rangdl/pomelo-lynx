@@ -85,7 +85,8 @@ final class ViewController: UIViewController {
     let edgePan = UIScreenEdgePanGestureRecognizer(
       target: self, action: #selector(handleEdgePan(_:)))
     edgePan.edges = .left
-    edgePan.cancelsTouchesInView = false
+    // 手势一旦识别就取消 LynxView 内的触摸,避免侧滑同时滚动页面。
+    edgePan.cancelsTouchesInView = true
     edgePan.delegate = self
     view.addGestureRecognizer(edgePan)
   }
@@ -94,6 +95,15 @@ final class ViewController: UIViewController {
   @objc private func handleEdgePan(
     _ gesture: UIScreenEdgePanGestureRecognizer
   ) {
+    switch gesture.state {
+    case .began:
+      // 识别为横向边缘手势后立即冻结 LynxView,避免 scroll-view 同时滚动。
+      lynxView?.isUserInteractionEnabled = false
+    case .ended, .cancelled, .failed:
+      lynxView?.isUserInteractionEnabled = true
+    default:
+      return
+    }
     guard gesture.state == .ended else { return }
     let translation = gesture.translation(in: view)
     let velocity = gesture.velocity(in: view)
@@ -458,11 +468,19 @@ extension ViewController: LynxViewLifecycle {
 
 
 extension ViewController: UIGestureRecognizerDelegate {
-  /// 边缘手势与 Lynx 内部手势可同时识别,避免页面内可滚动区域吞掉返回手势。
-  func gestureRecognizer(
-    _ gestureRecognizer: UIGestureRecognizer,
-    shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+  /// 只接管横向边缘滑动;纵向滑动仍交给页面滚动。
+  func gestureRecognizerShouldBegin(
+    _ gestureRecognizer: UIGestureRecognizer
   ) -> Bool {
-    true
+    guard let pan = gestureRecognizer as? UIPanGestureRecognizer else {
+      return true
+    }
+    let velocity = pan.velocity(in: view)
+    if abs(velocity.x) > 0 || abs(velocity.y) > 0 {
+      return abs(velocity.x) > abs(velocity.y)
+    }
+    // 极早期速度可能为 0,退回比较位移,避免横向手势被误判掉。
+    let translation = pan.translation(in: view)
+    return abs(translation.x) >= abs(translation.y)
   }
 }

@@ -50,7 +50,10 @@ ShellLayout(全局唯一)
   「开发者」入口行,Dev Server 与调试通道都放在子页内。
 - iOS 左边缘右滑返回:宿主 `UIScreenEdgePanGestureRecognizer` 发
   `PomeloNavigation.back`,JS 只在 `/settings/*` 子页响应并 pop 路由历史;
-  根 tab(`/`、`/settings`)不响应。
+  根 tab(`/`、`/settings`)不响应。手势识别后取消 LynxView 触摸,避免侧滑
+  同时滚动页面;纵向边缘滑动仍交给页面滚动。
+- 页面切换动画由 `.shell__page` 的挂载 keyframes 实现(push/pop/fade);
+  Lynx 没有原生导航栈,不要期待系统 interactivePop。
 
 ### 状态栏
 
@@ -65,13 +68,12 @@ ShellLayout(全局唯一)
 - 槽位上限 4 个;超过 4 个时显示前 3 个 + 「更多」,更多打开底部面板。
 - 选中指示器:
   - 单个滑动胶囊,宽度 `100% / 槽位数`,`translateX(index × 100%)`;
-  - 指示器父层铺满底栏内容区,子层固定 `height: 46px` 并垂直居中;
+  - 指示器父层铺满底栏内容区,子层固定 `height: 48px` 并垂直居中;
     **不要用 top/bottom 双边定位**,iOS 边框取整会造成上下边距不一致;
   - 使用 `TabIndicator` 的主线程 spring/jelly 动画;
   - **不要从 background 再设置指示器的 transform**——首帧位置固定,
     之后只由主线程动画写。
-- 选中项内容上下 padding 为 `5px / 3px`,补偿文字墨迹偏上,让选中框
-  视觉居中。
+- 选中项内容上下 padding 为 `4px / 4px`,与指示器同高,保持上下对称。
 - 图标 24×24、标签 10px;图标在上、标签在下。
 - 层级:blur 层 0、tint 1、指示器 2、tab 按钮 3、底栏容器 90、More 面板 100。
 - 材质:
@@ -97,9 +99,9 @@ ShellLayout(全局唯一)
 - 分隔线:1px,`margin-left: 64px`(与图标列对齐)。
 - 旧 `.settings-row` 只允许在未迁移的更新区使用;
   新页面优先 `ListRow`。
-- 外观设置只保留一个「主题」条目:右侧显示当前值和 `▾`,点击展开
-  `appearance-menu`;选项行用 `appearance-option`,选中后收起。不要再把
-  system/light/dark 三行平铺在分组里。
+- 外观设置只保留一个「主题」条目:右侧显示当前值和 `▾`;展开的是锚定在
+  行右下角的绝对定位浮层 `appearance-anchor/appearance-popover`,不是把三行
+  塞进分组。选项行用 `appearance-option`,点遮罩关闭,选中后收起。
 - 输入框统一下发:
   `avoid-keyboard={true}`、`avoid-keyboard-spacing="12px"`、
   `set-soft-input-mode="resize"`;聚焦时由 Lynx 抬升根视图,避免键盘

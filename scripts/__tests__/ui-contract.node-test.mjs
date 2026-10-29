@@ -1,0 +1,69 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+
+/**
+ * UI 交互契约:底栏指示器、外观下拉、页面转场与键盘避让。
+ * 这些行为依赖平台相关细节,单测之外用源码闸门防止被改回旧实现。
+ */
+
+const ROOT = fileURLToPath(new URL('../..', import.meta.url));
+const read = (path) => readFileSync(join(ROOT, path), 'utf8');
+
+test('底栏指示器固定高度并由父层居中', () => {
+  const css = read('src/shared/layouts/ShellLayout.css');
+  const indicator = css.match(/\.nav-indicator \{([\s\S]*?)\n\}/)?.[1] ?? '';
+  const pill = css.match(/\.nav-indicator__pill \{([\s\S]*?)\n\}/)?.[1] ?? '';
+  assert.match(indicator, /top: 0;/);
+  assert.match(indicator, /bottom: 0;/);
+  assert.doesNotMatch(
+    indicator,
+    /top: \d+px;/,
+    '父层不能用 top 偏移,否则 iOS 上下边距不一致',
+  );
+  assert.match(pill, /height: 48px;/);
+});
+
+test('外观下拉是右侧锚定的绝对定位浮层', () => {
+  const page = read('src/features/settings/SettingsPage.tsx');
+  assert.match(page, /appearance-anchor/);
+  assert.match(page, /appearance-popover/);
+  assert.doesNotMatch(
+    page,
+    /boundingClientRect/,
+    'Web 不支持 boundingClientRect;不要用它给下拉测位',
+  );
+  const css = read('src/features/settings/settings.css');
+  const popover = css.match(/\.appearance-popover \{([\s\S]*?)\n\}/)?.[1] ?? '';
+  assert.match(popover, /position: absolute;/);
+  assert.match(popover, /right: 0;/);
+});
+
+test('页面切换有 push/pop/fade 挂载动画', () => {
+  const layout = read('src/shared/layouts/ShellLayout.tsx');
+  assert.match(layout, /key=\{pathname\}/);
+  assert.match(layout, /shell__page--\$\{pageDirection\}/);
+  const css = read('src/shared/layouts/ShellLayout.css');
+  for (const name of ['push', 'pop', 'fade']) {
+    assert.match(css, new RegExp(`@keyframes shell-page-${name}`));
+  }
+  assert.match(
+    css,
+    /fill-mode: backwards|backwards;/,
+    '动画结束后不能留下 transform,否则 fixed 浮层会改为相对页面定位',
+  );
+});
+
+test('开发者页输入框启用键盘避让', () => {
+  for (const file of [
+    'src/features/settings/DevServerSection.tsx',
+    'src/features/settings/DebugTunnelSection.tsx',
+  ]) {
+    const source = read(file);
+    assert.match(source, /avoid-keyboard=\{true\}/, file);
+    assert.match(source, /avoid-keyboard-spacing="12px"/, file);
+    assert.match(source, /set-soft-input-mode="resize"/, file);
+  }
+});

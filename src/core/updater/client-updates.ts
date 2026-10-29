@@ -62,10 +62,9 @@ export async function checkClientUpdate(input: {
             candidate.rawManifest,
             candidate.signature,
           );
-          const asset = releaseAsset(
-            candidate,
-            candidate.manifest.bundle_update!.asset,
-          );
+          const bundle = candidate.manifest.bundle_update;
+          if (!bundle) throw new Error('release_changed');
+          const asset = releaseAsset(candidate, bundle.asset);
           if (!asset) throw new Error('release_changed');
           return {
             candidate,

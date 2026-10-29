@@ -10,8 +10,8 @@
  */
 export function readNativeModules(): Record<string, unknown> | undefined {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (typeof NativeModules !== 'undefined') return NativeModules as any;
+    if (typeof NativeModules !== 'undefined')
+      return NativeModules as unknown as Record<string, unknown>;
   } catch {
     // undeclared bare identifier — fall through to globalThis
   }
@@ -45,6 +45,18 @@ export function readSystemInfo(): Record<string, unknown> | null {
   return null;
 }
 
+/** Lynx 原生事件发射器的最小接口(老 SDK 可能缺其中一个方法)。 */
+export interface GlobalEventEmitterLike {
+  addListener?(event: string, handler: (payload: unknown) => void): void;
+  removeListener?(event: string, handler: (payload: unknown) => void): void;
+}
+
+/** 应用实际读取的 `lynx` 全局最小接口。 */
+export interface LynxGlobalLike {
+  getJSModule?(name: string): GlobalEventEmitterLike | undefined;
+  __globalProps?: Record<string, unknown>;
+}
+
 /**
  * The runtime `lynx` object, or `null` outside a Lynx host (tests / plain node).
  * Same bare-global rule as {@link readNativeModules}: `lynx` is not declared on
@@ -53,14 +65,11 @@ export function readSystemInfo(): Record<string, unknown> | null {
  * Callers reach for this to get `lynx.getJSModule('GlobalEventEmitter')` (native
  * event delivery) or `lynx.__globalProps` (host-injected page data).
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function readLynxGlobal(): any | null {
+export function readLynxGlobal(): LynxGlobalLike | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (typeof lynx !== 'undefined') return lynx as any;
+    if (typeof lynx !== 'undefined') return lynx as unknown as LynxGlobalLike;
   } catch {
     // undeclared bare identifier — fall through to globalThis
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (globalThis as any).lynx ?? null;
+  return (globalThis as unknown as { lynx?: LynxGlobalLike }).lynx ?? null;
 }

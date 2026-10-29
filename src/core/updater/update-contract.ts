@@ -165,10 +165,11 @@ export function parseReleaseManifest(raw: unknown): ReleaseManifest {
       new Set(targets.map((target) => target.platform)).size !== targets.length
     )
       throw new Error('Duplicate or missing update targets');
+    const bundleAsset = assetName(value.asset);
     bundle = {
       protocol: integer(value.protocol),
       bundle_id: string(value.bundle_id),
-      asset: assetName(value.asset),
+      asset: bundleAsset,
       size: integer(value.size),
       sha256: string(value.sha256),
       local_schema: integer(value.local_schema),
@@ -184,7 +185,7 @@ export function parseReleaseManifest(raw: unknown): ReleaseManifest {
       throw new Error('Invalid update bundle');
     if (bundle.bundle_id !== `${data.channel}-${buildNumber}-${gitCommit}`)
       throw new Error('Invalid bundle identity');
-    const listed = assets.find((candidate) => candidate.name === bundle!.asset);
+    const listed = assets.find((candidate) => candidate.name === bundleAsset);
     if (
       !listed ||
       listed.size !== bundle.size ||

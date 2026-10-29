@@ -192,7 +192,7 @@ writeFileSync(out, `${JSON.stringify(host, null, 2)}\n`);
 // release 元数据(保证 finalize-release 的逐字段对拍通过)。
 writeFileSync(
   join(root, '.build/version.json'),
-  JSON.stringify(metadata, null, 2) + '\n',
+  `${JSON.stringify(metadata, null, 2)}\n`,
 );
 console.log(`[gen-native-host] ${out}`);
 console.log(JSON.stringify(host, null, 2));

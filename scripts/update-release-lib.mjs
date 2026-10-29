@@ -318,11 +318,11 @@ export function finalizeRelease({
       ].sort((a, b) => a.name.localeCompare(b.name, 'en'))
     : packageAssets;
   const rawManifest = Buffer.from(
-    JSON.stringify(
+    `${JSON.stringify(
       { ...metadata, assets, bundle_update: bundleUpdate },
       null,
       2,
-    ) + '\n',
+    )}\n`,
   );
   if (rawManifest.length > MAX_MANIFEST_BYTES)
     throw new Error('Update manifest exceeds the size limit');
@@ -349,7 +349,7 @@ export function finalizeRelease({
     }
     writeAtomic(
       join(directory, SIGNATURE_ASSET),
-      JSON.stringify(envelope) + '\n',
+      `${JSON.stringify(envelope)}\n`,
     );
   } else {
     rmSync(join(directory, BUNDLE_ASSET), { force: true });
@@ -363,6 +363,6 @@ export function finalizeRelease({
       ? [`${hashFile(join(directory, SIGNATURE_ASSET))}  ${SIGNATURE_ASSET}`]
       : []),
   ];
-  writeAtomic(join(directory, 'checksums.txt'), checksums.join('\n') + '\n');
+  writeAtomic(join(directory, 'checksums.txt'), `${checksums.join('\n')}\n`);
   return { assetCount: assets.length, signedUpdate: envelope != null };
 }

@@ -67,14 +67,12 @@ export async function fetchNativeUpdateMetadata(
   maxBytes: number,
 ): Promise<{ status: number; body: string }> {
   const value = requiredModule();
-  if (typeof value.fetchMetadata !== 'function')
+  const fetchMetadata = value.fetchMetadata;
+  if (typeof fetchMetadata !== 'function')
     throw new Error('metadata_unavailable');
   const raw = record(
     await invoke((callback) =>
-      value.fetchMetadata!(
-        JSON.stringify({ url, max_bytes: maxBytes }),
-        callback,
-      ),
+      fetchMetadata(JSON.stringify({ url, max_bytes: maxBytes }), callback),
     ),
   );
   if (
@@ -313,12 +311,12 @@ export function subscribeUpdateProgress(
       /* Ignore malformed/late events. */
     }
   };
-  emitter.addListener('PomeloUpdate.progress', handler);
+  emitter?.addListener?.('PomeloUpdate.progress', handler);
   return () => {
     if (active) {
       active = false;
       try {
-        emitter.removeListener('PomeloUpdate.progress', handler);
+        emitter?.removeListener?.('PomeloUpdate.progress', handler);
       } catch {
         /* Detached host. */
       }

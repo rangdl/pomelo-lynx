@@ -11,7 +11,7 @@ export function createMemoryStorage(): PomeloStorage {
   return {
     prefs: {
       async get(key) {
-        return prefsMap.has(key) ? prefsMap.get(key)! : null;
+        return prefsMap.get(key) ?? null;
       },
       async set(key, value) {
         prefsMap.set(key, value);
@@ -25,7 +25,7 @@ export function createMemoryStorage(): PomeloStorage {
     },
     secure: {
       async get(key) {
-        return secureMap.has(key) ? secureMap.get(key)! : null;
+        return secureMap.get(key) ?? null;
       },
       async set(key, value) {
         secureMap.set(key, value);

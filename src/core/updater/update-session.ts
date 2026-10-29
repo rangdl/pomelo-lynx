@@ -133,8 +133,10 @@ async function downloadBundle(input: {
     return 'busy';
   if (source === 'automatic' && !automaticUpdatePolicy.store.getState().enabled)
     return 'busy';
+  const bundle = check.candidate.manifest.bundle_update;
+  if (!bundle) return 'busy';
   const taskId = createUpdateTaskId();
-  const size = check.candidate.manifest.bundle_update!.size;
+  const size = bundle.size;
   const task = {
     cancelled: false,
     bundle: updateBundleKey(check.candidate.manifest),
@@ -170,7 +172,7 @@ async function downloadBundle(input: {
       if ((error as Error).message !== 'download_failed') throw error;
       const direct = releaseAsset(
         check.candidate,
-        check.candidate.manifest.bundle_update!.asset,
+        bundle.asset,
       )?.browser_download_url;
       if (!direct || direct === request.url) throw error;
       // Proxy transport failure only: retry the SAME verified asset; cancellation/signature/hash errors do not retry.

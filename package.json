@@ -8,6 +8,7 @@
     "build:lynx": "rspeedy build --environment lynx",
     "build:web": "rspeedy build --environment web",
     "check": "biome check --write",
+    "lint": "biome ci --error-on-warnings",
     "dev": "rspeedy dev",
     "e2e": "rstest run -c rstest.e2e.config.ts",
     "e2e:collect": "bash e2e/alignment/collect.sh",

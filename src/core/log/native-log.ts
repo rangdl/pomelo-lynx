@@ -34,7 +34,7 @@ interface PomeloLogNativeModule {
 
 function logModule(): PomeloLogNativeModule | null {
   const modules = readNativeModules();
-  const candidate = modules?.['PomeloLog'] as PomeloLogNativeModule | undefined;
+  const candidate = modules?.PomeloLog as PomeloLogNativeModule | undefined;
   return candidate && typeof candidate.append === 'function' ? candidate : null;
 }
 
@@ -173,12 +173,12 @@ export function subscribeLogAppend(
         /* Malformed / late event. */
       }
     };
-    emitter.addListener('PomeloLog.append', handler);
+    emitter?.addListener?.('PomeloLog.append', handler);
     return () => {
       if (!active) return;
       active = false;
       try {
-        emitter.removeListener('PomeloLog.append', handler);
+        emitter?.removeListener?.('PomeloLog.append', handler);
       } catch {
         /* Detached host. */
       }

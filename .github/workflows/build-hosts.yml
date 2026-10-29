@@ -63,7 +63,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run typecheck
-      - run: pnpm run check
+      - run: pnpm run lint
       - run: pnpm test
       # build:host = build + gen-native-host + copy into both host projects
       # gen-native-host 把 POMELO_UPDATE_PUBLIC_KEY 转写进 native-host.json 的

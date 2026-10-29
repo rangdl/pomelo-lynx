@@ -35,8 +35,7 @@ function namespace(store: WebLocalStorage, prefix: string) {
       const out: string[] = [];
       for (let i = 0; i < store.length; i++) {
         const raw = store.key(i);
-        if (raw != null && raw.startsWith(prefix))
-          out.push(raw.slice(prefix.length));
+        if (raw?.startsWith(prefix)) out.push(raw.slice(prefix.length));
       }
       return out;
     },

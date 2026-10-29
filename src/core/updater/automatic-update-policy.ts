@@ -156,8 +156,7 @@ export class AutomaticUpdatePolicy {
     return this.update({
       failures,
       nextAttempt:
-        now +
-        (failures ? RETRY_DELAYS[failures - 1]! : AUTOMATIC_UPDATE_INTERVAL),
+        now + (RETRY_DELAYS[failures - 1] ?? AUTOMATIC_UPDATE_INTERVAL),
     });
   }
 

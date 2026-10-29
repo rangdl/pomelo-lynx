@@ -251,7 +251,8 @@ test('OFF invalidates an in-flight check; its late response cannot start a downl
   expect(f.deps.download).not.toHaveBeenCalled();
   expect(f.deps.cancel).toHaveBeenCalledOnce();
   expect(
-    JSON.parse((await f.storage.prefs.get(PREF_AUTOMATIC_UPDATE))!).enabled,
+    JSON.parse((await f.storage.prefs.get(PREF_AUTOMATIC_UPDATE)) ?? 'null')
+      .enabled,
   ).toBe(false);
 });
 
@@ -279,17 +280,19 @@ test('network failures back off for 30 minutes, two hours and six hours, survivi
   f.deps.check.mockRejectedValue(new Error('metadata_failed'));
   f.controller.start();
   await settle();
-  for (const [delay, count] of [
-    [30 * 60_000, 2],
-    [2 * 60 * 60_000, 3],
-    [AUTOMATIC_UPDATE_INTERVAL, 4],
+  for (const { delay, count } of [
+    { delay: 30 * 60_000, count: 2 },
+    { delay: 2 * 60 * 60_000, count: 3 },
+    { delay: AUTOMATIC_UPDATE_INTERVAL, count: 4 },
   ]) {
-    await rs.advanceTimersByTimeAsync(delay! - 1);
-    expect(f.deps.check).toHaveBeenCalledTimes(count! - 1);
+    await rs.advanceTimersByTimeAsync(delay - 1);
+    expect(f.deps.check).toHaveBeenCalledTimes(count - 1);
     await rs.advanceTimersByTimeAsync(1);
-    expect(f.deps.check).toHaveBeenCalledTimes(count!);
+    expect(f.deps.check).toHaveBeenCalledTimes(count);
   }
-  const saved = JSON.parse((await f.storage.prefs.get(PREF_AUTOMATIC_UPDATE))!);
+  const saved = JSON.parse(
+    (await f.storage.prefs.get(PREF_AUTOMATIC_UPDATE)) ?? 'null',
+  );
   const next = await fixture(saved);
   next.controller.start();
   await settle();
@@ -304,14 +307,17 @@ test('network failures back off for 30 minutes, two hours and six hours, survivi
 });
 
 test('rolled-back bundle identity is persisted and skipped; a corrected hash may be downloaded', async () => {
-  const key = updateBundleKey(manifest)!;
+  const key = updateBundleKey(manifest);
+  if (!key) throw new Error('fixture manifest has no bundle update');
   const f = await fixture({ enabled: true, preparedBundle: key });
   f.native.last_error = 'rollback_unconfirmed';
   f.controller.start();
   await settle();
   expect(f.policy.store.getState().skippedBundles).toContain(key);
   expect(f.deps.download).not.toHaveBeenCalled();
-  const saved = JSON.parse((await f.storage.prefs.get(PREF_AUTOMATIC_UPDATE))!);
+  const saved = JSON.parse(
+    (await f.storage.prefs.get(PREF_AUTOMATIC_UPDATE)) ?? 'null',
+  );
   expect(saved.skippedBundles).toContain(key);
   f.deps.check.mockResolvedValue({
     ...result(),

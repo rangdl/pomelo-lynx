@@ -17,12 +17,12 @@ export function subscribeAppResumed(listener: () => void): () => void {
     const handler = () => {
       if (active) listener();
     };
-    emitter.addListener(APP_RESUMED_EVENT, handler);
+    emitter?.addListener?.(APP_RESUMED_EVENT, handler);
     return () => {
       if (!active) return;
       active = false;
       try {
-        emitter.removeListener(APP_RESUMED_EVENT, handler);
+        emitter?.removeListener?.(APP_RESUMED_EVENT, handler);
       } catch {
         // 晚到事件触不到已卸载页面。
       }

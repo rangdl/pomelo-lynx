@@ -13,6 +13,7 @@ import com.lynx.tasm.service.LynxServiceCenter
 import org.pomelo.lynx.log.LogStore
 import org.pomelo.lynx.log.PomeloLog
 import org.pomelo.lynx.log.PomeloLogModule
+import org.pomelo.lynx.platform.PomeloPlatformModule
 import org.pomelo.lynx.storage.PomeloStorageModule
 import org.pomelo.lynx.updater.PomeloUpdateModule
 
@@ -71,5 +72,8 @@ class HostApplication : Application() {
         // Log store: `NativeModules.PomeloLog.*` + `PomeloLog.append` global
         // events (see src/core/log/ and src/features/settings/LogsPage).
         LynxEnv.inst().registerModule("PomeloLog", PomeloLogModule::class.java)
+        // Platform utilities: open URL / clipboard / keep-screen-on / share.
+        // See src/native/platform.ts and src/native/__tests__/platform.test.ts.
+        LynxEnv.inst().registerModule("PomeloPlatform", PomeloPlatformModule::class.java)
     }
 }

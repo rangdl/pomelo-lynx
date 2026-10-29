@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PomeloPlatform.shareFile 的临时文件目录,与 FileProvider 的 authority
+     一起使用(见 AndroidManifest.xml)。 -->
+<paths>
+    <cache-path name="share" path="share/" />
+</paths>

@@ -91,7 +91,7 @@
 - [x] JS native facade + 单例播放器 store
 - [x] 第三个「播放」tab + 最小播放页
 - [ ] iOS 真机播放/seek/切 tab 后继续播放验证
-- [ ] 后台播放/锁屏控制(后续)
+- [x] 后台播放/锁屏控制(iOS 实现,待真机验证)
 - [ ] Android ExoPlayer(后续)
 - [ ] 视频/播放队列/缓存(后续)
 

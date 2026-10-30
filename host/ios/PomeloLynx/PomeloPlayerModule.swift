@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import MediaPlayer
 
 /**
  * Lynx native module `NativeModules.PomeloPlayer`.
@@ -20,6 +21,8 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
   private var statusObservation: NSKeyValueObservation?
   private var endObserver: NSObjectProtocol?
   private var timeObserver: Any?
+  private var interruptionObserver: NSObjectProtocol?
+  private var remoteTargets: [(MPRemoteCommand, Any)] = []
   private var currentURL = ""
   private var stateName = "idle"
   private var position: Double = 0
@@ -69,6 +72,12 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     if let endObserver {
       NotificationCenter.default.removeObserver(endObserver)
     }
+    if let interruptionObserver {
+      NotificationCenter.default.removeObserver(interruptionObserver)
+    }
+    for (command, token) in remoteTargets {
+      command.removeTarget(token)
+    }
   }
 
   private func installObservers() {
@@ -77,6 +86,77 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
       queue: .main
     ) { [weak self] time in
       self?.tick(time)
+    }
+
+    let center = MPRemoteCommandCenter.shared()
+    center.playCommand.isEnabled = true
+    center.pauseCommand.isEnabled = true
+    center.togglePlayPauseCommand.isEnabled = true
+    center.stopCommand.isEnabled = true
+    center.changePlaybackPositionCommand.isEnabled = true
+
+    remoteTargets.append((center.playCommand, center.playCommand.addTarget {
+      [weak self] _ in
+      DispatchQueue.main.async { self?.play() }
+      return .success
+    }))
+    remoteTargets.append((center.pauseCommand, center.pauseCommand.addTarget {
+      [weak self] _ in
+      DispatchQueue.main.async { self?.pause() }
+      return .success
+    }))
+    remoteTargets.append((center.togglePlayPauseCommand, center.togglePlayPauseCommand.addTarget {
+      [weak self] _ in
+      DispatchQueue.main.async {
+        guard let self else { return }
+        if self.stateName == "playing" {
+          self.pause()
+        } else {
+          self.play()
+        }
+      }
+      return .success
+    }))
+    remoteTargets.append((center.stopCommand, center.stopCommand.addTarget {
+      [weak self] _ in
+      DispatchQueue.main.async { self?.stop() }
+      return .success
+    }))
+    remoteTargets.append((center.changePlaybackPositionCommand, center.changePlaybackPositionCommand.addTarget {
+      [weak self] event in
+      guard let event = event as? MPChangePlaybackPositionCommandEvent else {
+        return .commandFailed
+      }
+      DispatchQueue.main.async { self?.seek(event.positionTime) }
+      return .success
+    }))
+
+    interruptionObserver = NotificationCenter.default.addObserver(
+      forName: AVAudioSession.interruptionNotification,
+      object: AVAudioSession.sharedInstance(),
+      queue: .main
+    ) { [weak self] notification in
+      guard
+        let self,
+        let raw = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+        let type = AVAudioSession.InterruptionType(rawValue: raw)
+      else { return }
+      switch type {
+      case .began:
+        self.player.pause()
+        self.stateName = "paused"
+        self.emit()
+      case .ended:
+        let rawOptions = notification.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
+        let options = AVAudioSession.InterruptionOptions(rawValue: rawOptions)
+        if options.contains(.shouldResume), self.item != nil {
+          self.player.play()
+          self.stateName = "playing"
+          self.emit()
+        }
+      @unknown default:
+        break
+      }
     }
   }
 
@@ -210,7 +290,27 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     "{\"error\":\"\(code)\"}"
   }
 
+  private func updateNowPlaying() {
+    if currentURL.isEmpty {
+      MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+      MPNowPlayingInfoCenter.default().playbackState = .stopped
+      return
+    }
+    let title = URL(string: currentURL)?.lastPathComponent ?? "Pomelo Audio"
+    MPNowPlayingInfoCenter.default().nowPlayingInfo = [
+      MPMediaItemPropertyTitle: title,
+      MPMediaItemPropertyArtist: "Pomelo Lynx",
+      MPMediaItemPropertyPlaybackDuration: duration,
+      MPNowPlayingInfoPropertyElapsedPlaybackTime: position,
+      MPNowPlayingInfoPropertyPlaybackRate: stateName == "playing" ? 1.0 : 0.0,
+      MPNowPlayingInfoPropertyMediaType: MPNowPlayingInfoMediaType.audio.rawValue,
+    ]
+    MPNowPlayingInfoCenter.default().playbackState =
+      stateName == "playing" ? .playing : stateName == "paused" ? .paused : .stopped
+  }
+
   private func emit() {
+    updateNowPlaying()
     guard let context else { return }
     context.sendGlobalEvent("PomeloPlayer.state", withParams: [stateJSON()])
   }

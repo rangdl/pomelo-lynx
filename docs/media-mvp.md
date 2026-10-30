@@ -5,7 +5,7 @@
 - 正式版:`v0.0.3`(stable,latest)
 - 开发分支:`dev`,`package.json` 0.1.0
 - UI 约束见 `docs/ui-kit.md`;新控件必须复用共享原语
-- 当前没有媒体能力;Android CI 暂停,先只做 iOS
+- 已有 iOS 音频 MVP(iOS 原生模块 + 播放页);Android CI 暂停,先只做 iOS
 
 ## 0.1.0 范围
 
@@ -17,12 +17,12 @@
 - load / play / pause / seek / stop
 - 播放状态、位置、时长
 - 页面切换后播放器状态保持
+- 后台播放与锁屏控制
 - 最小播放 UI
 
 不包含:
 
 - 视频
-- 后台播放/锁屏控制
 - 播放队列/缓存/歌词
 - Android 实现
 
@@ -91,4 +91,4 @@ https://cdn.truefilesize.com/mp3/sample-1mb.mp3
 - `pnpm run check:ios`
 - `pnpm run build`
 - `pnpm run e2e:web`
-- iOS 真机:播放/暂停/seek/停止、切 tab 后继续播放
+- iOS 真机:播放/暂停/seek/停止、切 tab 后继续播放、后台播放、锁屏控制

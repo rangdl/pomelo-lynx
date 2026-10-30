@@ -26,6 +26,10 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<!-- The dev/QA flow loads bundles over plain HTTP on the LAN; the hot

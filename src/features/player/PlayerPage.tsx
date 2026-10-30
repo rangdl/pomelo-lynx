@@ -122,7 +122,7 @@ export function PlayerPage() {
               value={draft}
               onChange={setDraft}
               placeholder={SAMPLE_AUDIO_URL}
-              hint="当前 MVP 支持远程 HTTPS 音频;可点下方加载 1 MB 测试音频,暂不支持后台播放"
+              hint="当前 MVP 支持远程 HTTPS 音频、后台播放和锁屏控制;可点下方加载 1 MB 测试音频"
               error={error}
               testid="player-url-input"
             />

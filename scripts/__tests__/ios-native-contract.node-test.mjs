@@ -278,3 +278,14 @@ test('methodLookup 的每个选择器都能对应到 @objc func', () => {
     }
   }
 });
+
+test('播放器声明后台音频并接入锁屏控制', () => {
+  const info = readFileSync(join(IOS_DIR, 'Info.plist'), 'utf8');
+  assert.match(info, /<key>UIBackgroundModes<\/key>/);
+  assert.match(info, /<string>audio<\/string>/);
+  const player = read('PomeloPlayerModule.swift');
+  assert.match(player, /MPNowPlayingInfoCenter/);
+  assert.match(player, /MPRemoteCommandCenter/);
+  assert.match(player, /changePlaybackPositionCommand/);
+  assert.match(player, /AVAudioSession\.interruptionNotification/);
+});

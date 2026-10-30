@@ -72,10 +72,16 @@
   flex-direction: row;
   align-items: center;
   justify-content: flex-end;
-  min-width: 76px;
-  padding: 4px 8px;
-  border-radius: 8px;
+  min-width: 92px;
+  height: 44px;
+  padding: 0 10px;
+  border-radius: 10px;
   background-color: var(--color-surface-muted);
+  transition: background-color 120ms ease;
+}
+
+.appearance-select:active {
+  background-color: var(--color-separator);
 }
 
 .appearance-select__value {
@@ -101,6 +107,7 @@
   display: flex;
   flex-direction: column;
   width: 208px;
+  overflow: hidden;
   padding: 6px 0;
   background-color: var(--color-surface);
   border-width: 1px;
@@ -120,6 +127,7 @@
   justify-content: space-between;
   min-height: 46px;
   padding: 0 16px;
+  background-color: var(--color-surface);
   transition: background-color 120ms ease;
 }
 

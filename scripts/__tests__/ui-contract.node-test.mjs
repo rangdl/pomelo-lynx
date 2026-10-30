@@ -30,6 +30,13 @@ test('外观下拉是右侧锚定的绝对定位浮层', () => {
   const page = read('src/features/settings/SettingsPage.tsx');
   assert.match(page, /appearance-anchor/);
   assert.match(page, /appearance-popover/);
+  assert.match(page, /appearance-trigger/);
+  assert.match(page, /Fragment/);
+  assert.doesNotMatch(
+    page,
+    /onTap=\{toggleAppearanceMenu\}/,
+    '只有右侧下拉控件可点,整行不能绑定打开菜单',
+  );
   assert.doesNotMatch(
     page,
     /boundingClientRect/,

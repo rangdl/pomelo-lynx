@@ -1,4 +1,4 @@
-import { useState } from '@lynx-js/react';
+import { Fragment, useState } from '@lynx-js/react';
 import { useNavigate } from '@tanstack/react-router';
 
 import { clientBuild } from '../../core/config/constants.js';
@@ -68,11 +68,16 @@ export function SettingsPage() {
               icon={<text className="list-row__icon-text">◐</text>}
               iconColor="#0ea5e9"
               label={t('appearance.theme')}
-              onTap={toggleAppearanceMenu}
               testid="appearance-row"
-              accessibilityLabel={`${t('appearance.theme')}, ${appearanceLabel}`}
               trailing={
-                <view className="appearance-select">
+                <view
+                  className="appearance-select"
+                  bindtap={toggleAppearanceMenu}
+                  accessibility-element={true}
+                  accessibility-label={`${t('appearance.theme')}, ${appearanceLabel}`}
+                  accessibility-traits="button"
+                  data-testid="appearance-trigger"
+                >
                   <text className="appearance-select__value">
                     {appearanceLabel}
                   </text>
@@ -90,7 +95,7 @@ export function SettingsPage() {
                 {APPEARANCE_OPTIONS.map((option, index) => {
                   const selected = appearanceMode === option.mode;
                   return (
-                    <view key={option.mode}>
+                    <Fragment key={option.mode}>
                       {index > 0 ? (
                         <view className="appearance-option-divider" />
                       ) : null}
@@ -116,7 +121,7 @@ export function SettingsPage() {
                           <text className="appearance-check">✓</text>
                         ) : null}
                       </view>
-                    </view>
+                    </Fragment>
                   );
                 })}
               </view>

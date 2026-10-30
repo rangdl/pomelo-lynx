@@ -58,11 +58,11 @@ test('外观下拉是右侧锚定的绝对定位浮层', () => {
 });
 
 test('自动更新使用开关而不是文字状态', () => {
-  const section = read('src/features/settings/ClientUpdateSection.tsx');
+  const section = read('src/features/settings/BundleUpdateSection.tsx');
   assert.match(section, /client-update__switch/);
   assert.match(section, /client-update__switch-hit/);
   assert.doesNotMatch(section, /已开启|已关闭/);
-  const css = read('src/features/settings/ClientUpdateSection.css');
+  const css = read('src/features/settings/BundleUpdateSection.css');
   assert.match(css, /translateX\(20px\)/);
   assert.match(css, /height: 44px;/);
 });
@@ -134,10 +134,34 @@ test('日志入口移到设置页独立路由,关于页不再放日志', () => {
 });
 
 test('更新区使用 ListRow,且不再渲染重复版本行', () => {
-  const section = read('src/features/settings/ClientUpdateSection.tsx');
+  const section = read('src/features/settings/BundleUpdateSection.tsx');
   assert.match(section, /<ListRow/);
   assert.doesNotMatch(section, /className="settings-row/);
   assert.doesNotMatch(section, /Bundle 版本|宿主版本/);
+});
+
+test('客户端更新与 Bundle 热更新拆成两个分组,并提供官方/加速下载', () => {
+  const about = read('src/features/settings/AboutPage.tsx');
+  assert.match(about, /ClientReleaseSection/);
+  assert.match(about, /BundleUpdateSection/);
+  assert.match(about, /about\.group\.clientUpdate/);
+  assert.match(about, /about\.group\.bundleUpdate/);
+  assert.doesNotMatch(
+    about,
+    /about-row-release/,
+    '发布页入口应移入客户端更新组件',
+  );
+
+  const client = read('src/features/settings/ClientReleaseSection.tsx');
+  assert.match(client, /client-release-download-github/);
+  assert.match(client, /client-release-download-accelerated/);
+  assert.match(client, /about-row-release/);
+  assert.match(client, /checkClientRelease/);
+  assert.match(client, /readUpdateProxy/);
+  assert.match(client, /about\.changes/);
+
+  const bundle = read('src/features/settings/BundleUpdateSection.tsx');
+  assert.doesNotMatch(bundle, /client-release-download/);
 });
 
 test('主题色子页覆盖四个调色板并接入设置与路由', () => {

@@ -1,11 +1,14 @@
 import { useState } from '@lynx-js/react';
 import { useNavigate } from '@tanstack/react-router';
 
+import {
+  readBundleDisplayVersion,
+  readClientIdentity,
+} from '../../core/config/client-identity.js';
 import { clientBuild } from '../../core/config/constants.js';
-import { releasePage } from '../../core/updater/release-resolver.js';
 import { t } from '../../i18n/index.js';
 import { readLynxGlobal } from '../../native/native-modules.js';
-import { openURL, setClipboard } from '../../native/platform.js';
+import { setClipboard } from '../../native/platform.js';
 import { isWebPlatform } from '../../native/web-platform.js';
 import { PageTopBar } from '../../shared/layouts/PageTopBar.js';
 import { ListRow } from '../../shared/ui/ListRow.js';
@@ -13,12 +16,13 @@ import {
   SettingsGroup,
   SettingsGroupDivider,
 } from '../../shared/ui/SettingsGroup.js';
-import { ClientUpdateSection } from './ClientUpdateSection.js';
+import { BundleUpdateSection } from './BundleUpdateSection.js';
+import { ClientReleaseSection } from './ClientReleaseSection.js';
 import './settings.css';
 
 /**
- * 关于页:壳身份信息 + 客户端更新区。
- * 更新区在 Web 端只提示"随部署更新";原生端为完整热更新交互。
+ * 关于页:壳身份信息 + 客户端更新 + Bundle 热更新。
+ * Web 端只提示“随部署更新”;原生端两条更新链路分开显示。
  */
 export function AboutPage() {
   const navigate = useNavigate();
@@ -26,18 +30,15 @@ export function AboutPage() {
   const props: Record<string, unknown> = readLynxGlobal()?.__globalProps ?? {};
   const hostName =
     typeof props.hostName === 'string' ? props.hostName : 'pomelo-host';
-  const hostVersion =
-    typeof props.hostVersion === 'string' ? props.hostVersion : '';
-  const clientVersion =
-    hostVersion || clientBuild.native_version || clientBuild.version;
+  const client = readClientIdentity();
+  const bundleVersion = readBundleDisplayVersion();
   const web = isWebPlatform();
-  const releaseUrl = releasePage(clientBuild.channel);
   const versionInfo = [
-    `PomeloLynx ${clientBuild.version}`,
-    `channel=${clientBuild.channel}`,
-    `commit=${clientBuild.git_commit}`,
+    `client=${client.display_version}`,
+    `bundle=${bundleVersion}`,
+    `channel=${client.channel}`,
+    `commit=${client.git_commit}`,
     `host=${hostName}`,
-    ...(hostVersion ? [`hostVersion=${hostVersion}`] : []),
   ].join(' ');
 
   const copyVersionInfo = () => {
@@ -64,15 +65,15 @@ export function AboutPage() {
             icon={<text className="list-row__icon-text">⌂</text>}
             iconColor="#3b82f6"
             label={t('about.client')}
-            value={clientVersion}
-            detail={`${clientVersion} · ${clientBuild.git_commit}`}
+            value={client.display_version}
+            detail={`${client.display_version} · ${client.git_commit}`}
           />
           <SettingsGroupDivider />
           <ListRow
             icon={<text className="list-row__icon-text">#</text>}
             iconColor="#8e8e93"
             label={t('about.bundleVersion')}
-            value={clientBuild.version}
+            value={bundleVersion}
             detail={`${clientBuild.channel} · ${clientBuild.git_commit}`}
           />
           <SettingsGroupDivider />
@@ -85,35 +86,26 @@ export function AboutPage() {
             onTap={copyVersionInfo}
             testid="about-row-copy"
           />
-          {releaseUrl && !web ? (
-            <>
-              <SettingsGroupDivider />
-              <ListRow
-                icon={<text className="list-row__icon-text">↗</text>}
-                iconColor="#e5484d"
-                label={t('about.release')}
-                chevron
-                onTap={() => {
-                  'background only';
-                  openURL(releaseUrl);
-                }}
-                testid="about-row-release"
-              />
-            </>
-          ) : null}
         </SettingsGroup>
 
-        <SettingsGroup title={t('about.group.update')}>
-          {web ? (
+        {web ? (
+          <SettingsGroup title={t('about.group.update')}>
             <ListRow
               icon={<text className="list-row__icon-text">↻</text>}
               iconColor="#0ea5e9"
               label={t('about.webUpdate')}
             />
-          ) : (
-            <ClientUpdateSection showTitle={false} />
-          )}
-        </SettingsGroup>
+          </SettingsGroup>
+        ) : (
+          <>
+            <SettingsGroup title={t('about.group.clientUpdate')}>
+              <ClientReleaseSection />
+            </SettingsGroup>
+            <SettingsGroup title={t('about.group.bundleUpdate')}>
+              <BundleUpdateSection showTitle={false} />
+            </SettingsGroup>
+          </>
+        )}
 
         <view className="settings__tail" />
       </scroll-view>

@@ -62,6 +62,28 @@ const gitRef = process.env.GITHUB_REF ?? '';
 const releaseTag = gitRef.startsWith('refs/tags/')
   ? gitRef.slice('refs/tags/'.length)
   : '';
+function releaseMetadata(tag: string): {
+  version: string;
+  channel: 'dev' | 'stable' | 'preview';
+  release_tag: string;
+} {
+  if (!tag) return { version: 'dev', channel: 'dev', release_tag: 'dev' };
+  if (tag === `v${packageVersion}`) {
+    return {
+      version: packageVersion,
+      channel: packageVersion.includes('-') ? 'preview' : 'stable',
+      release_tag: tag,
+    };
+  }
+  const dev = /^dev-v?(\d+\.\d+\.\d+)(?:-[0-9A-Za-z.]+)?$/.exec(tag);
+  if (dev && dev[1] === packageVersion) {
+    return { version: 'dev', channel: 'dev', release_tag: 'dev' };
+  }
+  throw new Error(
+    `Tag ${tag} does not match package.json v${packageVersion} or dev-v${packageVersion}-<id>`,
+  );
+}
+const release = releaseMetadata(releaseTag);
 let gitCommit = 'unknown';
 try {
   gitCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
@@ -71,7 +93,7 @@ try {
   // 无 git 环境(如 artifact 构建):占位值使热更新自然失效。
 }
 const buildMetadata = {
-  version: releaseTag ? packageVersion : 'dev',
+  version: release.version,
   package_version: packageVersion,
   native_version: packageVersion.split('-')[0],
   build_number: process.env.GITHUB_RUN_NUMBER
@@ -79,8 +101,8 @@ const buildMetadata = {
     : Math.floor((Date.now() - Date.UTC(2026, 0, 1)) / 1000),
   git_commit: process.env.GITHUB_SHA ?? gitCommit,
   build_time: new Date().toISOString(),
-  channel: releaseTag ? 'stable' : 'dev',
-  release_tag: releaseTag || 'dev',
+  channel: release.channel,
+  release_tag: release.release_tag,
 };
 
 export default defineConfig({

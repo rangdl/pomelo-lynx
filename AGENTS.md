@@ -53,7 +53,7 @@
 
 - Rspack: <https://rspack.rs/llms.txt>
 
-- 项目内: [页面设计约束](docs/page-design.md) · [Web 端调试](docs/web-debug.md)(症状 → 根因 → 解法) · [E2E 套件](e2e/README.md) · [跨端对齐](e2e/alignment/README.md)
+- 项目内: [页面设计约束](docs/page-design.md) · [版本/发布/更新](docs/release.md) · [Web 端调试](docs/web-debug.md)(症状 → 根因 → 解法) · [E2E 套件](e2e/README.md) · [跨端对齐](e2e/alignment/README.md)
 
 ## 工具
 

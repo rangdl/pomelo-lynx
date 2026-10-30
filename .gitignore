@@ -11,6 +11,9 @@ node_modules
 dist/
 .build/
 
+# 本地 Release 组装目录(CI 在 workspace 内临时生成)
+release-files/
+
 # 宿主 app 的 bundle 资源(构建产物,由 copy-bundle-* 脚本从 dist/ 拷入)
 host/android/app/src/main/assets/*.bundle
 host/android/app/src/main/assets/native-host.json

@@ -7,6 +7,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -38,6 +39,26 @@ const metadata = createBuildMetadata({
   now: new Date('2026-10-06T00:00:00Z'),
 });
 
+test('dev tag 只选择 dev 通道,签名契约仍使用滚动 dev release_tag', () => {
+  const value = createBuildMetadata({
+    packageVersion: '0.1.0',
+    ref: 'refs/tags/dev-v0.1.0-abc1234',
+    sha: 'abcdef0',
+    now: new Date('2026-10-06T00:00:00Z'),
+  });
+  assert.equal(value.channel, 'dev');
+  assert.equal(value.version, 'dev');
+  assert.equal(value.release_tag, 'dev');
+  assert.equal(value.package_version, '0.1.0');
+  assert.throws(() =>
+    createBuildMetadata({
+      packageVersion: '0.1.0',
+      ref: 'refs/tags/dev-v0.1.1-abc1234',
+      sha: 'abcdef0',
+    }),
+  );
+});
+
 function fixture(t) {
   const base = mkdtempSync(join(tmpdir(), 'pomelo-update-contract-'));
   t.after(() => rmSync(base, { recursive: true, force: true }));
@@ -65,6 +86,8 @@ function fixture(t) {
 
 test('signed native bundle shares one manifest with the full package', (t) => {
   const options = fixture(t);
+  options.changes = ['新增：客户端更新检查', '修复：下载链接'];
+  options.buildTag = 'dev-v0.1.0-abcdef0';
   assert.deepEqual(finalizeRelease(options), {
     assetCount: 2,
     signedUpdate: true,
@@ -103,7 +126,32 @@ test('signed native bundle shares one manifest with the full package', (t) => {
   )
     .trim()
     .split('\n');
-  assert.equal(checksums.length, 4);
+  assert.equal(checksums.length, 5);
+  const client = JSON.parse(
+    readFileSync(join(options.directory, 'client.json'), 'utf8'),
+  );
+  assert.equal(client.channel, 'dev');
+  assert.equal(client.version, '0.1.0');
+  assert.equal(client.display_version, 'dev-0.1.0');
+  assert.equal(client.build_tag, 'dev-v0.1.0-abcdef0');
+  assert.deepEqual(client.changes, ['新增：客户端更新检查', '修复：下载链接']);
+  assert.deepEqual(client.assets, [
+    {
+      platform: 'ios',
+      name: 'pomelo-lynx-ios-nosign.ipa',
+      size: statSync(join(options.directory, 'pomelo-lynx-ios-nosign.ipa'))
+        .size,
+      sha256: createHash('sha256')
+        .update(
+          readFileSync(join(options.directory, 'pomelo-lynx-ios-nosign.ipa')),
+        )
+        .digest('hex'),
+    },
+  ]);
+  assert.ok(
+    checksums.some((line) => line.endsWith('  client.json')),
+    'checksums 必须覆盖客户端更新元数据',
+  );
   for (const line of checksums) {
     const [hash, name] = line.split('  ');
     assert.equal(

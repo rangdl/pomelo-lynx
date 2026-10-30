@@ -234,8 +234,13 @@ final class ViewController: UIViewController {
     // first frame already knows who is hosting it.
     let meta = LynxLoadMeta()
     meta.url = bundleURL
+    let info = Bundle.main.infoDictionary ?? [:]
     var globalProps: [String: Any] = [
       "hostName": "pomelo-host-ios",
+      // 客户端更新必须看安装包本身的版本,不能用热更新后的 bundle 身份。
+      "hostVersion": info["CFBundleShortVersionString"] as? String ?? "",
+      "hostBuild": info["CFBundleVersion"] as? String ?? "",
+      "hostChannel": info["PomeloChannel"] as? String ?? "dev",
       "isDebug": ProcessInfo.processInfo.environment["POMELO_DEBUG"] != nil,
       "language": Locale.preferredLanguages.first ?? "zh",
     ]

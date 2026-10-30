@@ -1,6 +1,6 @@
 {
   "name": "pomelo-lynx",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "scripts": {
     "build": "rspeedy build && node scripts/assert-bundle-fresh.mjs",

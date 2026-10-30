@@ -5,7 +5,6 @@ import {
   nativeUpdateMetadataAvailable,
   nativeUpdaterAvailable,
 } from '../../core/updater/native-updater.js';
-import { releasePage } from '../../core/updater/release-resolver.js';
 import {
   cancelClientBundle,
   checkClientRelease,
@@ -17,7 +16,7 @@ import {
 import { isWebPlatform } from '../../native/web-platform.js';
 import { ListRow } from '../../shared/ui/ListRow.js';
 import { SettingsGroupDivider } from '../../shared/ui/SettingsGroup.js';
-import './ClientUpdateSection.css';
+import './BundleUpdateSection.css';
 
 function errorText(error: string): string {
   const known: Record<string, string> = {
@@ -46,10 +45,10 @@ function reasonText(reason: string): string {
 }
 
 /**
- * 客户端热更新区:版本行、通道、自动更新开关、手动检查、下载进度、
- * 恢复内置。已准备好的包在下次冷启动生效(不替换正在运行的根视图)。
+ * Bundle 热更新区:通道、自动更新开关、手动检查、下载进度、恢复内置。
+ * 与 native 客户端更新(IPA/APK)是两条独立链路。
  */
-export function ClientUpdateSection({
+export function BundleUpdateSection({
   showTitle = true,
 }: {
   showTitle?: boolean;
@@ -119,7 +118,7 @@ export function ClientUpdateSection({
   return (
     <view className="client-update" data-testid="client-update-section">
       {showTitle ? (
-        <text className="client-update__section-title">客户端更新</text>
+        <text className="client-update__section-title">Bundle 热更新</text>
       ) : null}
 
       <ListRow
@@ -189,20 +188,12 @@ export function ClientUpdateSection({
       />
 
       {error ? (
-        <>
-          <text
-            className="client-update__error"
-            data-testid="client-update-error"
-          >
-            {error}
-          </text>
-          <ListRow
-            icon={<text className="list-row__icon-text">↗</text>}
-            iconColor="#e5484d"
-            label="前往下载页"
-            detail={releasePage(identity.channel) ?? undefined}
-          />
-        </>
+        <text
+          className="client-update__error"
+          data-testid="client-update-error"
+        >
+          {error}
+        </text>
       ) : null}
 
       {check ? (

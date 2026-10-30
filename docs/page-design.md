@@ -116,8 +116,17 @@ ShellLayout(全局唯一)
 - **设置页每个入口行都要有 `detail` 描述**(关于/主题/主题色/开发者);
   只有纯值行或危险操作行可以省略。
 - 关于页版本行统一为“右侧短版本号 + detail 具体信息”:
-  「客户端」右值显示客户端版本,detail 显示版本号与 commit;
-  「Bundle 版本」右值显示 bundle 版本,detail 显示 channel 与 commit。
+  「客户端」右值显示宿主版本的展示值(dev 带 `dev-` 前缀),detail 显示版本号与 commit;
+  「Bundle 版本」右值显示 bundle 的展示版本,detail 显示 channel 与 commit。
+- 更新区域拆成两张卡片:
+  - 「客户端更新」:检查 native 安装包、更新内容、GitHub 官方下载、
+    国内加速下载、打开发布页;iOS 必须提示“先下载到文件,不能直接安装”。
+  - 「Bundle 热更新」:通道、自动检查更新、检查/下载/取消/待生效/恢复内置。
+  - 两套链路不要混用 `client.json` 与 `version.json`;
+    加速下载只影响 IPA,不改变 GitHub API / 签名 manifest。
+- 客户端下载入口只在检查成功且存在当前平台资产时显示;没有资产时只保留
+  发布页。官方下载放在加速下载之前,加速地址标注第三方。
+- 更新内容最多展示 8 条,不渲染 Markdown;完整记录通过发布页查看。
 - 分隔线:1px,`margin-left: 64px`(与图标列对齐)。
 - 设置页/关于页/更新区统一使用 `ListRow`;旧 `.settings-row`
   已全部迁移,不再新增。
@@ -157,7 +166,8 @@ ShellLayout(全局唯一)
   切换时不应重建页面树,否则会丢失滚动/输入状态并重播页面进入动画。
 - 外观偏好持久化在 `PomeloStorage.prefs` 的 `appearance_mode`:
   `system`(默认)/`light`/`dark`;设置页「外观」分组提供三个选项。
-- 调色板偏好持久化在 `theme_palette`:当前 `default`/`violet`,默认
+- 调色板偏好持久化在 `theme_palette`:当前
+  `default`/`violet`/`sunset`/`teal`,默认
   `default`;与 `appearance_mode` 正交。两者合成
   `theme-<palette>-<scheme>` 完整变体,切换时重建 shell。
 - 固定浅色/深色时,JS 通过 `PomeloPlatform.setAppearanceMode` 同步
@@ -199,3 +209,5 @@ ShellLayout(全局唯一)
 - 开发者能力已移到独立子页,Dev Server/调试通道内部仍是
   `.dev-server__*` 行,未迁移到 `ListRow`。
 - 日志入口已从关于页移到设置页「支持」分组,路由为 `/settings/logs`。
+- 客户端更新与 Bundle 热更新已拆分;客户端更新检查、`client.json`、
+  固定文件名和 changelog 见 [发布与更新](release.md)。

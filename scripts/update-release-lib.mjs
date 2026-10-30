@@ -26,8 +26,10 @@ import {
 export const UPDATE_ALGORITHM = 'rsa-pkcs1v15-sha256';
 export const BUNDLE_ASSET = 'pomelo-lynx-main.lynx.bundle';
 export const SIGNATURE_ASSET = 'version.json.sig';
+export const CLIENT_ASSET = 'client.json';
 export const MAX_BUNDLE_BYTES = 32 * 1024 * 1024;
 export const MAX_MANIFEST_BYTES = 128 * 1024;
+export const MAX_CLIENT_ASSET_BYTES = 64 * 1024;
 const PLATFORMS = ['android', 'ios'];
 
 /**
@@ -135,6 +137,44 @@ function hashFile(file) {
   return createHash('sha256').update(readFileSync(file)).digest('hex');
 }
 
+function hasControlCharacters(value) {
+  for (let index = 0; index < value.length; index++) {
+    const code = value.charCodeAt(index);
+    if (
+      (code >= 0 && code <= 8) ||
+      code === 11 ||
+      code === 12 ||
+      (code >= 14 && code <= 31)
+    )
+      return true;
+  }
+  return false;
+}
+
+function releaseChanges(value) {
+  if (!Array.isArray(value) || value.length > 20)
+    throw new Error('Release changes must be an array of at most 20 strings');
+  return value.map((change) => {
+    if (
+      typeof change !== 'string' ||
+      change.length === 0 ||
+      change.length > 200 ||
+      hasControlCharacters(change)
+    )
+      throw new Error('Invalid release change entry');
+    const trimmed = change.trim();
+    if (!trimmed) throw new Error('Invalid release change entry');
+    return trimmed;
+  });
+}
+
+function releaseBuildTag(value) {
+  if (value == null || value === '') return null;
+  if (typeof value !== 'string' || !/^[A-Za-z0-9._-]{1,96}$/.test(value))
+    throw new Error('Invalid release build tag');
+  return value;
+}
+
 function writeAtomic(file, data) {
   const temp = `${file}.part`;
   try {
@@ -192,11 +232,15 @@ export function finalizeRelease({
   nativeHost,
   publicKey = '',
   privateKey = '',
+  changes = [],
+  buildTag = '',
 }) {
   const original = JSON.parse(
     readFileSync(join(directory, 'version.json'), 'utf8'),
   );
   const metadata = validateBuildMetadata(original, packageVersion);
+  const normalizedChanges = releaseChanges(changes);
+  const normalizedBuildTag = releaseBuildTag(buildTag);
   // 安卓构建暂停(2026-10):发版资产只含 iOS IPA;恢复安卓 CI 时把
   // 'pomelo-lynx-android.apk' 加回此清单(见 docs/dev-server.md)。
   const expected = ['pomelo-lynx-ios-nosign.ipa'];
@@ -206,6 +250,7 @@ export function finalizeRelease({
     'checksums.txt',
     BUNDLE_ASSET,
     SIGNATURE_ASSET,
+    CLIENT_ASSET,
   ]);
   if (
     readdirSync(directory).some((name) => !allowed.has(name)) ||
@@ -307,6 +352,40 @@ export function finalizeRelease({
   const packageAssets = listReleaseAssets(directory).filter((asset) =>
     expected.includes(asset.name),
   );
+  const ipaName = expected[0];
+  const ipaPath = join(directory, ipaName);
+  const ipaSize = statSync(ipaPath).size;
+  const displayVersion =
+    metadata.channel === 'dev'
+      ? `dev-${metadata.package_version}`
+      : metadata.channel === 'preview'
+        ? `preview-${metadata.package_version}`
+        : metadata.package_version;
+  const clientMetadata = {
+    schema: 1,
+    channel: metadata.channel,
+    version: metadata.package_version,
+    display_version: displayVersion,
+    build_number: metadata.build_number,
+    git_commit: metadata.git_commit,
+    build_time: metadata.build_time,
+    release_tag: metadata.release_tag,
+    ...(normalizedBuildTag ? { build_tag: normalizedBuildTag } : {}),
+    changes: normalizedChanges,
+    assets: [
+      {
+        platform: 'ios',
+        name: ipaName,
+        size: ipaSize,
+        sha256: hashFile(ipaPath),
+      },
+    ],
+  };
+  const clientRaw = Buffer.from(`${JSON.stringify(clientMetadata, null, 2)}\n`);
+  if (clientRaw.length > MAX_CLIENT_ASSET_BYTES)
+    throw new Error('Client release metadata exceeds the size limit');
+  writeAtomic(join(directory, CLIENT_ASSET), clientRaw);
+
   const assets = bundleUpdate
     ? [
         ...packageAssets,
@@ -358,6 +437,7 @@ export function finalizeRelease({
   writeAtomic(join(directory, 'version.json'), rawManifest);
   const checksums = [
     ...assets.map((asset) => `${asset.sha256}  ${asset.name}`),
+    `${hashFile(join(directory, CLIENT_ASSET))}  ${CLIENT_ASSET}`,
     `${hashFile(join(directory, 'version.json'))}  version.json`,
     ...(envelope
       ? [`${hashFile(join(directory, SIGNATURE_ASSET))}  ${SIGNATURE_ASSET}`]

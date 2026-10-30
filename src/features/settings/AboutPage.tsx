@@ -10,7 +10,7 @@ import { t } from '../../i18n/index.js';
 import { readLynxGlobal } from '../../native/native-modules.js';
 import { setClipboard } from '../../native/platform.js';
 import { isWebPlatform } from '../../native/web-platform.js';
-import { PageTopBar } from '../../shared/layouts/PageTopBar.js';
+import { SettingsSubPage } from '../../shared/layouts/SettingsSubPage.js';
 import { ListRow } from '../../shared/ui/ListRow.js';
 import {
   SettingsGroup,
@@ -19,7 +19,6 @@ import {
 import { BundleUpdateSection } from './BundleUpdateSection.js';
 import { ClientReleaseSection } from './ClientReleaseSection.js';
 import { UpdateProxySection } from './UpdateProxySection.js';
-import './settings.css';
 
 /**
  * 关于页:壳身份信息 + 客户端更新 + Bundle 热更新。
@@ -51,68 +50,60 @@ export function AboutPage() {
   };
 
   return (
-    <view className="settings" data-testid="about-page">
-      <PageTopBar
-        title={t('about.title')}
-        backLabel={t('about.back')}
-        onBack={() => navigate({ to: '/settings' })}
-        testid="about-topbar"
-        backTestid="about-back"
-      />
+    <SettingsSubPage
+      title={t('about.title')}
+      backLabel={t('about.back')}
+      onBack={() => navigate({ to: '/settings' })}
+      testid="about-page"
+      topbarTestid="about-topbar"
+      backTestid="about-back"
+      scrollTestid="about-scroll"
+    >
+      <SettingsGroup>
+        <ListRow
+          iconGlyph="⌂"
+          iconTone="azure"
+          label={t('about.client')}
+          value={client.display_version}
+          detail={`${client.display_version} · ${client.git_commit}`}
+        />
+        <SettingsGroupDivider />
+        <ListRow
+          iconGlyph="#"
+          iconTone="neutral"
+          label={t('about.bundleVersion')}
+          value={bundleVersion}
+          detail={`${clientBuild.channel} · ${clientBuild.git_commit}`}
+        />
+        <SettingsGroupDivider />
+        <ListRow
+          iconGlyph="⧉"
+          iconTone="indigo"
+          label={t('about.copy')}
+          value={copyState ?? undefined}
+          chevron={!copyState}
+          onTap={copyVersionInfo}
+          testid="about-row-copy"
+        />
+      </SettingsGroup>
 
-      <scroll-view className="settings__scroll" scroll-orientation="vertical">
-        <SettingsGroup>
-          <ListRow
-            icon={<text className="list-row__icon-text">⌂</text>}
-            iconColor="#3b82f6"
-            label={t('about.client')}
-            value={client.display_version}
-            detail={`${client.display_version} · ${client.git_commit}`}
-          />
-          <SettingsGroupDivider />
-          <ListRow
-            icon={<text className="list-row__icon-text">#</text>}
-            iconColor="#8e8e93"
-            label={t('about.bundleVersion')}
-            value={bundleVersion}
-            detail={`${clientBuild.channel} · ${clientBuild.git_commit}`}
-          />
-          <SettingsGroupDivider />
-          <ListRow
-            icon={<text className="list-row__icon-text">⧉</text>}
-            iconColor="#5a5ad6"
-            label={t('about.copy')}
-            value={copyState ?? undefined}
-            chevron={!copyState}
-            onTap={copyVersionInfo}
-            testid="about-row-copy"
-          />
+      {web ? (
+        <SettingsGroup title={t('about.group.update')}>
+          <ListRow iconGlyph="↻" iconTone="sky" label={t('about.webUpdate')} />
         </SettingsGroup>
-
-        {web ? (
-          <SettingsGroup title={t('about.group.update')}>
-            <ListRow
-              icon={<text className="list-row__icon-text">↻</text>}
-              iconColor="#0ea5e9"
-              label={t('about.webUpdate')}
-            />
+      ) : (
+        <>
+          <SettingsGroup title={t('about.group.acceleration')}>
+            <UpdateProxySection />
           </SettingsGroup>
-        ) : (
-          <>
-            <SettingsGroup title={t('about.group.acceleration')}>
-              <UpdateProxySection />
-            </SettingsGroup>
-            <SettingsGroup title={t('about.group.clientUpdate')}>
-              <ClientReleaseSection />
-            </SettingsGroup>
-            <SettingsGroup title={t('about.group.bundleUpdate')}>
-              <BundleUpdateSection showTitle={false} />
-            </SettingsGroup>
-          </>
-        )}
-
-        <view className="settings__tail" />
-      </scroll-view>
-    </view>
+          <SettingsGroup title={t('about.group.clientUpdate')}>
+            <ClientReleaseSection />
+          </SettingsGroup>
+          <SettingsGroup title={t('about.group.bundleUpdate')}>
+            <BundleUpdateSection />
+          </SettingsGroup>
+        </>
+      )}
+    </SettingsSubPage>
   );
 }

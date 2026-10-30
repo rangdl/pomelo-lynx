@@ -135,6 +135,9 @@ docs/web-debug.md   Web 端调试:症状 → 根因 → 解法
 
 ## 进一步阅读
 
+- [页面设计约束](docs/page-design.md)—— 页面壳、顶栏/底栏、安全区与检查清单
+- [UI 组件约束](docs/ui-kit.md)—— 共享原语、页面骨架与禁止手写项
+- [版本/发布/更新](docs/release.md)—— 版本语义、tag、固定资产与代理
 - [Web 端调试](docs/web-debug.md)—— 常见故障与工具链约束
 - [E2E 测试套件](e2e/README.md)—— driver 抽象与场景编写
 - [跨端对齐](e2e/alignment/README.md)—— 真机采集与几何比对

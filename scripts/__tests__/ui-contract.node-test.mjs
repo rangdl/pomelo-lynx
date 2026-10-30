@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -57,14 +57,21 @@ test('外观下拉是右侧锚定的绝对定位浮层', () => {
   );
 });
 
-test('自动更新使用开关而不是文字状态', () => {
+test('开关统一使用 Switch/SwitchRow,不再在业务区复制 CSS', () => {
   const section = read('src/features/settings/BundleUpdateSection.tsx');
-  assert.match(section, /client-update__switch/);
-  assert.match(section, /client-update__switch-hit/);
+  assert.match(section, /SwitchRow/);
+  assert.doesNotMatch(section, /client-update__switch/);
   assert.doesNotMatch(section, /已开启|已关闭/);
-  const css = read('src/features/settings/BundleUpdateSection.css');
+
+  const proxy = read('src/features/settings/UpdateProxySection.tsx');
+  assert.match(proxy, /SwitchRow/);
+  assert.doesNotMatch(proxy, /update-proxy__switch/);
+
+  const shared = read('src/shared/ui/Switch.tsx');
+  assert.match(shared, /accessibility-label/);
+  const css = read('src/shared/ui/Switch.css');
   assert.match(css, /translateX\(20px\)/);
-  assert.match(css, /height: 44px;/);
+  assert.match(css, /height: var\(--tap-target\)/);
 });
 
 test('页面切换有 push/pop/fade 挂载动画', () => {
@@ -179,8 +186,8 @@ test('加速设置同时接入两个更新链路并支持默认地址/自定义/
   assert.match(section, /DEFAULT_UPDATE_PROXY/);
   assert.match(section, /readUpdateProxySettings/);
   assert.match(section, /writeUpdateProxySettings/);
-  assert.match(section, /avoid-keyboard=\{true\}/);
-  assert.match(section, /set-soft-input-mode="resize"/);
+  assert.match(section, /TextField/);
+  assert.doesNotMatch(section, /avoid-keyboard/);
 
   const prefs = read('src/core/updater/update-preferences.ts');
   assert.match(prefs, /update_proxy_enabled/);
@@ -194,29 +201,103 @@ test('主题色子页覆盖四个调色板并接入设置与路由', () => {
     assert.match(meta, new RegExp(`id: '${id}'`));
   }
   const page = read('src/features/settings/ThemePalettePage.tsx');
-  assert.match(page, /theme-\$\{option\.id\}-\$\{scheme\}/);
-  assert.match(page, /themePalettePreference\.setPalette/);
+  assert.match(page, /ThemePaletteCard/);
+  const card = read('src/features/settings/ThemePaletteCard.tsx');
+  assert.match(card, /theme-\$\{option\.id\}-\$\{scheme\}/);
+  assert.match(card, /PaletteSwatches/);
   const settings = read('src/features/settings/SettingsPage.tsx');
   assert.match(settings, /settings-row-theme-palette/);
+  assert.match(settings, /PaletteSwatches/);
   const router = read('src/router.tsx');
   assert.match(router, /path: '\/settings\/theme'/);
 });
 
-test('开发者页输入框启用键盘避让', () => {
+test('开发者页统一使用 TextField/Button,键盘避让只在共享组件里', () => {
   for (const file of [
     'src/features/settings/DevServerSection.tsx',
     'src/features/settings/DebugTunnelSection.tsx',
   ]) {
     const source = read(file);
-    assert.match(source, /avoid-keyboard=\{true\}/, file);
-    assert.match(source, /avoid-keyboard-spacing="12px"/, file);
-    assert.match(source, /set-soft-input-mode="resize"/, file);
-    assert.match(source, /dev-server__input-frame/, file);
-    assert.match(source, /bindblur=/, file);
+    assert.match(source, /TextField/, file);
+    assert.match(source, /Button/, file);
+    assert.doesNotMatch(source, /avoid-keyboard/, file);
+    assert.doesNotMatch(source, /dev-server__input-frame/, file);
   }
-  const css = read('src/features/settings/DevServerSection.css');
-  assert.match(css, /\.dev-server__input-frame \{/);
-  assert.match(css, /border-width: 1px;/);
+  const field = read('src/shared/ui/TextField.tsx');
+  assert.match(field, /avoid-keyboard=\{true\}/);
+  assert.match(field, /avoid-keyboard-spacing="12px"/);
+  assert.match(field, /set-soft-input-mode="resize"/);
+  assert.match(field, /bindblur=/);
+  const css = read('src/shared/ui/TextField.css');
   assert.match(css, /border-color: var\(--color-outline\)/);
-  assert.match(css, /\.dev-server__input-frame--focused/);
+  assert.match(css, /\.text-field__frame--focused/);
+});
+
+test('标准滚动子页统一使用 SettingsSubPage', () => {
+  for (const file of [
+    'src/features/settings/AboutPage.tsx',
+    'src/features/settings/DeveloperPage.tsx',
+    'src/features/settings/ThemePalettePage.tsx',
+  ]) {
+    const source = read(file);
+    assert.match(source, /SettingsSubPage/, file);
+    assert.doesNotMatch(source, /<PageTopBar/, file);
+  }
+  const settings = read('src/features/settings/SettingsPage.tsx');
+  assert.match(settings, /SettingsLargeTitle/);
+  assert.match(settings, /PageTail/);
+});
+
+test('业务页面禁止重新手写图标颜色和输入框属性', () => {
+  for (const file of [
+    'src/features/settings/SettingsPage.tsx',
+    'src/features/settings/AboutPage.tsx',
+    'src/features/settings/BundleUpdateSection.tsx',
+    'src/features/settings/ClientReleaseSection.tsx',
+    'src/features/settings/UpdateProxySection.tsx',
+    'src/features/settings/DevServerSection.tsx',
+    'src/features/settings/DebugTunnelSection.tsx',
+  ]) {
+    const source = read(file);
+    assert.doesNotMatch(source, /iconColor=/, file);
+    assert.doesNotMatch(source, /avoid-keyboard/, file);
+  }
+  assert.doesNotMatch(
+    read('src/features/settings/BundleUpdateSection.css'),
+    /__switch/,
+  );
+  assert.doesNotMatch(
+    read('src/features/settings/UpdateProxySection.css'),
+    /__switch|input-frame/,
+  );
+});
+
+test('feature CSS 不再重复共享控件样式', () => {
+  const dir = join(ROOT, 'src/features/settings');
+  const forbidden = [
+    '__switch',
+    'input-frame',
+    'dev-server__btn',
+    'client-update__note',
+    'client-update__error',
+    'client-release__note',
+    'client-release__error',
+    'update-proxy__note',
+    'update-proxy__error',
+    'dev-server__note',
+    'dev-server__error',
+    'dev-server__draft',
+    'dev-server__section-title',
+    'dev-server__status',
+  ];
+  for (const name of readdirSync(dir).filter((file) => file.endsWith('.css'))) {
+    const css = readFileSync(join(dir, name), 'utf8');
+    for (const token of forbidden) {
+      assert.doesNotMatch(
+        css,
+        new RegExp(token.replaceAll('-', '\\-')),
+        `${name}: ${token} 应立即使用共享组件`,
+      );
+    }
+  }
 });

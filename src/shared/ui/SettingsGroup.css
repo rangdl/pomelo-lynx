@@ -1,5 +1,5 @@
 .settings-group {
-  margin: 0 16px 8px 16px;
+  margin: 0 var(--page-inline) var(--space-2) var(--page-inline);
 }
 
 .settings-group--untitled {
@@ -7,7 +7,7 @@
 }
 
 .settings-group__title {
-  font-size: 20px;
+  font-size: var(--font-group-title);
   font-weight: 700;
   color: var(--color-on-surface);
   margin: 14px 4px 8px 4px;
@@ -15,7 +15,7 @@
 
 .settings-group__body {
   background-color: var(--color-surface-container-low);
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   padding: 4px 0;
 }
 

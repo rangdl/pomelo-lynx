@@ -14,8 +14,10 @@ import {
   updateSession,
 } from '../../core/updater/update-session.js';
 import { isWebPlatform } from '../../native/web-platform.js';
+import { Hint } from '../../shared/ui/Hint.js';
 import { ListRow } from '../../shared/ui/ListRow.js';
 import { SettingsGroupDivider } from '../../shared/ui/SettingsGroup.js';
+import { SwitchRow } from '../../shared/ui/SwitchRow.js';
 import './BundleUpdateSection.css';
 
 function errorText(error: string): string {
@@ -48,11 +50,7 @@ function reasonText(reason: string): string {
  * Bundle 热更新区:通道、自动更新开关、手动检查、下载进度、恢复内置。
  * 与 native 客户端更新(IPA/APK)是两条独立链路。
  */
-export function BundleUpdateSection({
-  showTitle = true,
-}: {
-  showTitle?: boolean;
-} = {}) {
+export function BundleUpdateSection() {
   const [session, setSession] = useState(updateSession.getState());
   const [automatic, setAutomatic] = useState(
     automaticUpdatePolicy.store.getState(),
@@ -117,13 +115,9 @@ export function BundleUpdateSection({
 
   return (
     <view className="client-update" data-testid="client-update-section">
-      {showTitle ? (
-        <text className="client-update__section-title">Bundle 热更新</text>
-      ) : null}
-
       <ListRow
-        icon={<text className="list-row__icon-text">⇄</text>}
-        iconColor="#0ea5e9"
+        iconGlyph="⇄"
+        iconTone="sky"
         label="通道"
         value={
           identity.channel === 'dev'
@@ -135,51 +129,29 @@ export function BundleUpdateSection({
       />
 
       {!available && !web ? (
-        <text className="client-update__note">
-          {errorText('metadata_unavailable')}
-        </text>
+        <Hint tone="muted">{errorText('metadata_unavailable')}</Hint>
       ) : null}
 
       {native ? (
         <>
           <SettingsGroupDivider />
-          <ListRow
-            icon={<text className="list-row__icon-text">↻</text>}
-            iconColor="#34c759"
+          <SwitchRow
+            iconGlyph="↻"
+            iconTone="green"
             label="自动检查更新"
             detail="启动时自动检查并下载更新"
+            checked={automatic.enabled}
+            onChange={changeAutomatic}
             testid="client-update-automatic"
-            trailing={
-              <view
-                className="client-update__switch-hit"
-                bindtap={() => {
-                  'background only';
-                  changeAutomatic(!automatic.enabled);
-                }}
-                accessibility-element={true}
-                accessibility-label="自动检查更新"
-                accessibility-traits="button"
-                data-testid="client-update-automatic-switch"
-              >
-                <view
-                  className={
-                    automatic.enabled
-                      ? 'client-update__switch client-update__switch--on'
-                      : 'client-update__switch'
-                  }
-                >
-                  <view className="client-update__switch-thumb" />
-                </view>
-              </view>
-            }
+            switchTestid="client-update-automatic-switch"
           />
         </>
       ) : null}
 
       <SettingsGroupDivider />
       <ListRow
-        icon={<text className="list-row__icon-text">⟳</text>}
-        iconColor="#007aff"
+        iconGlyph="⟳"
+        iconTone="blue"
         label={checking ? '正在检查…' : '检查更新'}
         detail="手动检查并下载新版本"
         disabled={busy || !available}
@@ -188,20 +160,17 @@ export function BundleUpdateSection({
       />
 
       {error ? (
-        <text
-          className="client-update__error"
-          data-testid="client-update-error"
-        >
+        <Hint tone="error" testid="client-update-error">
           {error}
-        </text>
+        </Hint>
       ) : null}
 
       {check ? (
         <>
           <SettingsGroupDivider />
           <ListRow
-            icon={<text className="list-row__icon-text">i</text>}
-            iconColor="#8e8e93"
+            iconGlyph="i"
+            iconTone="neutral"
             label={
               check.comparison === 'newer'
                 ? '有新版本'
@@ -219,8 +188,8 @@ export function BundleUpdateSection({
             <>
               <SettingsGroupDivider />
               <ListRow
-                icon={<text className="list-row__icon-text">↓</text>}
-                iconColor="#007aff"
+                iconGlyph="↓"
+                iconTone="blue"
                 label="下载更新"
                 detail="下次冷启动生效"
                 onTap={() => {
@@ -232,9 +201,7 @@ export function BundleUpdateSection({
             </>
           ) : null}
           {check.comparison === 'newer' && !check.bundleURL && !web ? (
-            <text className="client-update__note">
-              {reasonText(check.bundleReason ?? '')}
-            </text>
+            <Hint tone="muted">{reasonText(check.bundleReason ?? '')}</Hint>
           ) : null}
         </>
       ) : null}
@@ -243,18 +210,16 @@ export function BundleUpdateSection({
       (session.operation === 'download' || session.native?.download) ? (
         <>
           <SettingsGroupDivider />
-          <text
-            className="client-update__note"
-            data-testid="client-update-progress"
-          >
-            正在下载{' '}
-            {progress.total > 0
-              ? `${Math.floor((progress.bytes * 100) / progress.total)}%`
-              : '…'}
-          </text>
+          <Hint tone="muted" testid="client-update-progress">
+            {`正在下载 ${
+              progress.total > 0
+                ? `${Math.floor((progress.bytes * 100) / progress.total)}%`
+                : '…'
+            }`}
+          </Hint>
           <ListRow
-            icon={<text className="list-row__icon-text">×</text>}
-            iconColor="#d93025"
+            iconGlyph="×"
+            iconTone="danger"
             danger
             label="取消下载"
             onTap={cancelClientBundle}
@@ -267,8 +232,8 @@ export function BundleUpdateSection({
         <>
           <SettingsGroupDivider />
           <ListRow
-            icon={<text className="list-row__icon-text">⌛</text>}
-            iconColor="#f59e0b"
+            iconGlyph="⌛"
+            iconTone="orange"
             label="待生效更新"
             value={pending.version}
             detail={pending.git_commit}
@@ -278,27 +243,21 @@ export function BundleUpdateSection({
       ) : null}
 
       {session.restored ? (
-        <text className="client-update__note">
-          已恢复内置版本,下次冷启动生效
-        </text>
+        <Hint tone="muted">已恢复内置版本,下次冷启动生效</Hint>
       ) : null}
-      {taskError ? (
-        <text className="client-update__error">{taskError}</text>
-      ) : null}
+      {taskError ? <Hint tone="error">{taskError}</Hint> : null}
       {['rollback_unconfirmed', 'startup_failed'].includes(
         session.native?.last_error ?? '',
       ) ? (
-        <text className="client-update__note">
-          上次启动未确认,已回退到此前版本
-        </text>
+        <Hint tone="muted">上次启动未确认,已回退到此前版本</Hint>
       ) : null}
 
       {showRestore && !session.restored ? (
         <>
           <SettingsGroupDivider />
           <ListRow
-            icon={<text className="list-row__icon-text">⟲</text>}
-            iconColor="#d93025"
+            iconGlyph="⟲"
+            iconTone="danger"
             danger
             label={restoreConfirm ? '再次点击确认恢复内置' : '恢复内置版本'}
             onTap={restore}

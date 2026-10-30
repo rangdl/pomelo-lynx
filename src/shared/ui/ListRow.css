@@ -5,22 +5,6 @@
   padding: 11px 14px;
 }
 
-.list-row__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 9px;
-  margin-right: 12px;
-}
-
-.list-row__icon-text {
-  color: #ffffff;
-  font-size: 17px;
-  font-weight: 600;
-}
-
 .list-row__content {
   display: flex;
   flex-direction: column;
@@ -29,28 +13,28 @@
 }
 
 .list-row__label {
-  font-size: 16px;
+  font-size: var(--font-row-title);
   font-weight: 500;
   color: var(--color-on-surface);
 }
 
 .list-row__detail {
-  font-size: 12px;
-  line-height: 17px;
+  font-size: var(--font-caption);
+  line-height: var(--line-caption);
   color: var(--color-on-surface-variant);
   margin-top: 2px;
 }
 
 .list-row__value {
-  font-size: 15px;
+  font-size: var(--font-body);
   color: var(--color-on-surface-variant);
-  margin-left: 12px;
+  margin-left: var(--space-3);
 }
 
 .list-row__arrow {
   font-size: 22px;
   color: var(--color-on-surface-faint);
-  margin-left: 12px;
+  margin-left: var(--space-3);
 }
 
 .list-row--danger .list-row__label {

@@ -1,0 +1,40 @@
+.text-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.text-field__label {
+  font-size: var(--font-note);
+  font-weight: 600;
+  color: var(--color-on-surface-variant);
+  margin-bottom: var(--space-2);
+}
+
+.text-field__frame {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: var(--control-height);
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-outline);
+  border-radius: var(--radius-control);
+  background-color: var(--color-surface-container-low);
+  overflow: hidden;
+}
+
+.text-field__frame--focused {
+  border-color: var(--color-primary);
+}
+
+.text-field__frame--invalid {
+  border-color: var(--color-error);
+}
+
+.text-field__frame--disabled {
+  opacity: 0.5;
+}
+
+.text-field__placeholder {
+  color: var(--color-on-surface-faint);
+}

@@ -14,6 +14,7 @@ import {
   isWebPlatform,
   platformName,
 } from '../../native/web-platform.js';
+import { Hint } from '../../shared/ui/Hint.js';
 import { ListRow } from '../../shared/ui/ListRow.js';
 import { SettingsGroupDivider } from '../../shared/ui/SettingsGroup.js';
 import './ClientReleaseSection.css';
@@ -93,8 +94,8 @@ export function ClientReleaseSection() {
   return (
     <view className="client-release" data-testid="client-release-section">
       <ListRow
-        icon={<text className="list-row__icon-text">⟳</text>}
-        iconColor="#007aff"
+        iconGlyph="⟳"
+        iconTone="blue"
         label={
           checking ? t('about.checkingClient') : t('about.checkClientUpdate')
         }
@@ -108,8 +109,8 @@ export function ClientReleaseSection() {
         <>
           <SettingsGroupDivider />
           <ListRow
-            icon={<text className="list-row__icon-text">i</text>}
-            iconColor="#8e8e93"
+            iconGlyph="i"
+            iconTone="neutral"
             label={statusText(check)}
             value={check.candidate.display_version}
             detail={check.candidate.git_commit}
@@ -141,8 +142,8 @@ export function ClientReleaseSection() {
         <>
           <SettingsGroupDivider />
           <ListRow
-            icon={<text className="list-row__icon-text">↓</text>}
-            iconColor="#007aff"
+            iconGlyph="↓"
+            iconTone="blue"
             label={t('about.openDownload')}
             detail={`${asset.name} · ${sizeText(asset.size)} · ${
               check.accelerator ? t('about.viaProxy') : t('about.directGithub')
@@ -155,30 +156,27 @@ export function ClientReleaseSection() {
       ) : null}
 
       {check && !asset && check.comparison === 'newer' ? (
-        <text className="client-release__note">
+        <Hint tone="muted">
           {ios
             ? '此版本没有 iOS 安装包'
             : android
               ? '此版本没有 Android 安装包'
               : '此版本没有当前平台的安装包'}
-        </text>
+        </Hint>
       ) : null}
 
       {error ? (
-        <text
-          className="client-release__error"
-          data-testid="client-release-error"
-        >
+        <Hint tone="error" testid="client-release-error">
           {clientErrorText(error)}
-        </text>
+        </Hint>
       ) : null}
 
       {releaseURL ? (
         <>
           <SettingsGroupDivider />
           <ListRow
-            icon={<text className="list-row__icon-text">↗</text>}
-            iconColor="#e5484d"
+            iconGlyph="↗"
+            iconTone="red"
             label={t('about.release')}
             detail="github.com/rangdl/pomelo-lynx"
             chevron
@@ -189,11 +187,11 @@ export function ClientReleaseSection() {
       ) : null}
 
       {ios ? (
-        <text className="client-release__note">
+        <Hint tone="muted">
           iOS 会先下载到「文件」，无法直接点击安装；请使用 TrollStore
           或自行重签。使用代理更新时下载地址会走加速地址，否则走 GitHub
           原始地址。
-        </text>
+        </Hint>
       ) : null}
     </view>
   );

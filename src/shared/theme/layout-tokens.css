@@ -1,0 +1,28 @@
+/* 非颜色设计 token:布局、间距、圆角、字号、控件高度。
+   颜色 token 仍在 tokens.css / palettes.css;本文件不参与主题变体。 */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+
+  --radius-control: 10px;
+  --radius-card: 14px;
+  --radius-pill: 999px;
+
+  --font-caption: 12px;
+  --font-note: 13px;
+  --font-body: 15px;
+  --font-row-title: 16px;
+  --font-group-title: 20px;
+  --font-large-title: 34px;
+  --font-topbar: 17px;
+
+  --line-caption: 17px;
+  --line-note: 18px;
+
+  --control-height: 40px;
+  --tap-target: 44px;
+  --page-inline: 16px;
+}

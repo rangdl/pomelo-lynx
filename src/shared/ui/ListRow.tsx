@@ -1,11 +1,12 @@
 import type { ReactNode } from '@lynx-js/react';
 
+import { IconBadge, type IconTone } from './IconBadge.js';
 import './ListRow.css';
 
 interface ListRowProps {
   label: string;
   /** 右侧单行值,通常是短文本。 */
-  value?: ReactNode;
+  value?: string;
   /** 标签下方的辅助说明。 */
   detail?: string;
   onTap?: () => void;
@@ -15,9 +16,9 @@ interface ListRowProps {
   disabled?: boolean;
   /** 完全自定义右侧内容;提供时忽略 value/chevron。 */
   trailing?: ReactNode;
-  /** 左侧图标内容(通常是 <text className="list-row__icon-text">)。 */
-  icon?: ReactNode;
-  iconColor?: string;
+  /** 设置行图标;由 IconBadge 统一色板和尺寸。 */
+  iconGlyph?: string;
+  iconTone?: IconTone;
   /** 显示右侧箭头。 */
   chevron?: boolean;
   /** 读屏文案;省略时用 label。 */
@@ -37,13 +38,13 @@ export function ListRow({
   danger,
   disabled,
   trailing,
-  icon,
-  iconColor,
+  iconGlyph,
+  iconTone,
   chevron,
   accessibilityLabel,
 }: ListRowProps) {
   const classes = ['list-row'];
-  if (icon) classes.push('list-row--with-icon');
+  if (iconGlyph) classes.push('list-row--with-icon');
   if (danger) classes.push('list-row--danger');
   if (disabled) classes.push('list-row--disabled');
 
@@ -56,25 +57,21 @@ export function ListRow({
       accessibility-label={onTap ? (accessibilityLabel ?? label) : undefined}
       accessibility-traits={onTap ? 'button' : undefined}
     >
-      {icon ? (
-        <view
-          className="list-row__icon"
-          style={{ backgroundColor: iconColor ?? 'var(--color-primary)' }}
-        >
-          {icon}
-        </view>
-      ) : null}
+      {iconGlyph ? <IconBadge glyph={iconGlyph} tone={iconTone} /> : null}
       <view className="list-row__content">
         <text className="list-row__label">{label}</text>
         {detail ? <text className="list-row__detail">{detail}</text> : null}
       </view>
       {trailing ? (
         trailing
-      ) : chevron ? (
-        <text className="list-row__arrow">›</text>
-      ) : value !== undefined ? (
-        <text className="list-row__value">{value}</text>
-      ) : null}
+      ) : (
+        <>
+          {value !== undefined ? (
+            <text className="list-row__value">{value}</text>
+          ) : null}
+          {chevron ? <text className="list-row__arrow">›</text> : null}
+        </>
+      )}
     </view>
   );
 }

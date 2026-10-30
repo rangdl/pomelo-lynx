@@ -10,6 +10,8 @@ import {
 } from '../../core/updater/update-preferences.js';
 import { ListRow } from '../../shared/ui/ListRow.js';
 import { SettingsGroupDivider } from '../../shared/ui/SettingsGroup.js';
+import { SwitchRow } from '../../shared/ui/SwitchRow.js';
+import { TextField } from '../../shared/ui/TextField.js';
 import './UpdateProxySection.css';
 
 /**
@@ -22,7 +24,6 @@ export function UpdateProxySection() {
   const [draft, setDraft] = useState(DEFAULT_UPDATE_PROXY);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [focused, setFocused] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -69,12 +70,6 @@ export function UpdateProxySection() {
       });
   };
 
-  const toggle = () => {
-    'background only';
-    if (saving) return;
-    persist({ enabled: !enabled, address: draft });
-  };
-
   const commitAddress = () => {
     'background only';
     if (saving) return;
@@ -89,90 +84,42 @@ export function UpdateProxySection() {
 
   return (
     <view className="update-proxy" data-testid="update-proxy-section">
-      <ListRow
-        icon={<text className="list-row__icon-text">⇄</text>}
-        iconColor="#0ea5e9"
+      <SwitchRow
+        iconGlyph="⇄"
+        iconTone="sky"
         label="使用代理更新"
         detail="Release API、version.json、client.json 与 Bundle/IPA 下载"
+        checked={enabled}
+        onChange={(next) => {
+          'background only';
+          persist({ enabled: next, address: draft });
+        }}
+        disabled={saving}
         testid="update-proxy-switch-row"
-        trailing={
-          <view
-            className="update-proxy__switch-hit"
-            bindtap={toggle}
-            accessibility-element={true}
-            accessibility-label="使用代理更新"
-            accessibility-traits="button"
-            data-testid="update-proxy-switch"
-          >
-            <view
-              className={
-                enabled
-                  ? 'update-proxy__switch update-proxy__switch--on'
-                  : 'update-proxy__switch'
-              }
-            >
-              <view className="update-proxy__switch-thumb" />
-            </view>
-          </view>
-        }
+        switchTestid="update-proxy-switch"
       />
 
       <SettingsGroupDivider />
-      <view className="update-proxy__editor">
-        <text className="update-proxy__label">代理地址</text>
-        <view
-          className={
-            focused
-              ? 'update-proxy__input-frame update-proxy__input-frame--focused'
-              : 'update-proxy__input-frame'
-          }
-        >
-          <input
-            key={`update-proxy-${loaded ? address : 'loading'}`}
-            default-value={draft}
-            placeholder={DEFAULT_UPDATE_PROXY}
-            placeholder-class="update-proxy__placeholder"
-            maxlength={300}
-            avoid-keyboard={true}
-            avoid-keyboard-spacing="12px"
-            set-soft-input-mode="resize"
-            style={{
-              flex: 1,
-              fontSize: '13px',
-              paddingLeft: '10px',
-              paddingRight: '10px',
-              height: '38px',
-              backgroundColor: 'transparent',
-              color: 'var(--color-on-surface)',
-            }}
-            bindinput={(event: { detail: { value: string } }) => {
-              'background only';
-              setDraft(event.detail.value);
-            }}
-            bindfocus={() => {
-              'background only';
-              setFocused(true);
-            }}
-            bindblur={() => {
-              'background only';
-              setFocused(false);
-              commitAddress();
-            }}
-            bindconfirm={commitAddress}
-            data-testid="update-proxy-input"
-          />
-        </view>
-        <text className="update-proxy__note">
-          默认 {DEFAULT_UPDATE_PROXY};仅支持
-          https://，保存后立即用于两个更新链路。 第三方代理只做传输加速，Bundle
-          仍会验签。
-        </text>
-      </view>
+      <TextField
+        className="update-proxy__editor"
+        label="代理地址"
+        value={draft}
+        onChange={setDraft}
+        onBlur={commitAddress}
+        onConfirm={commitAddress}
+        placeholder={DEFAULT_UPDATE_PROXY}
+        hint={`默认 ${DEFAULT_UPDATE_PROXY};仅支持 https://，保存后立即用于两个更新链路。第三方代理只做传输加速，Bundle 仍会验签。`}
+        error={error}
+        inputKey={`update-proxy-${loaded ? address : 'loading'}`}
+        maxlength={300}
+        disabled={saving}
+        testid="update-proxy-input"
+      />
 
       <SettingsGroupDivider />
       <ListRow
-        icon={<text className="list-row__icon-text">↺</text>}
-        iconColor="#8e8e93"
+        iconGlyph="↺"
+        iconTone="neutral"
         label="恢复默认地址"
         value={DEFAULT_UPDATE_PROXY}
         disabled={saving}
@@ -183,12 +130,6 @@ export function UpdateProxySection() {
         }}
         testid="update-proxy-reset"
       />
-
-      {error ? (
-        <text className="update-proxy__error" data-testid="update-proxy-error">
-          {error}
-        </text>
-      ) : null}
     </view>
   );
 }

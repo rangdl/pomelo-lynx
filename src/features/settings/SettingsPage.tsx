@@ -5,6 +5,10 @@ import { clientBuild } from '../../core/config/constants.js';
 import { t } from '../../i18n/index.js';
 import { isIosPlatform } from '../../native/web-platform.js';
 import {
+  PageTail,
+  SettingsLargeTitle,
+} from '../../shared/layouts/SettingsSubPage.js';
+import {
   type AppearanceMode,
   appearancePreference,
   useAppearanceMode,
@@ -12,6 +16,7 @@ import {
 import { useThemePalette } from '../../shared/theme/theme-palette-preference.js';
 import { THEME_PALETTE_OPTIONS } from '../../shared/theme/theme-palettes.js';
 import { ListRow } from '../../shared/ui/ListRow.js';
+import { PaletteSwatches } from '../../shared/ui/PaletteSwatches.js';
 import {
   SettingsGroup,
   SettingsGroupDivider,
@@ -56,14 +61,12 @@ export function SettingsPage() {
       bindtap={appearanceOpen ? () => setAppearanceOpen(false) : undefined}
       data-testid="settings-page"
     >
-      <view className="settings__header">
-        <text className="settings__title">{t('settings.title')}</text>
-      </view>
+      <SettingsLargeTitle title={t('settings.title')} />
       <scroll-view className="settings__scroll" scroll-orientation="vertical">
         <SettingsGroup title={t('settings.group.app')}>
           <ListRow
-            icon={<text className="list-row__icon-text">ⓘ</text>}
-            iconColor="#5a5ad6"
+            iconGlyph="ⓘ"
+            iconTone="indigo"
             label={t('settings.about')}
             detail={t('settings.aboutDetail')}
             chevron
@@ -82,8 +85,8 @@ export function SettingsPage() {
           <SettingsGroup title={t('settings.group.appearance')}>
             <view className="appearance-anchor" catchtap={() => {}}>
               <ListRow
-                icon={<text className="list-row__icon-text">◐</text>}
-                iconColor="#0ea5e9"
+                iconGlyph="◐"
+                iconTone="sky"
                 label={t('appearance.theme')}
                 detail={t('appearance.themeDetail')}
                 testid="appearance-row"
@@ -155,8 +158,8 @@ export function SettingsPage() {
             </view>
             <SettingsGroupDivider />
             <ListRow
-              icon={<text className="list-row__icon-text">◨</text>}
-              iconColor="#7c3aed"
+              iconGlyph="◨"
+              iconTone="violet"
               label={t('settings.themePalette')}
               detail={t('settings.themePaletteDetail')}
               accessibilityLabel={`${t('settings.themePalette')}, ${paletteLabel}`}
@@ -164,10 +167,7 @@ export function SettingsPage() {
               testid="settings-row-theme-palette"
               trailing={
                 <view className="theme-palette-value">
-                  <view className="theme-palette-value__swatches">
-                    <view className="theme-palette-value__dot" />
-                    <view className="theme-palette-value__dot theme-palette-value__dot--secondary" />
-                  </view>
+                  <PaletteSwatches size="sm" />
                   <text className="list-row__value">{paletteLabel}</text>
                   <text className="list-row__arrow">›</text>
                 </view>
@@ -178,8 +178,8 @@ export function SettingsPage() {
         {showDeveloperEntry ? (
           <SettingsGroup title={t('settings.group.developer')}>
             <ListRow
-              icon={<text className="list-row__icon-text">⚙</text>}
-              iconColor="#6b7280"
+              iconGlyph="⚙"
+              iconTone="gray"
               label={t('settings.developer')}
               detail={t('settings.developerDetail')}
               chevron
@@ -190,8 +190,8 @@ export function SettingsPage() {
         ) : null}
         <SettingsGroup title={t('settings.group.support')}>
           <ListRow
-            icon={<text className="list-row__icon-text">≡</text>}
-            iconColor="#6b7280"
+            iconGlyph="≡"
+            iconTone="gray"
             label={t('settings.logs')}
             detail={t('settings.logsDetail')}
             chevron
@@ -199,7 +199,7 @@ export function SettingsPage() {
             testid="settings-row-logs"
           />
         </SettingsGroup>
-        <view className="settings__tail" />
+        <PageTail />
       </scroll-view>
     </view>
   );

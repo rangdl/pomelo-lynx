@@ -1,95 +1,11 @@
-.theme-palette__note {
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--color-on-surface-variant);
-  padding: 14px 20px 4px;
+.theme-palette {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--space-2);
 }
 
 .theme-palette__list {
   display: flex;
   flex-direction: column;
-  padding: 8px 16px 0;
-}
-
-.theme-palette-card {
-  display: flex;
-  flex-direction: column;
-  padding: 14px;
-  margin-bottom: 12px;
-  border-width: 2px;
-  border-style: solid;
-  border-color: transparent;
-  border-radius: 16px;
-  background-color: var(--color-surface);
-}
-
-.theme-palette-card--selected {
-  border-color: var(--color-primary);
-}
-
-.theme-palette-card__header {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.theme-palette-card__title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-on-surface);
-}
-
-.theme-palette-card__check {
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--color-primary);
-}
-
-.theme-palette-card__preview {
-  display: flex;
-  flex-direction: column;
-  margin-top: 10px;
-  padding: 12px;
-  border-width: 1px;
-  border-style: solid;
-  border-color: var(--color-outline-variant);
-  border-radius: 12px;
-  background-color: var(--color-surface-container-low);
-}
-
-.theme-palette-card__sample {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--color-on-surface);
-}
-
-.theme-palette-card__sample-muted {
-  margin-top: 3px;
-  font-size: 12px;
-  color: var(--color-on-surface-variant);
-}
-
-.theme-palette-card__swatches {
-  display: flex;
-  flex-direction: row;
-  margin-top: 10px;
-}
-
-.theme-palette-card__swatch {
-  width: 22px;
-  height: 22px;
-  border-radius: 11px;
-  border-width: 1px;
-  border-style: solid;
-  border-color: var(--color-outline-variant);
-}
-
-.theme-palette-card__swatch--primary {
-  background-color: var(--color-primary);
-}
-
-.theme-palette-card__swatch--secondary {
-  margin-left: 6px;
-  background-color: var(--color-secondary);
+  padding: var(--space-2) var(--page-inline) 0;
 }

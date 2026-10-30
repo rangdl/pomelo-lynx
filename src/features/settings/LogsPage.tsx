@@ -21,6 +21,15 @@ import { levelLetter, levelName } from '../../core/log/levels.js';
 import type { LogEntry } from '../../core/log/types.js';
 import { t } from '../../i18n/index.js';
 import { PageTopBar } from '../../shared/layouts/PageTopBar.js';
+import { PageTail } from '../../shared/layouts/SettingsSubPage.js';
+import { Button } from '../../shared/ui/Button.js';
+import { Hint } from '../../shared/ui/Hint.js';
+import { ListRow } from '../../shared/ui/ListRow.js';
+import {
+  SettingsGroup,
+  SettingsGroupDivider,
+} from '../../shared/ui/SettingsGroup.js';
+import { SwitchRow } from '../../shared/ui/SwitchRow.js';
 import './LogsPage.css';
 
 /**
@@ -169,76 +178,57 @@ export function LogsPage() {
         {entries.length} 条 / 显示 {rows.length}
       </text>
 
-      <view
-        className="logs__setting"
-        bindtap={cycleDisplayLevel}
-        data-testid="logs-level-display"
-      >
-        <text className="logs__setting-label">显示级别</text>
-        <text className="logs__setting-value">
-          {LEVEL_LABELS[displayLevel]} · {displayLevel} ›
-        </text>
-      </view>
+      <SettingsGroup title="日志设置">
+        <ListRow
+          label="显示级别"
+          value={`${LEVEL_LABELS[displayLevel]} · ${displayLevel}`}
+          chevron
+          onTap={cycleDisplayLevel}
+          testid="logs-level-display"
+        />
+        {native ? (
+          <>
+            <SettingsGroupDivider />
+            <ListRow
+              label="存储级别"
+              value={`${LEVEL_LABELS[storageLevel]} · ${storageLevel}`}
+              chevron
+              onTap={cycleStorageLevel}
+              testid="logs-level-storage"
+            />
+            <SettingsGroupDivider />
+            <ListRow
+              label="保存天数"
+              value={`${retention} 天`}
+              chevron
+              onTap={cycleRetention}
+              testid="logs-retention"
+            />
+          </>
+        ) : null}
+        <SettingsGroupDivider />
+        <SwitchRow
+          label="自动跟随新日志"
+          checked={follow}
+          onChange={setFollow}
+          testid="logs-follow"
+          switchTestid="logs-follow-switch"
+        />
+      </SettingsGroup>
 
       {native ? (
-        <view
-          className="logs__setting"
-          bindtap={cycleStorageLevel}
-          data-testid="logs-level-storage"
-        >
-          <text className="logs__setting-label">存储级别</text>
-          <text className="logs__setting-value">
-            {LEVEL_LABELS[storageLevel]} · {storageLevel} ›
-          </text>
-        </view>
-      ) : null}
-
-      {native ? (
-        <view
-          className="logs__setting"
-          bindtap={cycleRetention}
-          data-testid="logs-retention"
-        >
-          <text className="logs__setting-label">保存天数</text>
-          <text className="logs__setting-value">{retention} 天 ›</text>
-        </view>
-      ) : null}
-
-      <view
-        className="logs__setting"
-        bindtap={() => setFollow((on) => !on)}
-        data-testid="logs-follow"
-      >
-        <text className="logs__setting-label">自动跟随新日志</text>
-        <text
-          className={
-            follow
-              ? 'logs__setting-value logs__setting-value--on'
-              : 'logs__setting-value'
-          }
-        >
-          {follow ? '开' : '关'}
-        </text>
-      </view>
-
-      {native ? (
-        <view
-          className={
-            sharing ? 'logs__action logs__action--busy' : 'logs__action'
-          }
-          bindtap={share}
-          data-testid="logs-share"
-        >
-          <text className="logs__action-text">
-            {sharing ? '正在导出…' : '导出日志'}
-          </text>
+        <view className="logs__share">
+          <Button
+            grow
+            label={sharing ? '正在导出…' : '导出日志'}
+            variant="secondary"
+            disabled={sharing}
+            onTap={share}
+            testid="logs-share"
+          />
         </view>
       ) : (
-        <view className="logs__note">
-          <text className="logs__note-text">
-            Web 端日志仅保存在当前会话内存中
-          </text>
-        </view>
+        <Hint tone="caption">Web 端日志仅保存在当前会话内存中</Hint>
       )}
 
       <scroll-view
@@ -269,7 +259,7 @@ export function LogsPage() {
             </view>
           ))
         )}
-        <view className="logs__tail" />
+        <PageTail />
       </scroll-view>
     </view>
   );

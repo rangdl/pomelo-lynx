@@ -1,49 +1,3 @@
-.settings {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  background-color: var(--color-surface);
-}
-
-/* 页面内容滚动区:设置页/关于页内容可能超过一屏,必须滚动而不是被
-   浮动底栏裁掉。 */
-.settings__scroll {
-  flex: 1;
-  min-height: 0;
-}
-
-.settings__tail {
-  /* 底栏 60 + 底部间距 8 + 安全区;让最后一行能滚到胶囊上方。 */
-  height: calc(84px + env(safe-area-inset-bottom));
-}
-
-.settings__header {
-  /* 在滚动区外固定;顶部安全区已由 .shell__body 处理。 */
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-top: 16px;
-  padding-bottom: 12px;
-}
-
-.settings__title {
-  /* iOS large title: 34pt bold。 */
-  font-size: 34px;
-  font-weight: 700;
-  color: var(--color-on-surface);
-}
-
-.settings__section {
-  margin-top: 24px;
-}
-
-.settings__section-title {
-  font-size: 13px;
-  color: var(--color-on-surface-faint);
-  padding-left: 20px;
-  padding-bottom: 4px;
-}
-
 .appearance-select {
   display: flex;
   flex-direction: row;
@@ -88,27 +42,6 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-}
-
-.theme-palette-value__swatches {
-  display: flex;
-  flex-direction: row;
-  margin-right: 8px;
-}
-
-.theme-palette-value__dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 6px;
-  border-width: 1px;
-  border-style: solid;
-  border-color: var(--color-outline-variant);
-  background-color: var(--color-primary);
-}
-
-.theme-palette-value__dot--secondary {
-  margin-left: 4px;
-  background-color: var(--color-secondary);
 }
 
 .appearance-group {

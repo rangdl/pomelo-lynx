@@ -10,6 +10,9 @@
   处理 Lynx 相关任务时,agent **必须**阅读此文档,它是所有 Lynx 相关文档的入口。
 - 页面结构: [页面设计约束](docs/page-design.md)。**新增页面或修改页面结构
   (顶栏、底栏、安全区、滚动容器、设置行)前必读**,并按文末检查清单逐项核对。
+- UI 框架: [UI 组件与页面骨架约束](docs/ui-kit.md)。**新增/修改设置行、开关、
+  输入框、按钮、提示、图标、主题色预览或子页骨架前必读**;优先复用共享组件,
+  禁止在 feature 内重新手写。
 
 ## 项目技能
 
@@ -53,7 +56,7 @@
 
 - Rspack: <https://rspack.rs/llms.txt>
 
-- 项目内: [页面设计约束](docs/page-design.md) · [版本/发布/更新](docs/release.md) · [Web 端调试](docs/web-debug.md)(症状 → 根因 → 解法) · [E2E 套件](e2e/README.md) · [跨端对齐](e2e/alignment/README.md)
+- 项目内: [页面设计约束](docs/page-design.md) · [UI 组件约束](docs/ui-kit.md) · [版本/发布/更新](docs/release.md) · [Web 端调试](docs/web-debug.md)(症状 → 根因 → 解法) · [E2E 套件](e2e/README.md) · [跨端对齐](e2e/alignment/README.md)
 
 ## 工具
 

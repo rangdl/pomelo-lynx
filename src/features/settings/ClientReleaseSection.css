@@ -10,7 +10,7 @@
 }
 
 .client-release__changes-title {
-  font-size: 13px;
+  font-size: var(--font-note);
   font-weight: 600;
   color: var(--color-on-surface-variant);
   margin-bottom: 6px;
@@ -24,29 +24,15 @@
 }
 
 .client-release__change-dot {
-  width: 12px;
-  font-size: 13px;
-  line-height: 18px;
+  width: var(--space-3);
+  font-size: var(--font-note);
+  line-height: var(--line-note);
   color: var(--color-primary);
 }
 
 .client-release__change-text {
   flex: 1;
-  font-size: 13px;
-  line-height: 18px;
+  font-size: var(--font-note);
+  line-height: var(--line-note);
   color: var(--color-on-surface-variant);
-}
-
-.client-release__note {
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--color-on-surface-variant);
-  padding: 8px 20px;
-}
-
-.client-release__error {
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--color-error);
-  padding: 8px 20px;
 }

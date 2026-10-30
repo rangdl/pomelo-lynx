@@ -40,6 +40,18 @@
 - [ ] **iOS 真机验证**:关于页加速设置、单一下载入口、changelog 展示
   - 本地 Linux 无法编译 iOS;iOS 编译与行为以 CI `iOS IPA` job 为准
 
+## 批次 1c:UI 框架收敛
+
+- [x] 共享原语:`Switch`/`SwitchRow`、`TextField`、`Button`、`Hint`、
+      `IconBadge`、`PaletteSwatches`
+- [x] 页面骨架 `SettingsSubPage` / `SettingsLargeTitle` / `PageTail`
+- [x] 设置/关于/开发者/主题色/日志页迁移到共享设置行与控件
+- [x] 非颜色设计 token(`layout-tokens.css`)
+- [x] 主题色卡片与 swatch 复用
+- [x] `docs/ui-kit.md` + UI 契约测试,禁止 feature 内重新手写
+- [ ] iOS 真机视觉回归:开发者页、日志设置、主题色卡片
+  - 本地 Linux 无法验证;iOS 以 CI IPA / dev server 为准
+
 ## 批次 2:系统外观 / 安全区 / 深色模式
 
 - [x] JS 主题 token(`src/shared/theme/tokens.css`)与深色模式

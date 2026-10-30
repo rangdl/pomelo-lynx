@@ -10,6 +10,8 @@
 }
 
 .shell__body {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   /* 顶部安全区只在这里加一次(songloft 同款)；页面自己的 topbar/header
@@ -19,16 +21,29 @@
      模糊/玻璃才看得见。每个可滚动页面自己加尾部 spacer。 */
 }
 
-/* 页面挂载动画:push 从右侧轻滑入,pop 从左侧轻滑入,tab 切换只淡入。
-   fill-mode 用 backwards,动画结束后不能留下 transform(否则会让页面内的
-   position:fixed 下拉浮层改为相对页面定位)。 */
-.shell__page {
-  display: flex;
-  flex-direction: column;
+/* 每个 tab 一条页面栈;祖先页面保持挂载,侧滑时父页就在当前页下面。
+   页面层绝对定位叠放,只有栈顶层参与进入动画。 */
+.page-stack {
+  position: relative;
   flex: 1;
   min-height: 0;
   width: 100%;
 }
+
+.shell__page-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg);
+  overflow: hidden;
+}
+
+/* 页面挂载动画:push 从右侧轻滑入,tab 切换淡入。pop 的父页已经在栈里,
+   不再重复播放进入动画。fill-mode 用 backwards,结束后不能留下 transform。 */
 
 .shell__page--push {
   animation: shell-page-push 220ms cubic-bezier(0.22, 0.61, 0.36, 1) backwards;

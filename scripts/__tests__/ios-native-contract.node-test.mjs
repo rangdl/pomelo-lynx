@@ -124,9 +124,10 @@ test('iOS 左边缘手势上报跟手进度并提交返回', () => {
     '侧滑识别后必须取消 LynxView 触摸,否则页面会跟着滚动',
   );
   assert.match(viewController, /gestureRecognizerShouldBegin/);
-  assert.match(viewController, /isUserInteractionEnabled = false/);
   assert.match(viewController, /func setEdgeBackEnabled\(/);
   assert.match(viewController, /edgePanGesture\?\.isEnabled = enabled/);
+  assert.match(viewController, /func beginSwipeShield\(/);
+  assert.match(viewController, /swipeSafety/);
 
   const navigation = readFileSync(
     join(ROOT, 'src/native/navigation.ts'),

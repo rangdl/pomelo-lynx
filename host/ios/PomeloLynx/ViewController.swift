@@ -45,6 +45,10 @@ final class ViewController: UIViewController {
   private var storedAppearanceModeApplied = false
   /// 左边缘返回手势;只有 JS 路由处于子页时启用。
   private var edgePanGesture: UIScreenEdgePanGestureRecognizer?
+  /// 侧滑期间的透明遮罩:阻断 LynxView 滚动,但不禁用触摸序列。
+  private var swipeShield: UIView?
+  /// 遮罩/手势异常中断时的安全回收。
+  private var swipeSafety: DispatchWorkItem?
 
   init() {
     // `PomeloLynx --bundle probe` selects the alignment probe page.
@@ -107,26 +111,51 @@ final class ViewController: UIViewController {
     let translation = max(0, gesture.translation(in: view).x)
     switch gesture.state {
     case .began:
-      // 识别为横向边缘手势后立即冻结 LynxView,避免 scroll-view 同时滚动。
-      lynxView?.isUserInteractionEnabled = false
+      beginSwipeShield()
       sendNavigationSwipe(phase: "begin", translation: 0, commit: false)
     case .changed:
       sendNavigationSwipe(
         phase: "change", translation: translation, commit: false)
     case .ended:
-      lynxView?.isUserInteractionEnabled = true
+      endSwipeShield()
       let velocity = gesture.velocity(in: view).x
       let width = max(view.bounds.width, 1)
       let commit = translation > width * 0.28 || velocity > 500
       sendNavigationSwipe(
         phase: "end", translation: translation, commit: commit)
     case .cancelled, .failed:
-      lynxView?.isUserInteractionEnabled = true
+      endSwipeShield()
       sendNavigationSwipe(
         phase: "end", translation: translation, commit: false)
     default:
       break
     }
+  }
+
+  /// 透明遮罩挡在 LynxView 上方:手指仍由父 view 的边缘手势接管,但
+  /// scroll-view 收不到触摸,侧滑就不会同时滚页。
+  private func beginSwipeShield() {
+    guard swipeShield == nil else { return }
+    let shield = UIView(frame: view.bounds)
+    shield.backgroundColor = .clear
+    shield.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    view.addSubview(shield)
+    swipeShield = shield
+    let work = DispatchWorkItem { [weak self] in
+      guard let self, self.swipeShield != nil else { return }
+      self.endSwipeShield()
+      self.sendNavigationSwipe(
+        phase: "end", translation: 0, commit: false)
+    }
+    swipeSafety = work
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: work)
+  }
+
+  private func endSwipeShield() {
+    swipeSafety?.cancel()
+    swipeSafety = nil
+    swipeShield?.removeFromSuperview()
+    swipeShield = nil
   }
 
   /// 把拖拽进度发给 JS;`translation` 为 pt,`progress` 供 JS 判断阈值。

@@ -9,8 +9,10 @@
 ```
 ShellLayout(全局唯一)
   shell
-    shell__body        ← 页面 Outlet,顶部安全区只在这里加
-      <页面根 view>
+    shell__body        ← 顶部安全区只在这里加;display:flex 纵向
+      page-stack       ← 当前 tab 的页面栈
+        shell__page-layer × N  ← 祖先页保持挂载,绝对定位叠放
+        shell__page-layer(top) ← 当前页,唯一参与进入动画
     shell__bottombar   ← 浮动胶囊,position: fixed
     more-sheet         ← 仅 >4 个 tab 时出现
 ```
@@ -29,6 +31,10 @@ ShellLayout(全局唯一)
   - 首页(不滚动):`.Home { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }`
 - 页面根节点必须是 `display: flex; flex-direction: column; height: 100%`
   (或 `flex: 1; min-height: 0`),滚动区用 `flex: 1; min-height: 0` 吃掉剩余高度。
+- **页面栈按底部 tab 划分**:`PAGE_STACKS` 为每个 tab 维护一条祖先链;
+  设置 tab 记住最后位置(`lastSettingsPathRef`),从首页切回时恢复到该子页。
+  再点当前 tab 回到该 tab 的栈根。祖先页面保持挂载,所以侧滑时父页真实
+  垫在当前页下面,不是只露出 shell 背景。
 
 ## 2. 顶部标题栏
 
@@ -53,10 +59,16 @@ ShellLayout(全局唯一)
   `.shell__page` 跟手;超过 28% 屏宽或速度 > 500 时滑出并 pop 历史,
   否则回弹。只有 `/settings/*` 子页响应,根 tab 不响应。
 - 手势由 JS 按路由开关(`setEdgeBackEnabled`):根 tab 关闭,子页开启。
-- 手势识别后取消 LynxView 触摸并临时禁用交互,避免侧滑同时滚动页面;
-  纵向边缘滑动仍交给页面滚动。
-- 页面切换动画由 `.shell__page` 的挂载 keyframes 实现(push/pop/fade);
-  Lynx 没有原生导航栈,不要期待系统 interactivePop。
+- 侧滑返回只走**当前 tab 栈的父级**(`parentPath`),不能用全局
+  `history.back()`;否则从首页切到设置子页后侧滑会回到首页。
+- 手势识别后取消 LynxView 触摸,并在 LynxView 上方加透明 `UIView` 遮罩,
+  阻断 scroll-view,同时不打断 touch 序列(禁用 LynxView 交互会导致结束
+  回调丢失、页面卡在半途)。遮罩有 2s 安全回收。
+- JS 侧还有 1.2s 看门狗:如果 `end` 事件丢失,自动回弹并清理 transform。
+- 纵向边缘滑动仍交给页面滚动。
+- 页面切换动画挂载在栈顶 `.shell__page-layer` 上:push 从右侧滑入、
+  tab 切换 fade;pop 不重复播放,因为父页已经挂在下面。Lynx 没有原生
+  导航栈,不要期待系统 interactivePop。
 
 ### 状态栏
 

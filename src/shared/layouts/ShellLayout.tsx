@@ -1,3 +1,4 @@
+import type { ReactNode } from '@lynx-js/react';
 import {
   runOnMainThread,
   useEffect,
@@ -7,13 +8,13 @@ import {
   useState,
 } from '@lynx-js/react';
 import type { MainThread } from '@lynx-js/types';
-import {
-  Outlet,
-  useNavigate,
-  useRouter,
-  useRouterState,
-} from '@tanstack/react-router';
+import { useNavigate, useRouterState } from '@tanstack/react-router';
 
+import { HomePage } from '../../features/home/HomePage.js';
+import { AboutPage } from '../../features/settings/AboutPage.js';
+import { DeveloperPage } from '../../features/settings/DeveloperPage.js';
+import { LogsPage } from '../../features/settings/LogsPage.js';
+import { SettingsPage } from '../../features/settings/SettingsPage.js';
 import { type MessageKey, t } from '../../i18n/index.js';
 import { subscribeNavigationSwipe } from '../../native/navigation.js';
 import { setNativeEdgeBackEnabled } from '../../native/platform.js';
@@ -52,8 +53,15 @@ const SLOT_WIDTH = 84;
 const BAR_EXTRA_WIDTH = 8;
 
 type PageDirection = 'push' | 'pop' | 'fade';
+type AppPath =
+  | '/'
+  | '/settings'
+  | '/settings/about'
+  | '/settings/developer'
+  | '/settings/about/logs';
+type SettingsPath = Exclude<AppPath, '/'>;
 
-const ROUTE_DEPTH: Record<string, number> = {
+const ROUTE_DEPTH: Record<AppPath, number> = {
   '/': 0,
   '/settings': 1,
   '/settings/about': 2,
@@ -61,12 +69,54 @@ const ROUTE_DEPTH: Record<string, number> = {
   '/settings/about/logs': 3,
 };
 
+const PAGE_COMPONENTS: Record<AppPath, () => ReactNode> = {
+  '/': HomePage,
+  '/settings': SettingsPage,
+  '/settings/about': AboutPage,
+  '/settings/developer': DeveloperPage,
+  '/settings/about/logs': LogsPage,
+};
+
+/** 每个 tab 一条栈;栈里保持祖先页面挂载,侧滑时父页就在下面。 */
+const PAGE_STACKS: Record<AppPath, readonly AppPath[]> = {
+  '/': ['/'],
+  '/settings': ['/settings'],
+  '/settings/about': ['/settings', '/settings/about'],
+  '/settings/developer': ['/settings', '/settings/developer'],
+  '/settings/about/logs': [
+    '/settings',
+    '/settings/about',
+    '/settings/about/logs',
+  ],
+};
+
+const SETTINGS_PATHS = new Set<AppPath>([
+  '/settings',
+  '/settings/about',
+  '/settings/developer',
+  '/settings/about/logs',
+]);
+
 function routeDepth(pathname: string): number {
-  return ROUTE_DEPTH[pathname] ?? 2;
+  return ROUTE_DEPTH[pathname as AppPath] ?? 2;
 }
 
-function isTabRoot(pathname: string): boolean {
-  return pathname === '/' || pathname === '/settings';
+function stackFor(pathname: string): readonly AppPath[] {
+  return PAGE_STACKS[pathname as AppPath] ?? PAGE_STACKS['/settings'];
+}
+
+/** 当前 tab 栈里的上一页;侧滑返回只在这一条栈内移动。 */
+function parentPath(pathname: string): AppPath | null {
+  const stack = stackFor(pathname);
+  return stack.length > 1 ? stack[stack.length - 2] : null;
+}
+
+function isSettingsPath(pathname: string): pathname is SettingsPath {
+  return SETTINGS_PATHS.has(pathname as AppPath);
+}
+
+function tabOf(pathname: string): 'home' | 'settings' {
+  return pathname.startsWith('/settings') ? 'settings' : 'home';
 }
 
 /**
@@ -76,11 +126,13 @@ function isTabRoot(pathname: string): boolean {
  */
 export function ShellLayout() {
   const navigate = useNavigate();
-  const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [appearance, setAppearance] = useState(readSystemAppearance);
   const appearanceMode = useAppearanceMode();
   const [showMore, setShowMore] = useState(false);
+  // 记住设置 tab 的最后位置;从其它 tab 切回来时恢复整条栈。
+  const lastSettingsPathRef = useRef<SettingsPath>('/settings');
+  if (isSettingsPath(pathname)) lastSettingsPathRef.current = pathname;
 
   // 单 LynxView 没有原生导航栈;用页面挂载动画模拟 push/pop。
   // ref 只在 pathname 真正变化时更新,避免普通重渲染重播动画。
@@ -89,7 +141,7 @@ export function ShellLayout() {
   const pageDirectionRef = useRef<PageDirection>('fade');
   if (lastPathRef.current !== pathname) {
     const nextDepth = routeDepth(pathname);
-    if (isTabRoot(lastPathRef.current) && isTabRoot(pathname)) {
+    if (tabOf(lastPathRef.current) !== tabOf(pathname)) {
       pageDirectionRef.current = 'fade';
     } else if (nextDepth > lastDepthRef.current) {
       pageDirectionRef.current = 'push';
@@ -177,8 +229,20 @@ export function ShellLayout() {
     if (!pathname.startsWith('/settings/')) return;
     let navTimer: ReturnType<typeof setTimeout> | undefined;
     let clearTimer: ReturnType<typeof setTimeout> | undefined;
+    let watchdog: ReturnType<typeof setTimeout> | undefined;
     let translation = 0;
     let committed = false;
+
+    const armWatchdog = () => {
+      if (watchdog) clearTimeout(watchdog);
+      // 原生 end 丢失时(系统取消手势等)兜底回弹,避免页面卡在半途。
+      watchdog = setTimeout(() => {
+        if (committed) return;
+        settlePage(translation, 0, 200);
+        translation = 0;
+        clearTimer = setTimeout(() => clearPageMotion(), 240);
+      }, 1200);
+    };
 
     const unsubscribe = subscribeNavigationSwipe((event) => {
       if (navTimer) {
@@ -189,17 +253,23 @@ export function ShellLayout() {
         clearTimeout(clearTimer);
         clearTimer = undefined;
       }
+      if (watchdog) {
+        clearTimeout(watchdog);
+        watchdog = undefined;
+      }
 
       if (event.phase === 'begin') {
         committed = false;
         translation = 0;
         followPage(0);
+        armWatchdog();
         return;
       }
       if (event.phase === 'change') {
         if (committed) return;
         translation = Math.max(0, event.translation);
         followPage(translation);
+        armWatchdog();
         return;
       }
 
@@ -207,17 +277,9 @@ export function ShellLayout() {
         committed = true;
         const offscreen = event.width > 0 ? event.width : 400;
         settlePage(translation, offscreen, 180);
+        const parent = parentPath(pathname);
         navTimer = setTimeout(() => {
-          if (router.history.canGoBack()) {
-            router.history.back();
-            return;
-          }
-          navigate({
-            to:
-              pathname === '/settings/about/logs'
-                ? '/settings/about'
-                : '/settings',
-          });
+          if (parent) navigate({ to: parent });
         }, 190);
         return;
       }
@@ -229,9 +291,23 @@ export function ShellLayout() {
     return () => {
       if (navTimer) clearTimeout(navTimer);
       if (clearTimer) clearTimeout(clearTimer);
+      if (watchdog) clearTimeout(watchdog);
       unsubscribe();
     };
-  }, [clearPageMotion, followPage, navigate, pathname, router, settlePage]);
+  }, [clearPageMotion, followPage, navigate, pathname, settlePage]);
+
+  const handleTab = (tab: TabItem) => {
+    if (tab.path === '/') {
+      if (pathname !== '/') navigate({ to: '/' });
+      return;
+    }
+    if (isSettingsPath(pathname)) {
+      // 再点当前 tab:回到该 tab 的栈根。
+      if (pathname !== '/settings') navigate({ to: '/settings' });
+      return;
+    }
+    navigate({ to: lastSettingsPathRef.current });
+  };
 
   const activePath = pathname.startsWith('/settings') ? '/settings' : '/';
   const rawActiveIndex = TABS.findIndex((tab) => tab.path === activePath);
@@ -254,6 +330,7 @@ export function ShellLayout() {
   const glass = ios || isWebPlatform();
   const iconColor = (active: boolean): string =>
     active ? (dark ? '#4da3ff' : '#007aff') : dark ? '#b0b7c3' : '#666666';
+  const stack = stackFor(pathname);
 
   return (
     // iOS Lynx 移除 `.theme-dark` 后可能保留旧 CSS 变量;主题变化时重建
@@ -266,13 +343,36 @@ export function ShellLayout() {
       data-testid="shell-root"
     >
       <view className="shell__body">
-        <view
-          key={pathname}
-          className={`shell__page shell__page--${pageDirection}`}
-          main-thread:ref={pageRef}
-          data-testid="shell-page"
-        >
-          <Outlet />
+        <view className="page-stack">
+          {stack.map((path, index) => {
+            const Page = PAGE_COMPONENTS[path];
+            const top = index === stack.length - 1;
+            if (top) {
+              const animate = pageDirection !== 'pop';
+              return (
+                <view
+                  key={path}
+                  className={`shell__page-layer${
+                    animate ? ` shell__page--${pageDirection}` : ''
+                  }`}
+                  main-thread:ref={pageRef}
+                  style={{ zIndex: index + 1 }}
+                  data-testid="shell-page"
+                >
+                  <Page />
+                </view>
+              );
+            }
+            return (
+              <view
+                key={path}
+                className="shell__page-layer"
+                style={{ zIndex: index + 1 }}
+              >
+                <Page />
+              </view>
+            );
+          })}
         </view>
       </view>
       <view className="shell__bottombar" style={{ width: `${barWidth}px` }}>
@@ -307,7 +407,7 @@ export function ShellLayout() {
             <view
               key={tab.path}
               className={active ? 'nav-item nav-item--active' : 'nav-item'}
-              bindtap={() => navigate({ to: tab.path })}
+              bindtap={() => handleTab(tab)}
               data-testid={tab.testid}
               accessibility-element={true}
               accessibility-label={t(tab.labelKey)}

@@ -43,9 +43,13 @@ test('外观下拉是右侧锚定的绝对定位浮层', () => {
 
 test('页面切换有 push/pop/fade 挂载动画', () => {
   const layout = read('src/shared/layouts/ShellLayout.tsx');
-  assert.match(layout, /key=\{pathname\}/);
+  assert.match(layout, /PAGE_STACKS/);
+  assert.match(layout, /stackFor\(pathname\)/);
+  assert.match(layout, /key=\{path\}/);
   assert.match(layout, /shell__page--\$\{pageDirection\}/);
+  assert.match(layout, /page-stack/);
   const css = read('src/shared/layouts/ShellLayout.css');
+  assert.match(css, /\.shell__page-layer/);
   for (const name of ['push', 'pop', 'fade']) {
     assert.match(css, new RegExp(`@keyframes shell-page-${name}`));
   }
@@ -61,6 +65,13 @@ test('侧滑跟手由主线程平移并与路由开关联动', () => {
   assert.match(layout, /main-thread:ref=\{pageRef\}/);
   assert.match(layout, /subscribeNavigationSwipe/);
   assert.match(layout, /setNativeEdgeBackEnabled/);
+  assert.match(layout, /lastSettingsPathRef/);
+  assert.match(layout, /parentPath\(pathname\)/);
+  assert.doesNotMatch(
+    layout,
+    /history\.back\(/,
+    '返回必须走当前 tab 的栈父级,不能用全局 history.back',
+  );
   const navigation = read('src/native/navigation.ts');
   assert.match(navigation, /PomeloNavigation\.swipe/);
 });

@@ -81,6 +81,7 @@ export function DebugTunnelSection() {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
   const [status, setStatus] = useState<TunnelStatus | null>(null);
 
   useEffect(() => {
@@ -270,6 +271,11 @@ export function DebugTunnelSection() {
             paddingRight: '10px',
             backgroundColor: 'var(--color-surface)',
             borderRadius: '10px',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: inputFocused
+              ? 'var(--color-accent)'
+              : 'var(--color-input-border)',
             color: 'var(--color-text)',
           }}
           bindinput={(e: { detail: { value: string } }) => {
@@ -278,7 +284,12 @@ export function DebugTunnelSection() {
           }}
           bindfocus={() => {
             'background only';
+            setInputFocused(true);
             logger.info('debugtunnel', 'input focused');
+          }}
+          bindblur={() => {
+            'background only';
+            setInputFocused(false);
           }}
           data-testid="debug-tunnel-input"
         />

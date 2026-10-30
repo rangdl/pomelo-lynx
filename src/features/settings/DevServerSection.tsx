@@ -69,6 +69,7 @@ export function DevServerSection() {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
   const [probe, setProbe] = useState<DevServerProbe | null>(null);
   const [checking, setChecking] = useState(false);
   const [autoRecovered, setAutoRecovered] = useState(false);
@@ -269,6 +270,11 @@ export function DevServerSection() {
             paddingRight: '10px',
             backgroundColor: 'var(--color-surface)',
             borderRadius: '10px',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: inputFocused
+              ? 'var(--color-accent)'
+              : 'var(--color-input-border)',
             color: 'var(--color-text)',
           }}
           bindinput={(e: { detail: { value: string } }) => {
@@ -277,7 +283,12 @@ export function DevServerSection() {
           }}
           bindfocus={() => {
             'background only';
+            setInputFocused(true);
             logger.info('devserver', 'input focused');
+          }}
+          bindblur={() => {
+            'background only';
+            setInputFocused(false);
           }}
           data-testid="dev-server-input"
         />

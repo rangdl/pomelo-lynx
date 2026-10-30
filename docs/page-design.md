@@ -125,6 +125,9 @@ ShellLayout(全局唯一)
   `avoid-keyboard={true}`、`avoid-keyboard-spacing="12px"`、
   `set-soft-input-mode="resize"`;聚焦时由 Lynx 抬升根视图,避免键盘
   遮挡输入框。不要自己猜键盘高度。
+- 输入框边框用内联样式(原生 input 的 className CSS 不可靠):
+  默认 `1px solid var(--color-input-border)`,focus 时切
+  `var(--color-accent)`;配 `bindfocus/bindblur` 控制状态。
 
 ## 5. 颜色、主题与安全区
 

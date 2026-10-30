@@ -25,6 +25,7 @@
   --color-switch-track: rgba(120, 120, 128, 0.16);
   --color-switch-track-on: #34c759;
   --color-switch-thumb: #ffffff;
+  --color-input-border: rgba(60, 60, 67, 0.22);
 
   /* 安全区默认值必须是有效长度;iOS Lynx 对自定义属性里的 env() 解析
      不可靠,实际布局在消费点直接写 env()。 */
@@ -61,6 +62,7 @@
   --color-switch-track: rgba(120, 120, 128, 0.16);
   --color-switch-track-on: #34c759;
   --color-switch-thumb: #ffffff;
+  --color-input-border: rgba(60, 60, 67, 0.22);
 }
 
 .theme-dark {
@@ -87,4 +89,5 @@
   --color-switch-track: rgba(120, 120, 128, 0.32);
   --color-switch-track-on: #30d158;
   --color-switch-thumb: #ffffff;
+  --color-input-border: rgba(255, 255, 255, 0.2);
 }

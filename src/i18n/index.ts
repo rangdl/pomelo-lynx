@@ -18,6 +18,9 @@ export type MessageKey =
   | 'settings.group.developer'
   | 'settings.themePalette'
   | 'settings.themePaletteDetail'
+  | 'settings.group.support'
+  | 'settings.logs'
+  | 'settings.logsDetail'
   | 'settings.developer'
   | 'settings.developerDetail'
   | 'developer.title'
@@ -36,16 +39,13 @@ export type MessageKey =
   | 'appearance.dark'
   | 'about.title'
   | 'about.back'
-  | 'about.group.app'
   | 'about.group.update'
-  | 'about.group.support'
   | 'about.client'
   | 'about.bundleVersion'
   | 'about.copy'
   | 'about.copied'
   | 'about.copyFailed'
   | 'about.release'
-  | 'about.logs'
   | 'about.webUpdate'
   | 'logs.title'
   | 'logs.back';
@@ -67,6 +67,9 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.developerDetail': '连接、刷新与调试中继',
     'settings.themePalette': '主题色',
     'settings.themePaletteDetail': '选择主色与二级强调色',
+    'settings.group.support': '支持',
+    'settings.logs': '日志',
+    'settings.logsDetail': '查看运行日志',
     'themePalette.title': '主题色',
     'themePalette.default': '默认蓝',
     'themePalette.violet': '紫罗兰',
@@ -83,19 +86,16 @@ const MESSAGES: Record<Locale, Messages> = {
     'appearance.dark': '深色',
     'about.title': '关于',
     'about.back': '设置',
-    'about.group.app': '应用',
     'about.group.update': '更新',
-    'about.group.support': '支持',
     'about.client': '客户端',
     'about.bundleVersion': 'Bundle 版本',
     'about.copy': '复制版本信息',
     'about.copied': '已复制',
     'about.copyFailed': '复制失败',
     'about.release': '打开发布页',
-    'about.logs': '日志',
     'about.webUpdate': 'Web 端随部署更新,无独立热更新',
     'logs.title': '日志',
-    'logs.back': '关于',
+    'logs.back': '设置',
   },
   en: {
     'nav.home': 'Home',
@@ -111,6 +111,9 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.developerDetail': 'Connect, reload and debug relay',
     'settings.themePalette': 'Theme color',
     'settings.themePaletteDetail': 'Choose primary and secondary accents',
+    'settings.group.support': 'Support',
+    'settings.logs': 'Logs',
+    'settings.logsDetail': 'View runtime logs',
     'themePalette.title': 'Theme color',
     'themePalette.default': 'Default blue',
     'themePalette.violet': 'Violet',
@@ -128,19 +131,16 @@ const MESSAGES: Record<Locale, Messages> = {
     'appearance.dark': 'Dark',
     'about.title': 'About',
     'about.back': 'Settings',
-    'about.group.app': 'App',
     'about.group.update': 'Updates',
-    'about.group.support': 'Support',
     'about.client': 'Client',
     'about.bundleVersion': 'Bundle version',
     'about.copy': 'Copy version info',
     'about.copied': 'Copied',
     'about.copyFailed': 'Copy failed',
     'about.release': 'Open releases',
-    'about.logs': 'Logs',
     'about.webUpdate': 'Web updates with the deployment',
     'logs.title': 'Logs',
-    'logs.back': 'About',
+    'logs.back': 'Settings',
   },
 };
 

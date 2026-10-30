@@ -116,11 +116,11 @@ ShellLayout(全局唯一)
 - **设置页每个入口行都要有 `detail` 描述**(关于/主题/主题色/开发者);
   只有纯值行或危险操作行可以省略。
 - 关于页版本行统一为“右侧短版本号 + detail 具体信息”:
-  「客户端」右值显示客户端版本,detail 显示宿主标识与 commit;
+  「客户端」右值显示客户端版本,detail 显示版本号与 commit;
   「Bundle 版本」右值显示 bundle 版本,detail 显示 channel 与 commit。
 - 分隔线:1px,`margin-left: 64px`(与图标列对齐)。
-- 旧 `.settings-row` 只允许在未迁移的更新区使用;
-  新页面优先 `ListRow`。
+- 设置页/关于页/更新区统一使用 `ListRow`;旧 `.settings-row`
+  已全部迁移,不再新增。
 - 外观分组包含两个条目:
   - 「主题」:右侧是浅灰圆角控件(当前值 + `▾`);展开的是锚定在行右下角
     的绝对定位浮层 `appearance-anchor/appearance-popover`,不是把三行塞进
@@ -130,7 +130,7 @@ ShellLayout(全局唯一)
     `/settings/theme`;不要在设置页再放下拉。
 - 「自动检查更新」用右侧 iOS 风格开关(`client-update__switch`,51×31,
   命中区 44px),不要再用「已开启/已关闭」文字。切换用现有
-  `settings-row` 行布局,整行不绑 tap,避免与开关冒泡叠加。
+  `ListRow` 行布局,整行不绑 tap,避免与开关冒泡叠加。
 - 输入框统一下发:
   `avoid-keyboard={true}`、`avoid-keyboard-spacing="12px"`、
   `set-soft-input-mode="resize"`;聚焦时由 Lynx 抬升根视图,避免键盘
@@ -196,6 +196,6 @@ ShellLayout(全局唯一)
 - Android `blur-view` 依赖(`xelement-blur-view`)尚未加入;
 - iOS 26 液态玻璃/折射透镜未移植;
 - >4 tab 的 More 面板代码已存在,但目前只有 2 个 tab,未在真机验收;
-- 更新区内部仍是旧 `.settings-row` 行,未全部迁移到 `ListRow`;
-- 开发者能力已移到独立子页,但 Dev Server/调试通道内部仍是旧
+- 开发者能力已移到独立子页,Dev Server/调试通道内部仍是
   `.dev-server__*` 行,未迁移到 `ListRow`。
+- 日志入口已从关于页移到设置页「支持」分组,路由为 `/settings/logs`。

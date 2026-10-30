@@ -24,7 +24,7 @@ import { PageTopBar } from '../../shared/layouts/PageTopBar.js';
 import './LogsPage.css';
 
 /**
- * 日志页(/settings/about/logs)。
+ * 日志页(/settings/logs)。
  *
  * 数据流:挂载时先订阅(本地 core + 原生推送 `PomeloLog.append`),再打开推送
  * 开关,最后拉一次 `getRecent` 快照补齐历史——三路来源按 `entryId` 合并去重,
@@ -161,7 +161,7 @@ export function LogsPage() {
       <PageTopBar
         title={t('logs.title')}
         backLabel={t('logs.back')}
-        onBack={() => navigate({ to: '/settings/about' })}
+        onBack={() => navigate({ to: '/settings' })}
         testid="logs-topbar"
         backTestid="logs-back"
       />

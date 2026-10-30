@@ -59,13 +59,13 @@ export function AboutPage() {
       />
 
       <scroll-view className="settings__scroll" scroll-orientation="vertical">
-        <SettingsGroup title={t('about.group.app')}>
+        <SettingsGroup>
           <ListRow
             icon={<text className="list-row__icon-text">⌂</text>}
             iconColor="#3b82f6"
             label={t('about.client')}
             value={clientVersion}
-            detail={`${hostName} · ${clientBuild.git_commit}`}
+            detail={`${clientVersion} · ${clientBuild.git_commit}`}
           />
           <SettingsGroupDivider />
           <ListRow
@@ -115,16 +115,6 @@ export function AboutPage() {
           )}
         </SettingsGroup>
 
-        <SettingsGroup title={t('about.group.support')}>
-          <ListRow
-            icon={<text className="list-row__icon-text">≡</text>}
-            iconColor="#6b7280"
-            label={t('about.logs')}
-            chevron
-            onTap={() => navigate({ to: '/settings/about/logs' })}
-            testid="about-row-logs"
-          />
-        </SettingsGroup>
         <view className="settings__tail" />
       </scroll-view>
     </view>

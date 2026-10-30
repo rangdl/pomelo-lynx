@@ -3,15 +3,20 @@ import type { ReactNode } from '@lynx-js/react';
 import './SettingsGroup.css';
 
 interface SettingsGroupProps {
-  title: string;
+  /** 省略时不渲染组标题,只保留卡片容器。 */
+  title?: string;
   children: ReactNode;
 }
 
-/** 设置分组卡片:组标题 + 圆角 14px 的条目容器。 */
+/** 设置分组卡片:可选组标题 + 圆角 14px 的条目容器。 */
 export function SettingsGroup({ title, children }: SettingsGroupProps) {
   return (
-    <view className="settings-group">
-      <text className="settings-group__title">{title}</text>
+    <view
+      className={
+        title ? 'settings-group' : 'settings-group settings-group--untitled'
+      }
+    >
+      {title ? <text className="settings-group__title">{title}</text> : null}
       <view className="settings-group__body">{children}</view>
     </view>
   );

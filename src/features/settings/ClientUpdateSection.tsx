@@ -15,6 +15,8 @@ import {
   updateSession,
 } from '../../core/updater/update-session.js';
 import { isWebPlatform } from '../../native/web-platform.js';
+import { ListRow } from '../../shared/ui/ListRow.js';
+import { SettingsGroupDivider } from '../../shared/ui/SettingsGroup.js';
 import './ClientUpdateSection.css';
 
 function errorText(error: string): string {
@@ -120,31 +122,18 @@ export function ClientUpdateSection({
         <text className="client-update__section-title">客户端更新</text>
       ) : null}
 
-      <view className="settings-row client-update__row">
-        <text className="settings-row__label">Bundle 版本</text>
-        <text className="client-update__sub">
-          {identity.version} · {identity.git_commit}
-        </text>
-      </view>
-      {native && session.native ? (
-        <view className="settings-row client-update__row">
-          <text className="settings-row__label">宿主版本</text>
-          <text className="client-update__sub">
-            {session.native.host.native_version} ·{' '}
-            {session.native.host.git_commit}
-          </text>
-        </view>
-      ) : null}
-      <view className="settings-row client-update__row">
-        <text className="settings-row__label">通道</text>
-        <text className="client-update__sub">
-          {identity.channel === 'dev'
+      <ListRow
+        icon={<text className="list-row__icon-text">⇄</text>}
+        iconColor="#0ea5e9"
+        label="通道"
+        value={
+          identity.channel === 'dev'
             ? 'dev(跟随每次构建)'
             : identity.channel === 'stable'
               ? 'stable(正式发版)'
-              : '不受支持'}
-        </text>
-      </view>
+              : '不受支持'
+        }
+      />
 
       {!available && !web ? (
         <text className="client-update__note">
@@ -153,108 +142,116 @@ export function ClientUpdateSection({
       ) : null}
 
       {native ? (
-        <view
-          className="settings-row client-update__row"
-          data-testid="client-update-automatic"
-        >
-          <text className="settings-row__label">自动检查更新</text>
-          <view
-            className="client-update__switch-hit"
-            bindtap={() => {
-              'background only';
-              changeAutomatic(!automatic.enabled);
-            }}
-            accessibility-element={true}
-            accessibility-label="自动检查更新"
-            accessibility-traits="button"
-            data-testid="client-update-automatic-switch"
-          >
-            <view
-              className={
-                automatic.enabled
-                  ? 'client-update__switch client-update__switch--on'
-                  : 'client-update__switch'
-              }
-            >
-              <view className="client-update__switch-thumb" />
-            </view>
-          </view>
-        </view>
+        <>
+          <SettingsGroupDivider />
+          <ListRow
+            icon={<text className="list-row__icon-text">↻</text>}
+            iconColor="#34c759"
+            label="自动检查更新"
+            detail="启动时自动检查并下载更新"
+            testid="client-update-automatic"
+            trailing={
+              <view
+                className="client-update__switch-hit"
+                bindtap={() => {
+                  'background only';
+                  changeAutomatic(!automatic.enabled);
+                }}
+                accessibility-element={true}
+                accessibility-label="自动检查更新"
+                accessibility-traits="button"
+                data-testid="client-update-automatic-switch"
+              >
+                <view
+                  className={
+                    automatic.enabled
+                      ? 'client-update__switch client-update__switch--on'
+                      : 'client-update__switch'
+                  }
+                >
+                  <view className="client-update__switch-thumb" />
+                </view>
+              </view>
+            }
+          />
+        </>
       ) : null}
 
-      <view
-        className={
-          busy || !available
-            ? 'settings-row client-update__row client-update__row--disabled'
-            : 'settings-row client-update__row'
-        }
-        bindtap={startCheck}
-        data-testid="client-update-check"
-      >
-        <text className="settings-row__label">
-          {checking ? '正在检查…' : '检查更新'}
-        </text>
-      </view>
+      <SettingsGroupDivider />
+      <ListRow
+        icon={<text className="list-row__icon-text">⟳</text>}
+        iconColor="#007aff"
+        label={checking ? '正在检查…' : '检查更新'}
+        detail="手动检查并下载新版本"
+        disabled={busy || !available}
+        onTap={startCheck}
+        testid="client-update-check"
+      />
 
       {error ? (
-        <view>
+        <>
           <text
             className="client-update__error"
             data-testid="client-update-error"
           >
             {error}
           </text>
-          <view className="settings-row client-update__row">
-            <text className="settings-row__label">前往下载页</text>
-            <text className="client-update__sub">
-              {releasePage(identity.channel)}
-            </text>
-          </view>
-        </view>
+          <ListRow
+            icon={<text className="list-row__icon-text">↗</text>}
+            iconColor="#e5484d"
+            label="前往下载页"
+            detail={releasePage(identity.channel) ?? undefined}
+          />
+        </>
       ) : null}
 
       {check ? (
-        <view>
-          <view className="settings-row client-update__row">
-            <text className="settings-row__label">
-              {check.comparison === 'newer'
+        <>
+          <SettingsGroupDivider />
+          <ListRow
+            icon={<text className="list-row__icon-text">i</text>}
+            iconColor="#8e8e93"
+            label={
+              check.comparison === 'newer'
                 ? '有新版本'
                 : check.comparison === 'current'
                   ? '已是最新'
-                  : '无法确定'}
-            </text>
-            <text className="client-update__sub">
-              {check.candidate.manifest.version} ·{' '}
-              {check.candidate.manifest.git_commit}
-            </text>
-          </view>
+                  : '无法确定'
+            }
+            value={check.candidate.manifest.version}
+            detail={check.candidate.manifest.git_commit}
+          />
           {check.comparison === 'newer' &&
           check.bundleURL &&
           !pending &&
           !session.restored ? (
-            <view
-              className="settings-row client-update__row"
-              bindtap={() => {
-                'background only';
-                void downloadClientBundle(check);
-              }}
-              data-testid="client-update-download"
-            >
-              <text className="settings-row__label">下载更新</text>
-              <text className="client-update__sub">下次冷启动生效</text>
-            </view>
+            <>
+              <SettingsGroupDivider />
+              <ListRow
+                icon={<text className="list-row__icon-text">↓</text>}
+                iconColor="#007aff"
+                label="下载更新"
+                detail="下次冷启动生效"
+                onTap={() => {
+                  'background only';
+                  void downloadClientBundle(check);
+                }}
+                testid="client-update-download"
+              />
+            </>
           ) : null}
           {check.comparison === 'newer' && !check.bundleURL && !web ? (
             <text className="client-update__note">
               {reasonText(check.bundleReason ?? '')}
             </text>
           ) : null}
-        </view>
+        </>
       ) : null}
 
       {progress &&
       (session.operation === 'download' || session.native?.download) ? (
-        <view>
+        <>
+          <SettingsGroupDivider />
           <text
             className="client-update__note"
             data-testid="client-update-progress"
@@ -264,26 +261,29 @@ export function ClientUpdateSection({
               ? `${Math.floor((progress.bytes * 100) / progress.total)}%`
               : '…'}
           </text>
-          <view
-            className="settings-row client-update__row"
-            bindtap={cancelClientBundle}
-            data-testid="client-update-cancel"
-          >
-            <text className="settings-row__label">取消下载</text>
-          </view>
-        </view>
+          <ListRow
+            icon={<text className="list-row__icon-text">×</text>}
+            iconColor="#d93025"
+            danger
+            label="取消下载"
+            onTap={cancelClientBundle}
+            testid="client-update-cancel"
+          />
+        </>
       ) : null}
 
       {pending ? (
-        <view
-          className="settings-row client-update__row"
-          data-testid="client-update-pending"
-        >
-          <text className="settings-row__label">待生效更新</text>
-          <text className="client-update__sub">
-            {pending.version} · {pending.git_commit}
-          </text>
-        </view>
+        <>
+          <SettingsGroupDivider />
+          <ListRow
+            icon={<text className="list-row__icon-text">⌛</text>}
+            iconColor="#f59e0b"
+            label="待生效更新"
+            value={pending.version}
+            detail={pending.git_commit}
+            testid="client-update-pending"
+          />
+        </>
       ) : null}
 
       {session.restored ? (
@@ -303,15 +303,17 @@ export function ClientUpdateSection({
       ) : null}
 
       {showRestore && !session.restored ? (
-        <view
-          className="settings-row client-update__row client-update__row--danger"
-          bindtap={restore}
-          data-testid="client-update-restore"
-        >
-          <text className="settings-row__label">
-            {restoreConfirm ? '再次点击确认恢复内置' : '恢复内置版本'}
-          </text>
-        </view>
+        <>
+          <SettingsGroupDivider />
+          <ListRow
+            icon={<text className="list-row__icon-text">⟲</text>}
+            iconColor="#d93025"
+            danger
+            label={restoreConfirm ? '再次点击确认恢复内置' : '恢复内置版本'}
+            onTap={restore}
+            testid="client-update-restore"
+          />
+        </>
       ) : null}
     </view>
   );

@@ -119,6 +119,27 @@ test('设置页每项有描述,关于页版本行使用 value + detail', () => {
   assert.doesNotMatch(about, /about\.hostVersion/);
 });
 
+test('日志入口移到设置页独立路由,关于页不再放日志', () => {
+  const settings = read('src/features/settings/SettingsPage.tsx');
+  assert.match(settings, /settings-row-logs/);
+  assert.match(settings, /settings\.logsDetail/);
+  const about = read('src/features/settings/AboutPage.tsx');
+  assert.doesNotMatch(about, /about\.logs/);
+  assert.match(about, /about\.client/);
+  const logs = read('src/features/settings/LogsPage.tsx');
+  assert.match(logs, /navigate\(\{ to: '\/settings' \}\)/);
+  const router = read('src/router.tsx');
+  assert.match(router, /path: '\/settings\/logs'/);
+  assert.doesNotMatch(router, /settings\/about\/logs/);
+});
+
+test('更新区使用 ListRow,且不再渲染重复版本行', () => {
+  const section = read('src/features/settings/ClientUpdateSection.tsx');
+  assert.match(section, /<ListRow/);
+  assert.doesNotMatch(section, /className="settings-row/);
+  assert.doesNotMatch(section, /Bundle 版本|宿主版本/);
+});
+
 test('主题色子页覆盖四个调色板并接入设置与路由', () => {
   const meta = read('src/shared/theme/theme-palettes.ts');
   for (const id of ['default', 'violet', 'sunset', 'teal']) {

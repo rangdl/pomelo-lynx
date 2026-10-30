@@ -188,6 +188,17 @@ export function SettingsPage() {
             />
           </SettingsGroup>
         ) : null}
+        <SettingsGroup title={t('settings.group.support')}>
+          <ListRow
+            icon={<text className="list-row__icon-text">≡</text>}
+            iconColor="#6b7280"
+            label={t('settings.logs')}
+            detail={t('settings.logsDetail')}
+            chevron
+            onTap={() => navigate({ to: '/settings/logs' })}
+            testid="settings-row-logs"
+          />
+        </SettingsGroup>
         <view className="settings__tail" />
       </scroll-view>
     </view>

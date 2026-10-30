@@ -99,7 +99,7 @@ const themePaletteRoute = createRoute({
 
 const logsRoute = createRoute({
   getParentRoute: () => shellRoute,
-  path: '/settings/about/logs',
+  path: '/settings/logs',
   component: LogsPage,
 });
 

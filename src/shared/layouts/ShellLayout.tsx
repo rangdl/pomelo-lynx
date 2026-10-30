@@ -64,7 +64,7 @@ type AppPath =
   | '/settings/about'
   | '/settings/developer'
   | '/settings/theme'
-  | '/settings/about/logs';
+  | '/settings/logs';
 type SettingsPath = Exclude<AppPath, '/'>;
 
 const ROUTE_DEPTH: Record<AppPath, number> = {
@@ -73,7 +73,7 @@ const ROUTE_DEPTH: Record<AppPath, number> = {
   '/settings/about': 2,
   '/settings/developer': 2,
   '/settings/theme': 2,
-  '/settings/about/logs': 3,
+  '/settings/logs': 2,
 };
 
 const PAGE_COMPONENTS: Record<AppPath, () => ReactNode> = {
@@ -82,7 +82,7 @@ const PAGE_COMPONENTS: Record<AppPath, () => ReactNode> = {
   '/settings/about': AboutPage,
   '/settings/developer': DeveloperPage,
   '/settings/theme': ThemePalettePage,
-  '/settings/about/logs': LogsPage,
+  '/settings/logs': LogsPage,
 };
 
 /** 每个 tab 一条栈;栈里保持祖先页面挂载,侧滑时父页就在下面。 */
@@ -92,11 +92,7 @@ const PAGE_STACKS: Record<AppPath, readonly AppPath[]> = {
   '/settings/about': ['/settings', '/settings/about'],
   '/settings/developer': ['/settings', '/settings/developer'],
   '/settings/theme': ['/settings', '/settings/theme'],
-  '/settings/about/logs': [
-    '/settings',
-    '/settings/about',
-    '/settings/about/logs',
-  ],
+  '/settings/logs': ['/settings', '/settings/logs'],
 };
 
 const SETTINGS_PATHS = new Set<AppPath>([
@@ -104,7 +100,7 @@ const SETTINGS_PATHS = new Set<AppPath>([
   '/settings/about',
   '/settings/developer',
   '/settings/theme',
-  '/settings/about/logs',
+  '/settings/logs',
 ]);
 
 function routeDepth(pathname: string): number {

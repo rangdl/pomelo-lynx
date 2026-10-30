@@ -1,4 +1,4 @@
-/* 日志页(/settings/about/logs):紧凑 header + 设置行 + 实时列表。 */
+/* 日志页(/settings/logs):紧凑 header + 设置行 + 实时列表。 */
 
 .logs {
   display: flex;

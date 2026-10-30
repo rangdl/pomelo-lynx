@@ -62,71 +62,83 @@ export function SettingsPage() {
           />
         </SettingsGroup>
 
-        <SettingsGroup title={t('settings.group.appearance')}>
-          <view className="appearance-anchor" catchtap={() => {}}>
-            <ListRow
-              icon={<text className="list-row__icon-text">◐</text>}
-              iconColor="#0ea5e9"
-              label={t('appearance.theme')}
-              testid="appearance-row"
-              trailing={
+        <view
+          className={
+            appearanceOpen
+              ? 'appearance-group appearance-group--raised'
+              : 'appearance-group'
+          }
+        >
+          <SettingsGroup title={t('settings.group.appearance')}>
+            <view className="appearance-anchor" catchtap={() => {}}>
+              <ListRow
+                icon={<text className="list-row__icon-text">◐</text>}
+                iconColor="#0ea5e9"
+                label={t('appearance.theme')}
+                testid="appearance-row"
+                trailing={
+                  <view
+                    className="appearance-select"
+                    bindtap={toggleAppearanceMenu}
+                    accessibility-element={true}
+                    accessibility-label={`${t('appearance.theme')}, ${appearanceLabel}`}
+                    accessibility-traits="button"
+                    data-testid="appearance-trigger"
+                  >
+                    <text className="appearance-select__value">
+                      {appearanceLabel}
+                    </text>
+                    <text className="appearance-select__caret">
+                      {appearanceOpen ? '▴' : '▾'}
+                    </text>
+                  </view>
+                }
+              />
+              {appearanceOpen ? (
                 <view
-                  className="appearance-select"
-                  bindtap={toggleAppearanceMenu}
-                  accessibility-element={true}
-                  accessibility-label={`${t('appearance.theme')}, ${appearanceLabel}`}
-                  accessibility-traits="button"
-                  data-testid="appearance-trigger"
+                  className="appearance-popover"
+                  style={{
+                    // iOS 的 absolute + flex 子项不会自动撑高,必须显式给高度。
+                    height: `${APPEARANCE_OPTIONS.length * 46 + 14}px`,
+                  }}
+                  data-testid="appearance-menu"
                 >
-                  <text className="appearance-select__value">
-                    {appearanceLabel}
-                  </text>
-                  <text className="appearance-select__caret">
-                    {appearanceOpen ? '▴' : '▾'}
-                  </text>
+                  {APPEARANCE_OPTIONS.map((option, index) => {
+                    const selected = appearanceMode === option.mode;
+                    return (
+                      <view
+                        key={option.mode}
+                        className={
+                          selected
+                            ? 'appearance-option appearance-option--selected'
+                            : 'appearance-option'
+                        }
+                        bindtap={() => {
+                          void appearancePreference.setMode(option.mode);
+                          setAppearanceOpen(false);
+                        }}
+                        accessibility-element={true}
+                        accessibility-label={t(option.labelKey)}
+                        accessibility-traits="button"
+                        data-testid={`appearance-${option.mode}`}
+                      >
+                        {index > 0 ? (
+                          <view className="appearance-option-divider" />
+                        ) : null}
+                        <text className="appearance-option__label">
+                          {t(option.labelKey)}
+                        </text>
+                        {selected ? (
+                          <text className="appearance-check">✓</text>
+                        ) : null}
+                      </view>
+                    );
+                  })}
                 </view>
-              }
-            />
-            {appearanceOpen ? (
-              <view
-                className="appearance-popover"
-                data-testid="appearance-menu"
-              >
-                {APPEARANCE_OPTIONS.map((option, index) => {
-                  const selected = appearanceMode === option.mode;
-                  return (
-                    <view
-                      key={option.mode}
-                      className={
-                        selected
-                          ? 'appearance-option appearance-option--selected'
-                          : 'appearance-option'
-                      }
-                      bindtap={() => {
-                        void appearancePreference.setMode(option.mode);
-                        setAppearanceOpen(false);
-                      }}
-                      accessibility-element={true}
-                      accessibility-label={t(option.labelKey)}
-                      accessibility-traits="button"
-                      data-testid={`appearance-${option.mode}`}
-                    >
-                      {index > 0 ? (
-                        <view className="appearance-option-divider" />
-                      ) : null}
-                      <text className="appearance-option__label">
-                        {t(option.labelKey)}
-                      </text>
-                      {selected ? (
-                        <text className="appearance-check">✓</text>
-                      ) : null}
-                    </view>
-                  );
-                })}
-              </view>
-            ) : null}
-          </view>
-        </SettingsGroup>
+              ) : null}
+            </view>
+          </SettingsGroup>
+        </view>
         {showDeveloperEntry ? (
           <SettingsGroup title={t('settings.group.developer')}>
             <ListRow

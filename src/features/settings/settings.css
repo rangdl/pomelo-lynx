@@ -95,6 +95,15 @@
   margin-left: 6px;
 }
 
+.appearance-group {
+  position: relative;
+  z-index: 1;
+}
+
+.appearance-group--raised {
+  z-index: 20;
+}
+
 .appearance-anchor {
   position: relative;
   z-index: 20;

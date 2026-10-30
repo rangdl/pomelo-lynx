@@ -5,7 +5,7 @@
 
 .dev-server__section-title {
   font-size: 13px;
-  color: var(--color-text-tertiary);
+  color: var(--color-on-surface-faint);
   padding-left: 20px;
   padding-top: 20px;
   padding-bottom: 4px;
@@ -14,7 +14,7 @@
 .dev-server__row {
   display: flex;
   flex-direction: column;
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-container-low);
   padding-left: 20px;
   padding-right: 20px;
   padding-top: 16px;
@@ -23,12 +23,12 @@
 
 .dev-server__status-label {
   font-size: 16px;
-  color: var(--color-text);
+  color: var(--color-on-surface);
 }
 
 .dev-server__status-value {
   font-size: 13px;
-  color: var(--color-text-tertiary);
+  color: var(--color-on-surface-faint);
   margin-top: 4px;
 }
 
@@ -49,23 +49,23 @@
   height: 40px;
   border-width: 1px;
   border-style: solid;
-  border-color: var(--color-input-border);
+  border-color: var(--color-outline);
   border-radius: 10px;
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-container-low);
   overflow: hidden;
 }
 
 .dev-server__input-frame--focused {
-  border-color: var(--color-accent);
+  border-color: var(--color-primary);
 }
 
 .dev-server__placeholder {
-  color: var(--color-text-tertiary);
+  color: var(--color-on-surface-faint);
 }
 
 .dev-server__draft {
   font-size: 12px;
-  color: var(--color-text-secondary);
+  color: var(--color-on-surface-variant);
   padding-left: 20px;
   padding-right: 20px;
   padding-top: 6px;
@@ -85,7 +85,7 @@
   align-items: center;
   justify-content: center;
   height: 40px;
-  background-color: var(--color-accent);
+  background-color: var(--color-primary);
   border-radius: 8px;
   margin-right: 12px;
 }
@@ -100,16 +100,16 @@
 
 .dev-server__btn-text {
   font-size: 15px;
-  color: var(--color-on-accent);
+  color: var(--color-on-primary);
 }
 
 .dev-server__btn-text--danger {
-  color: var(--color-danger);
+  color: var(--color-error);
 }
 
 .dev-server__note {
   font-size: 12px;
-  color: var(--color-text-tertiary);
+  color: var(--color-on-surface-faint);
   padding-left: 20px;
   padding-right: 20px;
   padding-top: 8px;
@@ -119,7 +119,7 @@
 
 .dev-server__error {
   font-size: 13px;
-  color: var(--color-danger);
+  color: var(--color-error);
   padding-left: 20px;
   padding-right: 20px;
   padding-top: 8px;

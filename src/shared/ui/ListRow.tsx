@@ -59,7 +59,7 @@ export function ListRow({
       {icon ? (
         <view
           className="list-row__icon"
-          style={{ backgroundColor: iconColor ?? 'var(--color-accent)' }}
+          style={{ backgroundColor: iconColor ?? 'var(--color-primary)' }}
         >
           {icon}
         </view>

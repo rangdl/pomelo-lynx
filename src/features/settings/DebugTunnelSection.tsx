@@ -277,7 +277,7 @@ export function DebugTunnelSection() {
               paddingRight: '10px',
               height: '38px',
               backgroundColor: 'transparent',
-              color: 'var(--color-text)',
+              color: 'var(--color-on-surface)',
             }}
             bindinput={(e: { detail: { value: string } }) => {
               'background only';

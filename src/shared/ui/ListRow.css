@@ -31,30 +31,30 @@
 .list-row__label {
   font-size: 16px;
   font-weight: 500;
-  color: var(--color-text);
+  color: var(--color-on-surface);
 }
 
 .list-row__detail {
   font-size: 12px;
   line-height: 17px;
-  color: var(--color-text-secondary);
+  color: var(--color-on-surface-variant);
   margin-top: 2px;
 }
 
 .list-row__value {
   font-size: 15px;
-  color: var(--color-text-secondary);
+  color: var(--color-on-surface-variant);
   margin-left: 12px;
 }
 
 .list-row__arrow {
   font-size: 22px;
-  color: var(--color-text-tertiary);
+  color: var(--color-on-surface-faint);
   margin-left: 12px;
 }
 
 .list-row--danger .list-row__label {
-  color: var(--color-danger);
+  color: var(--color-error);
 }
 
 .list-row--disabled {

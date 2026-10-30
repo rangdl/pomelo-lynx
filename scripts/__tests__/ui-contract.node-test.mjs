@@ -117,6 +117,6 @@ test('开发者页输入框启用键盘避让', () => {
   const css = read('src/features/settings/DevServerSection.css');
   assert.match(css, /\.dev-server__input-frame \{/);
   assert.match(css, /border-width: 1px;/);
-  assert.match(css, /border-color: var\(--color-input-border\)/);
+  assert.match(css, /border-color: var\(--color-outline\)/);
   assert.match(css, /\.dev-server__input-frame--focused/);
 });

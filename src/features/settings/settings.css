@@ -3,7 +3,7 @@
   flex-direction: column;
   width: 100%;
   height: 100%;
-  background-color: var(--color-bg);
+  background-color: var(--color-surface);
 }
 
 /* 页面内容滚动区:设置页/关于页内容可能超过一屏,必须滚动而不是被
@@ -30,7 +30,7 @@
   /* iOS large title: 34pt bold。 */
   font-size: 34px;
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--color-on-surface);
 }
 
 .settings-row {
@@ -38,7 +38,7 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-container-low);
   padding-left: 20px;
   padding-right: 20px;
   padding-top: 16px;
@@ -48,12 +48,12 @@
 
 .settings-row__label {
   font-size: 16px;
-  color: var(--color-text);
+  color: var(--color-on-surface);
 }
 
 .settings-row__value {
   font-size: 16px;
-  color: var(--color-text-tertiary);
+  color: var(--color-on-surface-faint);
 }
 
 .settings__section {
@@ -62,7 +62,7 @@
 
 .settings__section-title {
   font-size: 13px;
-  color: var(--color-text-tertiary);
+  color: var(--color-on-surface-faint);
   padding-left: 20px;
   padding-bottom: 4px;
 }
@@ -76,17 +76,17 @@
   height: 44px;
   padding: 0 10px;
   border-radius: 10px;
-  background-color: var(--color-surface-muted);
+  background-color: var(--color-surface-container-high);
   transition: background-color 120ms ease;
 }
 
 .appearance-select:active {
-  background-color: var(--color-separator);
+  background-color: var(--color-outline-variant);
 }
 
 .appearance-select__value {
   font-size: 15px;
-  color: var(--color-text-secondary);
+  color: var(--color-on-surface-variant);
 }
 
 .appearance-select__caret {
@@ -97,8 +97,8 @@
   margin-top: -1px;
   border-right-width: 1.5px;
   border-bottom-width: 1.5px;
-  border-right-color: var(--color-text-tertiary);
-  border-bottom-color: var(--color-text-tertiary);
+  border-right-color: var(--color-on-surface-faint);
+  border-bottom-color: var(--color-on-surface-faint);
   transform: rotate(45deg);
   transition: transform 160ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
@@ -130,9 +130,9 @@
   width: 208px;
   overflow: hidden;
   padding: 6px 0;
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-container-low);
   border-width: 1px;
-  border-color: var(--color-separator);
+  border-color: var(--color-outline-variant);
   border-radius: 14px;
   box-shadow: 0 12px 30px var(--color-nav-shadow);
   z-index: 21;
@@ -149,12 +149,12 @@
   justify-content: space-between;
   min-height: 46px;
   padding: 0 16px;
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-container-low);
   transition: background-color 120ms ease;
 }
 
 .appearance-option:active {
-  background-color: var(--color-surface-muted);
+  background-color: var(--color-surface-container-high);
 }
 
 .appearance-option-divider {
@@ -163,12 +163,12 @@
   left: 16px;
   right: 0;
   height: 1px;
-  background-color: var(--color-separator);
+  background-color: var(--color-outline-variant);
 }
 
 .appearance-option__label {
   font-size: 16px;
-  color: var(--color-text);
+  color: var(--color-on-surface);
 }
 
 @keyframes appearance-popover-in {
@@ -183,12 +183,12 @@
 }
 
 .appearance-option--selected .appearance-option__label {
-  color: var(--color-accent);
+  color: var(--color-primary);
   font-weight: 500;
 }
 
 .appearance-check {
-  color: var(--color-accent);
+  color: var(--color-primary);
   font-size: 17px;
   font-weight: 600;
 }

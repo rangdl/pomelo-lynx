@@ -3,7 +3,7 @@
   height: 100%;
   /* 首页不滚动:把内容整体抬到底栏上方,避免被胶囊覆盖。 */
   padding-bottom: calc(68px + env(safe-area-inset-bottom));
-  background-color: var(--color-bg);
+  background-color: var(--color-surface);
   /* 亮色下降低渐变饱和度,避免整屏仍显得像深色海报。 */
   --home-gradient-mid: rgba(239, 155, 255, 0.16);
   --home-gradient-end: rgba(255, 100, 72, 0.24);
@@ -17,7 +17,7 @@
 }
 
 .Home text {
-  color: var(--color-text);
+  color: var(--color-on-surface);
 }
 
 .Background {
@@ -128,19 +128,19 @@
 
 .Description {
   font-size: 20px;
-  color: var(--color-text-secondary);
+  color: var(--color-on-surface-variant);
   margin: 15rpx;
 }
 
 .Hint {
   font-size: 12px;
   margin: 5px;
-  color: var(--color-text-tertiary);
+  color: var(--color-on-surface-faint);
 }
 
 .Hint-file {
   font-style: italic;
-  color: var(--color-text-secondary);
+  color: var(--color-on-surface-variant);
 }
 
 .Spacer {

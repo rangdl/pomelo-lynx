@@ -5,7 +5,7 @@
   flex-direction: column;
   width: 100%;
   height: 100%;
-  background-color: var(--color-bg);
+  background-color: var(--color-surface);
 }
 
 .logs__summary {
@@ -14,7 +14,7 @@
   padding-top: 4px;
   padding-bottom: 4px;
   font-size: 11px;
-  color: var(--color-text-tertiary);
+  color: var(--color-on-surface-faint);
   text-align: right;
 }
 
@@ -23,7 +23,7 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-container-low);
   padding-left: 16px;
   padding-right: 16px;
   padding-top: 10px;
@@ -33,16 +33,16 @@
 
 .logs__setting-label {
   font-size: 14px;
-  color: var(--color-text);
+  color: var(--color-on-surface);
 }
 
 .logs__setting-value {
   font-size: 14px;
-  color: var(--color-text-secondary);
+  color: var(--color-on-surface-variant);
 }
 
 .logs__setting-value--on {
-  color: var(--color-accent);
+  color: var(--color-primary);
   font-weight: 600;
 }
 
@@ -51,7 +51,7 @@
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-container-low);
   padding-top: 12px;
   padding-bottom: 12px;
   margin-top: 8px;
@@ -63,7 +63,7 @@
 
 .logs__action-text {
   font-size: 15px;
-  color: var(--color-accent);
+  color: var(--color-primary);
 }
 
 .logs__note {
@@ -75,14 +75,14 @@
 
 .logs__note-text {
   font-size: 12px;
-  color: var(--color-text-tertiary);
+  color: var(--color-on-surface-faint);
 }
 
 .logs__list {
   flex: 1;
   min-height: 0;
   margin-top: 8px;
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-container-low);
 }
 
 .logs__tail {
@@ -99,7 +99,7 @@
 
 .logs__empty-text {
   font-size: 13px;
-  color: var(--color-text-tertiary);
+  color: var(--color-on-surface-faint);
 }
 
 .logs__row {
@@ -115,7 +115,7 @@
 .logs__time {
   width: 80px;
   font-size: 11px;
-  color: var(--color-text-tertiary);
+  color: var(--color-on-surface-faint);
 }
 
 .logs__level {
@@ -126,15 +126,15 @@
 }
 
 .logs__level--verbose {
-  color: var(--color-text-tertiary);
+  color: var(--color-on-surface-faint);
 }
 
 .logs__level--debug {
-  color: var(--color-text-secondary);
+  color: var(--color-on-surface-variant);
 }
 
 .logs__level--info {
-  color: var(--color-text);
+  color: var(--color-on-surface);
 }
 
 .logs__level--warn {
@@ -142,18 +142,18 @@
 }
 
 .logs__level--error {
-  color: var(--color-danger);
+  color: var(--color-error);
 }
 
 .logs__tag {
   max-width: 96px;
   font-size: 11px;
-  color: var(--color-text-secondary);
+  color: var(--color-on-surface-variant);
   margin-right: 6px;
 }
 
 .logs__msg {
   flex: 1;
   font-size: 11px;
-  color: var(--color-text);
+  color: var(--color-on-surface);
 }

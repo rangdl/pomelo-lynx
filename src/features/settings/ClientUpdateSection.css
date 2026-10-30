@@ -5,7 +5,7 @@
 
 .client-update__section-title {
   font-size: 13px;
-  color: var(--color-text-tertiary);
+  color: var(--color-on-surface-faint);
   padding-left: 20px;
   padding-bottom: 4px;
 }
@@ -19,12 +19,12 @@
 }
 
 .client-update__row--danger .settings-row__label {
-  color: var(--color-danger);
+  color: var(--color-error);
 }
 
 .client-update__sub {
   font-size: 13px;
-  color: var(--color-text-tertiary);
+  color: var(--color-on-surface-faint);
   max-width: 180px;
 }
 
@@ -45,7 +45,7 @@
 }
 
 .client-update__switch--on {
-  background-color: var(--color-switch-track-on);
+  background-color: var(--color-secondary);
 }
 
 .client-update__switch-thumb {
@@ -67,7 +67,7 @@
 
 .client-update__note {
   font-size: 13px;
-  color: var(--color-text-secondary);
+  color: var(--color-on-surface-variant);
   padding-left: 20px;
   padding-right: 20px;
   padding-top: 8px;
@@ -76,7 +76,7 @@
 
 .client-update__error {
   font-size: 13px;
-  color: var(--color-danger);
+  color: var(--color-error);
   padding-left: 20px;
   padding-right: 20px;
   padding-top: 8px;

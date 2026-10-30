@@ -54,6 +54,37 @@ test('theme-light 覆盖 :root 的所有颜色 token', () => {
   }
 });
 
+test('Flutter 风格的核心颜色角色在三个作用域都存在', () => {
+  const required = [
+    '--color-surface',
+    '--color-surface-container-low',
+    '--color-surface-container',
+    '--color-surface-container-high',
+    '--color-on-surface',
+    '--color-on-surface-variant',
+    '--color-on-surface-faint',
+    '--color-primary',
+    '--color-on-primary',
+    '--color-primary-container',
+    '--color-on-primary-container',
+    '--color-secondary',
+    '--color-on-secondary',
+    '--color-secondary-container',
+    '--color-on-secondary-container',
+    '--color-outline',
+    '--color-outline-variant',
+    '--color-error',
+    '--color-on-error',
+    '--color-shadow',
+  ];
+  for (const selector of [':root', '.theme-light', '.theme-dark']) {
+    const present = new Set(variables(block(selector)));
+    for (const name of required) {
+      assert.ok(present.has(name), `${selector} 缺少核心角色 ${name}`);
+    }
+  }
+});
+
 test('ShellLayout 在主题变化时重建根视图', () => {
   const source = readFileSync(
     join(ROOT, 'src/shared/layouts/ShellLayout.tsx'),

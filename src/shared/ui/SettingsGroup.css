@@ -5,19 +5,19 @@
 .settings-group__title {
   font-size: 20px;
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--color-on-surface);
   margin: 14px 4px 8px 4px;
 }
 
 .settings-group__body {
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-container-low);
   border-radius: 14px;
   padding: 4px 0;
 }
 
 .settings-group__divider {
   height: 1px;
-  background-color: var(--color-separator);
+  background-color: var(--color-outline-variant);
   margin-left: 64px;
 }
 

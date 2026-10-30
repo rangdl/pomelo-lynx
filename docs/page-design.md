@@ -126,13 +126,17 @@ ShellLayout(全局唯一)
   `set-soft-input-mode="resize"`;聚焦时由 Lynx 抬升根视图,避免键盘
   遮挡输入框。不要自己猜键盘高度。
 - 输入框边框用内联样式(原生 input 的 className CSS 不可靠):
-  默认 `1px solid var(--color-input-border)`,focus 时切
-  `var(--color-accent)`;配 `bindfocus/bindblur` 控制状态。
+  默认 `1px solid var(--color-outline)`,focus 时切
+  `var(--color-primary)`;配 `bindfocus/bindblur` 控制状态。
 
 ## 5. 颜色、主题与安全区
 
 - 颜色只用 `src/shared/theme/tokens.css` 的语义 token;
   不要在页面 CSS/组件内联样式里写死 `#hex` 或 `rgba()`(图标块品牌色除外)。
+- 颜色命名对齐 Flutter Material 3 ColorScheme:
+  `surface / on-surface / primary / secondary / tertiary / *-container /
+  outline / outline-variant / error`;旧 `bg / accent / text-*` 名称已迁移,
+  新增代码不要再使用旧名。
 - 深色模式由 `.theme-dark` 覆盖 token;主题类挂在 `.shell`。
 - **`.theme-light` 必须显式覆盖 `.theme-dark` 的每个 token**。iOS Lynx
   移除 `.theme-dark` 后不会恢复 `:root` 值,d→浅切换时背景/文字会继续
@@ -146,7 +150,7 @@ ShellLayout(全局唯一)
 - 固定浅色/深色时,JS 通过 `PomeloPlatform.setAppearanceMode` 同步
   `overrideUserInterfaceStyle`;状态栏、键盘、系统弹窗都跟随应用选择。
   冷启动由 `ViewController` 读取同一 prefs key 并先行应用。
-- 首页也使用主题 token:`.Home` 背景为 `var(--color-bg)`,装饰渐变在
+- 首页也使用主题 token:`.Home` 背景为 `var(--color-surface)`,装饰渐变在
   亮色下降低透明度;不要再写死 `#000` 或白色文字。
 - `system` 模式由宿主 `globalProps.colorScheme` 初始化,并只接受
   `reason = trait / foreground / firstScreen` 的外观事件更新;

@@ -5,8 +5,8 @@
   align-items: center;
   height: 44px;
   border-bottom-width: 1px;
-  border-bottom-color: var(--color-separator);
-  background-color: var(--color-bg);
+  border-bottom-color: var(--color-outline-variant);
+  background-color: var(--color-surface);
 }
 
 .page-topbar__side {
@@ -32,13 +32,13 @@
 
 .page-topbar__back-text {
   font-size: 17px;
-  color: var(--color-accent);
+  color: var(--color-primary);
 }
 
 .page-topbar__title {
   flex: 1;
   font-size: 17px;
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--color-on-surface);
   text-align: center;
 }

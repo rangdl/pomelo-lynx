@@ -44,6 +44,8 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
         #selector(PomeloPlatformModule.setAppearanceMode(_:))),
       "setEdgeBackEnabled": NSStringFromSelector(
         #selector(PomeloPlatformModule.setEdgeBackEnabled(_:))),
+      "openTrollStore": NSStringFromSelector(
+        #selector(PomeloPlatformModule.openTrollStore(_:))),
     ]
   }
 
@@ -65,6 +67,25 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
     DispatchQueue.main.async {
       UIApplication.shared.open(parsed, options: [:]) { opened in
         if !opened { Log.warn("platform", "openURL could not open") }
+      }
+    }
+  }
+
+  // MARK: - TrollStore 安装
+
+  /// TrollStore 1.3+ 接管 apple-magnifier scheme;只允许 install 路径。
+  @objc func openTrollStore(_ url: String) {
+    guard let parsed = URL(string: url),
+      parsed.scheme?.lowercased() == "apple-magnifier",
+      parsed.host?.lowercased() == "install",
+      parsed.query?.hasPrefix("url=") == true
+    else {
+      Log.warn("platform", "openTrollStore rejected unsupported url")
+      return
+    }
+    DispatchQueue.main.async {
+      UIApplication.shared.open(parsed, options: [:]) { opened in
+        if !opened { Log.warn("platform", "openTrollStore could not open") }
       }
     }
   }

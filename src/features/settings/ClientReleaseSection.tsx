@@ -8,7 +8,7 @@ import {
 import { releasePage } from '../../core/updater/release-resolver.js';
 import { readUpdateProxy } from '../../core/updater/update-preferences.js';
 import { t } from '../../i18n/index.js';
-import { openURL } from '../../native/platform.js';
+import { openTrollStoreInstall, openURL } from '../../native/platform.js';
 import {
   isIosPlatform,
   isWebPlatform,
@@ -31,6 +31,7 @@ function clientErrorText(error: string): string {
     update_channel_unsupported: '当前通道不支持客户端更新检查',
     update_unavailable: '当前宿主不支持更新检查',
     open_url_failed: '无法打开链接',
+    trollstore_unavailable: '未检测到 TrollStore,请先安装或打开下载页',
   };
   return known[error] ?? '检查失败,请稍后再试';
 }
@@ -152,6 +153,24 @@ export function ClientReleaseSection() {
             onTap={() => open(downloadURL)}
             testid="client-release-download"
           />
+          {ios ? (
+            <>
+              <SettingsGroupDivider />
+              <ListRow
+                iconGlyph="◆"
+                iconTone="green"
+                label="用 TrollStore 安装"
+                detail="需要设备已安装 TrollStore，并在设置中启用 URL Scheme"
+                chevron
+                onTap={() => {
+                  'background only';
+                  if (!openTrollStoreInstall(downloadURL))
+                    setError('trollstore_unavailable');
+                }}
+                testid="client-release-trollstore"
+              />
+            </>
+          ) : null}
         </>
       ) : null}
 

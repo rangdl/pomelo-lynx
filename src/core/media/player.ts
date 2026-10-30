@@ -18,6 +18,8 @@ export interface MediaPlayerState extends PlayerState {
   available: boolean;
   busy: boolean;
   initialized: boolean;
+  queue: string[];
+  currentIndex: number;
 }
 
 function initial(): MediaPlayerState {
@@ -30,6 +32,8 @@ function initial(): MediaPlayerState {
     available: playerAvailable(),
     busy: false,
     initialized: false,
+    queue: [],
+    currentIndex: -1,
   };
 }
 
@@ -37,6 +41,7 @@ function initial(): MediaPlayerState {
 export const mediaPlayerStore = createStore<MediaPlayerState>(initial);
 
 let hydration: Promise<void> | null = null;
+let lastEndedUrl = '';
 
 function apply(state: PlayerState): void {
   mediaPlayerStore.setState({
@@ -46,6 +51,18 @@ function apply(state: PlayerState): void {
     duration: state.duration,
     error: state.error,
   });
+  if (state.state !== 'ended') {
+    lastEndedUrl = '';
+    return;
+  }
+  if (lastEndedUrl === state.url) return;
+  lastEndedUrl = state.url;
+  const current = mediaPlayerStore.getState();
+  if (
+    current.currentIndex >= 0 &&
+    current.currentIndex + 1 < current.queue.length
+  )
+    playQueueAt(current.currentIndex + 1);
 }
 
 /** 首次进入播放页时读取原生状态并挂上事件订阅。 */
@@ -73,7 +90,7 @@ export function ensureMediaPlayer(): Promise<void> {
   return hydration;
 }
 
-export async function loadMedia(url: string): Promise<void> {
+async function startMedia(url: string, index: number): Promise<void> {
   await ensureMediaPlayer();
   if (!mediaPlayerStore.getState().available) return;
   const value = url.trim();
@@ -86,6 +103,7 @@ export async function loadMedia(url: string): Promise<void> {
     error: '',
     url: value,
     state: 'loading',
+    currentIndex: index,
   });
   try {
     await loadPlayer(value, true);
@@ -98,6 +116,60 @@ export async function loadMedia(url: string): Promise<void> {
     return;
   }
   mediaPlayerStore.setState({ busy: false });
+}
+
+export async function loadMedia(url: string): Promise<void> {
+  const index = mediaPlayerStore.getState().queue.indexOf(url.trim());
+  await startMedia(url, index);
+}
+
+export function enqueueMedia(url: string): void {
+  const value = url.trim();
+  if (!value) {
+    mediaPlayerStore.setState({ error: 'player_empty_url' });
+    return;
+  }
+  const current = mediaPlayerStore.getState();
+  const existing = current.queue.indexOf(value);
+  if (existing >= 0) {
+    void playQueueAt(existing);
+    return;
+  }
+  const queue = [...current.queue, value];
+  mediaPlayerStore.setState({ queue });
+  if (current.currentIndex < 0 || current.state === 'idle')
+    void playQueueAt(queue.length - 1);
+}
+
+export function playQueueAt(index: number): Promise<void> | void {
+  const queue = mediaPlayerStore.getState().queue;
+  if (index < 0 || index >= queue.length) return;
+  return startMedia(queue[index], index);
+}
+
+export function playNextMedia(): void {
+  const current = mediaPlayerStore.getState();
+  if (current.currentIndex + 1 >= current.queue.length) return;
+  void playQueueAt(current.currentIndex + 1);
+}
+
+export function playPreviousMedia(): void {
+  const current = mediaPlayerStore.getState();
+  if (current.currentIndex <= 0) return;
+  void playQueueAt(current.currentIndex - 1);
+}
+
+export function clearMediaQueue(): void {
+  stopPlayer();
+  mediaPlayerStore.setState({
+    queue: [],
+    currentIndex: -1,
+    state: 'idle',
+    url: '',
+    position: 0,
+    duration: 0,
+    error: '',
+  });
 }
 
 export function toggleMedia(): void {
@@ -137,6 +209,7 @@ export function stopMedia(): void {
     position: 0,
     duration: 0,
     error: '',
+    currentIndex: -1,
   });
 }
 

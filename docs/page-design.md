@@ -128,6 +128,7 @@ ShellLayout(全局唯一)
   - 「客户端更新」:检查 native 安装包、更新内容、打开下载地址、
     打开发布页;iOS 必须提示“先下载到文件,不能直接安装”。
     下载入口只有一个:代理开启时打开加速地址,否则打开 GitHub 原始地址。
+    下载入口下方提供「用 TrollStore 安装」,仅在 iOS 显示。
   - 「Bundle 热更新」:通道、自动检查更新、检查/下载/取消/待生效/恢复内置。
   - 两套链路不要混用 `client.json` 与 `version.json`;
     代理开关同时作用于 Release API、更新元数据和 Bundle/IPA 下载。

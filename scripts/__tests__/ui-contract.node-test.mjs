@@ -162,6 +162,8 @@ test('客户端更新与 Bundle 热更新拆成两个分组,下载合并为单�
   const client = read('src/features/settings/ClientReleaseSection.tsx');
   assert.match(client, /client-release-download/);
   assert.match(client, /about\.openDownload/);
+  assert.match(client, /openTrollStoreInstall/);
+  assert.match(client, /client-release-trollstore/);
   assert.doesNotMatch(client, /client-release-download-github/);
   assert.doesNotMatch(client, /client-release-download-accelerated/);
   assert.match(client, /about-row-release/);
@@ -313,6 +315,15 @@ test('播放页使用共享 UI 原语并接入第三个 tab', () => {
     'PageTail',
   ]) {
     assert.match(page, new RegExp(name), `播放页缺少 ${name}`);
+  }
+  for (const name of [
+    'enqueueMedia',
+    'playQueueAt',
+    'playNextMedia',
+    'playPreviousMedia',
+    'clearMediaQueue',
+  ]) {
+    assert.match(page, new RegExp(name), `播放页缺少队列动作 ${name}`);
   }
   assert.doesNotMatch(page, /<input|avoid-keyboard|iconColor=/);
   const shell = read('src/shared/layouts/ShellLayout.tsx');

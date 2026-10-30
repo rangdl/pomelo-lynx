@@ -5,6 +5,7 @@ import {
   clearDevServer,
   hasDevServerControl,
   hasNativePlatform,
+  openTrollStoreInstall,
   openURL,
   pickAndUploadFile,
   probeDevServer,
@@ -42,6 +43,7 @@ interface PlatformMock {
   probeDevServer?: (url: string, callback: (result: unknown) => void) => void;
   setAppearanceMode?: (mode: 'system' | 'light' | 'dark') => void;
   setEdgeBackEnabled?: (enabled: boolean) => void;
+  openTrollStore?: (url: string) => void;
 }
 
 const globals = globalThis as unknown as {
@@ -455,4 +457,38 @@ describe('native platform facade', () => {
     expect(setNativeAppearanceMode('system')).toBe(true);
     expect(calls).toEqual(['light', 'system']);
   });
+});
+
+test('TrollStore 安装 URL 使用 apple-magnifier scheme', () => {
+  const calls: string[] = [];
+  globals.NativeModules = {
+    PomeloPlatform: {
+      openURL: () => {},
+      setKeepScreenOn: () => {},
+      openTrollStore: (url: string) => calls.push(url),
+    } satisfies PlatformMock,
+  };
+  expect(
+    openTrollStoreInstall(
+      'https://github.com/rangdl/pomelo-lynx/releases/download/dev/pomelo-lynx-ios-nosign.ipa',
+    ),
+  ).toBe(true);
+  expect(calls).toEqual([
+    'apple-magnifier://install?url=https%3A%2F%2Fgithub.com%2Frangdl%2Fpomelo-lynx%2Freleases%2Fdownload%2Fdev%2Fpomelo-lynx-ios-nosign.ipa',
+  ]);
+  expect(openTrollStoreInstall('javascript:alert(1)')).toBe(false);
+});
+
+test('旧壳没有 openTrollStore 时不伪装成功', () => {
+  globals.NativeModules = {
+    PomeloPlatform: {
+      openURL: () => {},
+      setKeepScreenOn: () => {},
+    } satisfies PlatformMock,
+  };
+  expect(
+    openTrollStoreInstall(
+      'https://github.com/rangdl/pomelo-lynx/releases/download/dev/pomelo-lynx-ios-nosign.ipa',
+    ),
+  ).toBe(false);
 });

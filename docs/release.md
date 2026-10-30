@@ -156,6 +156,7 @@ squash 合并会把逐条提交压成一条,changelog 会明显变少。
   有新版本 / 已是最新 / 无法确定
   更新内容
   打开下载地址
+  用 TrollStore 安装
   打开发布页
 
 Bundle 热更新
@@ -171,8 +172,10 @@ Bundle 热更新
 地址必须是 HTTPS,且不能带凭据或查询串。
 
 iOS 点击下载只会打开系统浏览器,IPA 保存到“文件”,**不能直接安装**;需要
-TrollStore 或自行重签。加速下载使用「加速设置」里的代理地址;它只是第三方
-传输加速,关闭代理后必须保留 GitHub 原始地址下载。
+TrollStore 或自行重签。下载地址下方还提供「用 TrollStore 安装」,使用
+`apple-magnifier://install?url=...` 交给 TrollStore;设备需安装 TrollStore
+并在其设置里启用 URL Scheme。加速下载使用「加速设置」里的代理地址;它只是
+第三方传输加速,关闭代理后必须保留 GitHub 原始地址下载。
 
 ## 7. 本地命令
 

@@ -1,7 +1,12 @@
 import { useState } from '@lynx-js/react';
 
 import {
+  clearMediaQueue,
+  enqueueMedia,
   loadMedia,
+  playNextMedia,
+  playPreviousMedia,
+  playQueueAt,
   seekMedia,
   stopMedia,
   toggleMedia,
@@ -72,7 +77,15 @@ export function PlayerPage() {
   const loadSample = () => {
     'background only';
     setDraft(SAMPLE_AUDIO_URL);
-    void loadMedia(SAMPLE_AUDIO_URL);
+    enqueueMedia(SAMPLE_AUDIO_URL);
+  };
+  const enqueue = () => {
+    'background only';
+    enqueueMedia(draft);
+  };
+  const clearQueue = () => {
+    'background only';
+    clearMediaQueue();
   };
   const toggle = () => {
     'background only';
@@ -138,12 +151,53 @@ export function PlayerPage() {
             <Button
               grow
               variant="secondary"
-              label="加载示例"
+              label="加入队列"
+              disabled={busy || !draft.trim() || !player.available}
+              onTap={enqueue}
+              testid="player-enqueue"
+            />
+            <Button
+              grow
+              variant="secondary"
+              label="加入示例"
               disabled={busy || !player.available}
               onTap={loadSample}
               testid="player-load-sample"
             />
           </view>
+        </SettingsGroup>
+
+        <SettingsGroup
+          title={`播放队列${player.queue.length ? ` · ${player.queue.length}` : ''}`}
+        >
+          {player.queue.length === 0 ? (
+            <Hint tone="caption">队列为空;输入 URL 后点「加入队列」。</Hint>
+          ) : (
+            <>
+              {player.queue.map((url, index) => (
+                <ListRow
+                  key={`${index}-${url}`}
+                  iconGlyph={index === player.currentIndex ? '▶' : '♪'}
+                  iconTone={index === player.currentIndex ? 'green' : 'indigo'}
+                  label={`音频 ${index + 1}`}
+                  value={index === player.currentIndex ? '当前' : undefined}
+                  detail={url}
+                  chevron
+                  onTap={() => playQueueAt(index)}
+                  testid={`player-queue-${index}`}
+                />
+              ))}
+              <SettingsGroupDivider />
+              <ListRow
+                iconGlyph="×"
+                iconTone="danger"
+                danger
+                label="清空队列"
+                onTap={clearQueue}
+                testid="player-clear-queue"
+              />
+            </>
+          )}
         </SettingsGroup>
 
         <SettingsGroup title="控制">
@@ -175,8 +229,34 @@ export function PlayerPage() {
           <view className="player__actions">
             <Button
               grow
+              variant="secondary"
+              label="上一首"
+              disabled={player.currentIndex <= 0 || busy}
+              onTap={() => {
+                'background only';
+                playPreviousMedia();
+              }}
+              testid="player-previous"
+            />
+            <Button
+              grow
+              variant="secondary"
+              label="下一首"
+              disabled={
+                player.currentIndex < 0 ||
+                player.currentIndex + 1 >= player.queue.length ||
+                busy
+              }
+              onTap={() => {
+                'background only';
+                playNextMedia();
+              }}
+              testid="player-next"
+            />
+            <Button
+              grow
               variant="danger"
-              label="停止并清空"
+              label="停止"
               disabled={!hasSource || busy}
               onTap={stop}
               testid="player-stop"

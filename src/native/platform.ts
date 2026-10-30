@@ -37,6 +37,8 @@ export interface PomeloPlatformNativeModule {
   setAppearanceMode?(mode: 'system' | 'light' | 'dark'): void;
   /** 按路由开关左边缘返回手势。 */
   setEdgeBackEnabled?(enabled: boolean): void;
+  /** 用 TrollStore 的 apple-magnifier scheme 安装 IPA。 */
+  openTrollStore?(url: string): void;
 }
 
 /** 模块存在所必需的方法;缺一个就视为旧壳,整体降级。 */
@@ -93,6 +95,26 @@ export function openURL(url: string): boolean {
     }
   }
   return false;
+}
+
+/**
+ * 用 TrollStore 安装 IPA。
+ *
+ * TrollStore 1.3+ 接管 `apple-magnifier://install?url=`;需要在 TrollStore 设置中
+ * 启用 URL Scheme。旧壳没有 `openTrollStore` 时返回 false,由页面提示用户打开
+ * 下载页,不要退化成 openURL(旧壳会拒绝该 scheme)。
+ */
+export function openTrollStoreInstall(ipaURL: string): boolean {
+  if (!isHttpURL(ipaURL)) return false;
+  const module = readPlatformModule();
+  if (!module?.openTrollStore) return false;
+  const installURL = `apple-magnifier://install?url=${encodeURIComponent(ipaURL)}`;
+  try {
+    module.openTrollStore(installURL);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** 把回调形状的原生方法包成带超时的 Promise;回调参数非空字符串即失败。 */

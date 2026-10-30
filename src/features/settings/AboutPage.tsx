@@ -28,6 +28,8 @@ export function AboutPage() {
     typeof props.hostName === 'string' ? props.hostName : 'pomelo-host';
   const hostVersion =
     typeof props.hostVersion === 'string' ? props.hostVersion : '';
+  const clientVersion =
+    hostVersion || clientBuild.native_version || clientBuild.version;
   const web = isWebPlatform();
   const releaseUrl = releasePage(clientBuild.channel);
   const versionInfo = [
@@ -61,8 +63,9 @@ export function AboutPage() {
           <ListRow
             icon={<text className="list-row__icon-text">⌂</text>}
             iconColor="#3b82f6"
-            label={t('about.host')}
-            value={hostName}
+            label={t('about.client')}
+            value={clientVersion}
+            detail={`${hostName} · ${clientBuild.git_commit}`}
           />
           <SettingsGroupDivider />
           <ListRow
@@ -70,18 +73,8 @@ export function AboutPage() {
             iconColor="#8e8e93"
             label={t('about.bundleVersion')}
             value={clientBuild.version}
+            detail={`${clientBuild.channel} · ${clientBuild.git_commit}`}
           />
-          {hostVersion ? (
-            <>
-              <SettingsGroupDivider />
-              <ListRow
-                icon={<text className="list-row__icon-text">#</text>}
-                iconColor="#8e8e93"
-                label={t('about.hostVersion')}
-                value={hostVersion}
-              />
-            </>
-          ) : null}
           <SettingsGroupDivider />
           <ListRow
             icon={<text className="list-row__icon-text">⧉</text>}

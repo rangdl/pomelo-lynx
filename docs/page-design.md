@@ -113,6 +113,11 @@ ShellLayout(全局唯一)
   - 右侧值 15px 或箭头 22px;
   - 危险操作加 `danger`;禁用加 `disabled`(0.5 透明度);
   - toggle 行不要把 `onTap` 绑在整行上,避免和开关冒泡叠加。
+- **设置页每个入口行都要有 `detail` 描述**(关于/主题/主题色/开发者);
+  只有纯值行或危险操作行可以省略。
+- 关于页版本行统一为“右侧短版本号 + detail 具体信息”:
+  「客户端」右值显示客户端版本,detail 显示宿主标识与 commit;
+  「Bundle 版本」右值显示 bundle 版本,detail 显示 channel 与 commit。
 - 分隔线:1px,`margin-left: 64px`(与图标列对齐)。
 - 旧 `.settings-row` 只允许在未迁移的更新区使用;
   新页面优先 `ListRow`。

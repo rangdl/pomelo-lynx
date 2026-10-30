@@ -17,6 +17,7 @@ export type MessageKey =
   | 'settings.group.appearance'
   | 'settings.group.developer'
   | 'settings.themePalette'
+  | 'settings.themePaletteDetail'
   | 'settings.developer'
   | 'settings.developerDetail'
   | 'developer.title'
@@ -29,6 +30,7 @@ export type MessageKey =
   | 'themePalette.sample'
   | 'themePalette.sampleMuted'
   | 'appearance.theme'
+  | 'appearance.themeDetail'
   | 'appearance.system'
   | 'appearance.light'
   | 'appearance.dark'
@@ -37,9 +39,8 @@ export type MessageKey =
   | 'about.group.app'
   | 'about.group.update'
   | 'about.group.support'
-  | 'about.host'
+  | 'about.client'
   | 'about.bundleVersion'
-  | 'about.hostVersion'
   | 'about.copy'
   | 'about.copied'
   | 'about.copyFailed'
@@ -65,6 +66,7 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.developer': 'Dev Server 与调试通道',
     'settings.developerDetail': '连接、刷新与调试中继',
     'settings.themePalette': '主题色',
+    'settings.themePaletteDetail': '选择主色与二级强调色',
     'themePalette.title': '主题色',
     'themePalette.default': '默认蓝',
     'themePalette.violet': '紫罗兰',
@@ -75,6 +77,7 @@ const MESSAGES: Record<Locale, Messages> = {
     'themePalette.sampleMuted': '次要文字',
     'developer.title': '开发者',
     'appearance.theme': '主题',
+    'appearance.themeDetail': '跟随系统、浅色或深色',
     'appearance.system': '跟随系统',
     'appearance.light': '浅色',
     'appearance.dark': '深色',
@@ -83,9 +86,8 @@ const MESSAGES: Record<Locale, Messages> = {
     'about.group.app': '应用',
     'about.group.update': '更新',
     'about.group.support': '支持',
-    'about.host': '宿主',
+    'about.client': '客户端',
     'about.bundleVersion': 'Bundle 版本',
-    'about.hostVersion': '宿主版本',
     'about.copy': '复制版本信息',
     'about.copied': '已复制',
     'about.copyFailed': '复制失败',
@@ -108,6 +110,7 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.developer': 'Dev server & debug tunnel',
     'settings.developerDetail': 'Connect, reload and debug relay',
     'settings.themePalette': 'Theme color',
+    'settings.themePaletteDetail': 'Choose primary and secondary accents',
     'themePalette.title': 'Theme color',
     'themePalette.default': 'Default blue',
     'themePalette.violet': 'Violet',
@@ -119,6 +122,7 @@ const MESSAGES: Record<Locale, Messages> = {
     'themePalette.sampleMuted': 'Secondary text',
     'developer.title': 'Developer',
     'appearance.theme': 'Theme',
+    'appearance.themeDetail': 'Follow system, light or dark',
     'appearance.system': 'System',
     'appearance.light': 'Light',
     'appearance.dark': 'Dark',
@@ -127,9 +131,8 @@ const MESSAGES: Record<Locale, Messages> = {
     'about.group.app': 'App',
     'about.group.update': 'Updates',
     'about.group.support': 'Support',
-    'about.host': 'Host',
+    'about.client': 'Client',
     'about.bundleVersion': 'Bundle version',
-    'about.hostVersion': 'Host version',
     'about.copy': 'Copy version info',
     'about.copied': 'Copied',
     'about.copyFailed': 'Copy failed',

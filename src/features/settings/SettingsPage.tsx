@@ -85,6 +85,7 @@ export function SettingsPage() {
                 icon={<text className="list-row__icon-text">◐</text>}
                 iconColor="#0ea5e9"
                 label={t('appearance.theme')}
+                detail={t('appearance.themeDetail')}
                 testid="appearance-row"
                 trailing={
                   <view
@@ -157,6 +158,7 @@ export function SettingsPage() {
               icon={<text className="list-row__icon-text">◨</text>}
               iconColor="#7c3aed"
               label={t('settings.themePalette')}
+              detail={t('settings.themePaletteDetail')}
               accessibilityLabel={`${t('settings.themePalette')}, ${paletteLabel}`}
               onTap={() => navigate({ to: '/settings/theme' })}
               testid="settings-row-theme-palette"

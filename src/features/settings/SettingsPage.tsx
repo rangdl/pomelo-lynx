@@ -88,9 +88,14 @@ export function SettingsPage() {
                     <text className="appearance-select__value">
                       {appearanceLabel}
                     </text>
-                    <text className="appearance-select__caret">
-                      {appearanceOpen ? '▴' : '▾'}
-                    </text>
+                    <view
+                      className={
+                        appearanceOpen
+                          ? 'appearance-select__caret appearance-select__caret--open'
+                          : 'appearance-select__caret'
+                      }
+                      accessibility-element={false}
+                    />
                   </view>
                 }
               />

@@ -49,6 +49,12 @@ test('外观下拉是右侧锚定的绝对定位浮层', () => {
   assert.match(popover, /width: 208px;/);
   assert.match(css, /appearance-popover-in/);
   assert.match(css, /appearance-option-divider/);
+  assert.match(css, /appearance-select__caret--open/);
+  assert.doesNotMatch(
+    page,
+    /[▴▾]/,
+    '下拉箭头应使用 CSS chevron,不要用字体字形',
+  );
 });
 
 test('自动更新使用开关而不是文字状态', () => {

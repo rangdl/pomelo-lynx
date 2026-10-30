@@ -1,0 +1,60 @@
+.icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  margin-right: var(--space-3);
+}
+
+.icon-badge__glyph {
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* 设置行图标品牌色。集中维护,页面不再写 hex。 */
+.icon-badge--azure {
+  background-color: #3b82f6;
+}
+
+.icon-badge--blue {
+  background-color: #007aff;
+}
+
+.icon-badge--danger {
+  background-color: #d93025;
+}
+
+.icon-badge--gray {
+  background-color: #6b7280;
+}
+
+.icon-badge--green {
+  background-color: #34c759;
+}
+
+.icon-badge--indigo {
+  background-color: #5a5ad6;
+}
+
+.icon-badge--neutral {
+  background-color: #8e8e93;
+}
+
+.icon-badge--orange {
+  background-color: #f59e0b;
+}
+
+.icon-badge--red {
+  background-color: #e5484d;
+}
+
+.icon-badge--sky {
+  background-color: #0ea5e9;
+}
+
+.icon-badge--violet {
+  background-color: #7c3aed;
+}

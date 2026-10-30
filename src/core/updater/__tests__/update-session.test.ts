@@ -28,6 +28,7 @@ import {
   updateBundleKey,
 } from '../automatic-update-policy.js';
 import type { ClientUpdateCheck } from '../client-updates.js';
+import { PREF_UPDATE_PROXY_ENABLED } from '../update-preferences.js';
 import {
   cancelAutomaticClientBundle,
   cancelClientBundle,
@@ -57,8 +58,11 @@ const check = {
 const settle = async () => {
   for (let i = 0; i < 25; i++) await Promise.resolve();
 };
-beforeEach(() => {
-  setPomeloStorage(createMemoryStorage());
+beforeEach(async () => {
+  const storage = createMemoryStorage();
+  // 这些用例验证直连路径;代理开关默认开启,显式关掉以保持请求地址可断言。
+  await storage.prefs.set(PREF_UPDATE_PROXY_ENABLED, 'false');
+  setPomeloStorage(storage);
   automaticUpdatePolicy.store.setState({
     loaded: true,
     enabled: false,

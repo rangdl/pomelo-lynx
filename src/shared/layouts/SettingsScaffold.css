@@ -1,0 +1,33 @@
+.settings {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-surface);
+}
+
+/* 页面内容滚动区:内容可能超过一屏,必须滚动而不是被浮动底栏裁掉。 */
+.settings__scroll {
+  flex: 1;
+  min-height: 0;
+}
+
+.settings__tail {
+  /* 底栏 60 + 底部间距 8 + 安全区;让最后一行能滚到胶囊上方。 */
+  height: calc(84px + env(safe-area-inset-bottom));
+}
+
+.settings__header {
+  /* 在滚动区外固定;顶部安全区已由 .shell__body 处理。 */
+  padding-left: var(--space-5);
+  padding-right: var(--space-5);
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-3);
+}
+
+.settings__title {
+  /* iOS large title: 34pt bold。 */
+  font-size: var(--font-large-title);
+  font-weight: 700;
+  color: var(--color-on-surface);
+}

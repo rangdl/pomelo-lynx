@@ -7,7 +7,7 @@
 
 ### 构建与分发
 
-- dev 通道(master push / workflow_dispatch)CI 用顶层
+- dev 通道(dev tag / workflow_dispatch)CI 用顶层
   `host/ios/Podfile`(devtools: true)+ **Debug configuration** 构建:
   自带 LynxService/Devtool(Inspector),bundle id `org.pomelo.lynx.debug`。
 - tag 正式发版仍用 `host/ios/release/Podfile`(devtools: false)+

@@ -2,7 +2,7 @@
 
 新增页面、修改现有页面结构(顶栏、底栏、安全区、滚动容器、设置行)前必读。
 本文记录当前实现中已经被真机/Web 验证过的硬约束;与代码冲突时以代码为准,
-并同步更新本文。
+并同步更新本文。UI 原语与禁止手写项见 [UI 组件约束](ui-kit.md)。
 
 ## 1. 页面外壳
 
@@ -26,8 +26,9 @@ ShellLayout(全局唯一)
 - **可滚动页面自己加尾部 spacer**:底部留白必须是真实内容高度。
   Lynx iOS 的 `<scroll-view>` 自身 `padding-bottom` **不会**扩展滚动范围,
   必须用末尾 `<view>` spacer。
-  - 设置/关于:`settings__tail = calc(84px + env(safe-area-inset-bottom))`
-  - 日志:`logs__tail = calc(84px + env(safe-area-inset-bottom))`
+  - 标准子页:`SettingsSubPage` 自动渲染 `PageTail`
+    (`settings__tail = calc(84px + env(safe-area-inset-bottom))`)
+  - 日志列表:同样使用 `PageTail`,不要新增 `logs__tail`
   - 首页(不滚动):`.Home { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }`
 - 页面根节点必须是 `display: flex; flex-direction: column; height: 100%`
   (或 `flex: 1; min-height: 0`),滚动区用 `flex: 1; min-height: 0` 吃掉剩余高度。
@@ -108,7 +109,7 @@ ShellLayout(全局唯一)
   卡片圆角 14px、内边距 `4px 0`,组外边距 `0 16px 8px`。
 - `ListRow`(`src/shared/ui/ListRow.tsx`):
   - 行内边距 `11px 14px`;
-  - 图标块 38×38、圆角 9、彩色背景、白色字形;
+  - 图标块统一由 `IconBadge` 渲染:38×38、圆角 9、tone 背景、白色字形;
   - 标题 16px / 500;描述 12px、行高 17px;
   - 右侧值 15px 或箭头 22px;
   - 危险操作加 `danger`;禁用加 `disabled`(0.5 透明度);
@@ -116,8 +117,21 @@ ShellLayout(全局唯一)
 - **设置页每个入口行都要有 `detail` 描述**(关于/主题/主题色/开发者);
   只有纯值行或危险操作行可以省略。
 - 关于页版本行统一为“右侧短版本号 + detail 具体信息”:
-  「客户端」右值显示客户端版本,detail 显示版本号与 commit;
-  「Bundle 版本」右值显示 bundle 版本,detail 显示 channel 与 commit。
+  「客户端」右值显示宿主版本的展示值(dev 带 `dev-` 前缀),detail 显示版本号与 commit;
+  「Bundle 版本」右值显示 bundle 的展示版本,detail 显示 channel 与 commit。
+- 更新区域拆成三张卡片:
+  - 「加速设置」:代理开关 + HTTPS 地址输入 + 恢复默认;默认
+    `https://gh-proxy.org`,关闭时全部直连。
+  - 「客户端更新」:检查 native 安装包、更新内容、打开下载地址、
+    打开发布页;iOS 必须提示“先下载到文件,不能直接安装”。
+    下载入口只有一个:代理开启时打开加速地址,否则打开 GitHub 原始地址。
+  - 「Bundle 热更新」:通道、自动检查更新、检查/下载/取消/待生效/恢复内置。
+  - 两套链路不要混用 `client.json` 与 `version.json`;
+    代理开关同时作用于 Release API、更新元数据和 Bundle/IPA 下载。
+- 客户端下载入口只在检查成功且存在当前平台资产时显示;没有资产时只保留
+  发布页。入口只有一个「打开下载地址」,detail 标注当前走「经代理加速」
+  还是「GitHub 直连」,不要再拆成两行。
+- 更新内容最多展示 8 条,不渲染 Markdown;完整记录通过发布页查看。
 - 分隔线:1px,`margin-left: 64px`(与图标列对齐)。
 - 设置页/关于页/更新区统一使用 `ListRow`;旧 `.settings-row`
   已全部迁移,不再新增。
@@ -128,16 +142,16 @@ ShellLayout(全局唯一)
     动画;选项行用 `appearance-option`,点外部关闭,选中后收起。
   - 「主题色」:右侧显示当前 palette 名称 + 主/次色点,点击进入
     `/settings/theme`;不要在设置页再放下拉。
-- 「自动检查更新」用右侧 iOS 风格开关(`client-update__switch`,51×31,
-  命中区 44px),不要再用「已开启/已关闭」文字。切换用现有
-  `ListRow` 行布局,整行不绑 tap,避免与开关冒泡叠加。
-- 输入框统一下发:
-  `avoid-keyboard={true}`、`avoid-keyboard-spacing="12px"`、
-  `set-soft-input-mode="resize"`;聚焦时由 Lynx 抬升根视图,避免键盘
-  遮挡输入框。不要自己猜键盘高度。
-- 输入框边框用内联样式(原生 input 的 className CSS 不可靠):
-  默认 `1px solid var(--color-outline)`,focus 时切
-  `var(--color-primary)`;配 `bindfocus/bindblur` 控制状态。
+- 自动更新/代理开关统一用 `SwitchRow`/`Switch`,不要在业务页面写
+  51×31 开关 CSS。开关行整行不绑 tap,避免与开关冒泡叠加。
+- 输入框统一用 `TextField`;`avoid-keyboard`、输入框边框/focus、
+  `bindinput/bindblur` 只允许出现在该组件内。页面不要再写 `<input>`
+  或 input frame。异步加载/重置外部值时用 `inputKey` 重新挂载。
+- 操作按钮统一用 `Button`;提示/错误统一用 `Hint`;设置行图标统一用
+  `ListRow iconGlyph + iconTone` 或 `IconBadge`。禁止在 feature 内写
+  `iconColor="#..."`。
+- 主题色点统一用 `PaletteSwatches`;主题色卡片统一用
+  `ThemePaletteCard`。
 
 ## 5. 颜色、主题与安全区
 
@@ -157,7 +171,8 @@ ShellLayout(全局唯一)
   切换时不应重建页面树,否则会丢失滚动/输入状态并重播页面进入动画。
 - 外观偏好持久化在 `PomeloStorage.prefs` 的 `appearance_mode`:
   `system`(默认)/`light`/`dark`;设置页「外观」分组提供三个选项。
-- 调色板偏好持久化在 `theme_palette`:当前 `default`/`violet`,默认
+- 调色板偏好持久化在 `theme_palette`:当前
+  `default`/`violet`/`sunset`/`teal`,默认
   `default`;与 `appearance_mode` 正交。两者合成
   `theme-<palette>-<scheme>` 完整变体,切换时重建 shell。
 - 固定浅色/深色时,JS 通过 `PomeloPlatform.setAppearanceMode` 同步
@@ -181,21 +196,27 @@ ShellLayout(全局唯一)
 
 1. 是否是 Shell 下的页面?是则自动继承 `shell__body` 的顶部安全区和底栏。
 2. 根节点是否 `height: 100%` / `flex: 1; min-height: 0`?
-3. 顶栏是否在滚动区外?子页是否用 `PageTopBar`?
+3. 标准滚动子页是否使用 `SettingsSubPage`?不要再手写
+   `PageTopBar + settings__scroll + settings__tail`。
 4. 是否**没有**重复写 `safe-area-inset-top`?
-5. 滚动区是否 `flex: 1` 且在末尾有 `84px + safe-bottom` 的 tail spacer?
-6. 设置条目是否用 `SettingsGroup` / `ListRow`?
-7. 是否只使用 token 颜色、`<view>` / `<text>`(不用 `div`/`span`)?
-8. 交互节点是否有 `data-testid`、可访问标签?
-9. 是否验证了 Web(`pnpm e2e:web` 或 Playwright)和 iOS 真机?
-   Android 原生能力改动只写计划,等 Android CI/设备恢复后再做。
-10. 是否更新了本文与 `docs/roadmap.md`(如果改变了尺寸/平台能力)?
+5. 滚动区是否 `flex: 1` 且由 `PageTail` 提供尾部留白?
+6. 设置条目是否用 `SettingsGroup` / `ListRow`?开关是否用 `SwitchRow`?
+7. 输入框是否用 `TextField`?按钮是否用 `Button`?提示是否用 `Hint`?
+8. 图标是否用 `iconGlyph/iconTone`?是否没有 `iconColor="#..."`?
+9. 主题色点/卡片是否用 `PaletteSwatches` / `ThemePaletteCard`?
+10. 是否只使用颜色 token + 布局 token,以及 `<view>` / `<text>`?
+11. 交互节点是否有 `data-testid`、可访问标签?
+12. 是否验证了 Web(`pnpm e2e:web` 或 Playwright)和 iOS 真机?
+    Android 原生能力改动只写计划,等 Android CI/设备恢复后再做。
+13. 是否更新了本文、`docs/ui-kit.md` 与 `docs/roadmap.md`?
 
 ## 7. 当前未完成/不要假设
 
 - Android `blur-view` 依赖(`xelement-blur-view`)尚未加入;
 - iOS 26 液态玻璃/折射透镜未移植;
 - >4 tab 的 More 面板代码已存在,但目前只有 2 个 tab,未在真机验收;
-- 开发者能力已移到独立子页,Dev Server/调试通道内部仍是
-  `.dev-server__*` 行,未迁移到 `ListRow`。
+- 开发者能力已移到独立子页,Dev Server/调试通道已迁移到
+  `SettingsGroup`/`ListRow`/`TextField`/`Button`/`Hint`。
 - 日志入口已从关于页移到设置页「支持」分组,路由为 `/settings/logs`。
+- 客户端更新与 Bundle 热更新已拆分;客户端更新检查、`client.json`、
+  固定文件名和 changelog 见 [发布与更新](release.md)。

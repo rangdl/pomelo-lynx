@@ -1,0 +1,4 @@
+.client-update {
+  display: flex;
+  flex-direction: column;
+}

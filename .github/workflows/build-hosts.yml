@@ -1,25 +1,24 @@
 name: Build Hosts
 
-# 发版即构建:打 vX.Y.Z tag 触发(tag 必须与 package.json 的 version 一致),
-# 产物发布到同名 Release。master push 也触发构建并滚动发布到 `dev` 预发布
-# Release(prerelease,固定资产名覆盖,dev tag 随 master 移动)——它同时是
-# 热更新 dev 通道(releases/tags/dev)的更新源。
+# 发版即构建:
+#   - vX.Y.Z tag:稳定版,必须从 master 打,产物发布到同名 Release
+#   - dev-vX.Y.Z-<id> tag:dev 构建,必须从 dev 打,产物滚动发布到 `dev`
+#     prerelease,同时是热更新 dev 通道(releases/tags/dev)的更新源
 #
-#   pnpm release:patch   # bump package.json + 同步原生版本字段 + 本地 commit/tag
-#   git push --follow-tags   # 批准后再推送,才会触发正式发版
-#
-# 临时手动构建用 workflow_dispatch。
+# master/dev 分支 push 不再自动构建;临时手动构建用 workflow_dispatch。
+# 版本号以 package.json 的 semver 为唯一来源,dev 前缀只做展示,不进入
+# package.json / native_version / MARKETING_VERSION。
 
 on:
   push:
-    tags: ["v*"]
-    branches: [master]
+    tags: ["v*", "dev-*"]
   workflow_dispatch:
 
 concurrency:
-  group: host-build-${{ github.ref }}
-  # 发版 tag 不允许被后一次构建取消;其他触发才取消旧构建。
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+  # 正式版按 tag 独立构建且不取消;所有 dev 构建共享一个组,避免并发
+  # 删除/重建滚动 `dev` Release。
+  group: host-build-${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'dev' }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') }}
 
 permissions:
   contents: read
@@ -30,18 +29,46 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      # tag 触发时校验:tag 必须等于 package.json 的 version(带 v 前缀)
-      - name: Verify tag matches package.json version
+        with:
+          fetch-depth: 0
+      # 正式版 tag 必须是 vX.Y.Z 且在 master;dev tag 必须是
+      # dev-vX.Y.Z-<id> 且在 dev。两者都必须与 package.json 版本一致。
+      - name: Verify release tag and branch
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           set -euo pipefail
-          PKG_VERSION="v$(node -p "require('./package.json').version")"
+          PKG_VERSION=$(node -p "require('./package.json').version")
           TAG_VERSION="${GITHUB_REF_NAME}"
-          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
-            echo "::error::tag $TAG_VERSION 与 package.json version $PKG_VERSION 不一致"
-            exit 1
+          if [[ "$TAG_VERSION" == v* ]]; then
+            if [ "$TAG_VERSION" != "v$PKG_VERSION" ]; then
+              echo "::error::tag $TAG_VERSION 与 package.json version v$PKG_VERSION 不一致"
+              exit 1
+            fi
+            git fetch origin refs/heads/master:refs/remotes/origin/master
+            if ! git merge-base --is-ancestor HEAD origin/master; then
+              echo "::error::正式版 tag 必须打在 master 上"
+              exit 1
+            fi
+            echo "stable tag=$TAG_VERSION ok"
+            exit 0
           fi
-          echo "version=$PKG_VERSION ok"
+          if [[ "$TAG_VERSION" =~ ^dev-v?([0-9]+\.[0-9]+\.[0-9]+)(-[0-9A-Za-z.]+)+$ ]]; then
+            if [ "${BASH_REMATCH[1]}" != "$PKG_VERSION" ]; then
+              echo "::error::dev tag $TAG_VERSION 的版本 ${BASH_REMATCH[1]} 与 package.json $PKG_VERSION 不一致"
+              exit 1
+            fi
+            # dev 同时存在滚动 tag `dev` 和分支 `dev`;必须显式指定
+            # refs/heads/dev,否则 git 会优先解析成 tag。
+            git fetch origin refs/heads/dev:refs/remotes/origin/dev
+            if ! git merge-base --is-ancestor HEAD origin/dev; then
+              echo "::error::dev tag 必须打在 dev 分支上"
+              exit 1
+            fi
+            echo "dev tag=$TAG_VERSION ok"
+            exit 0
+          fi
+          echo "::error::不支持的 tag $TAG_VERSION;请使用 vX.Y.Z 或 dev-vX.Y.Z-<id>"
+          exit 1
       # iOS 的 MARKETING_VERSION 由 `pnpm release:*` 的 version 钩子同步;
       # 手工改 package.json 时这里会拦住漂移。
       - name: Verify iOS MARKETING_VERSION matches package.json
@@ -158,7 +185,7 @@ jobs:
           key: ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/pods.rb', 'host/ios/Podfile', 'host/ios/release/Podfile', 'host/ios/release/Podfile.lock') }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/pods.rb', 'host/ios/Podfile', 'host/ios/release/Podfile', 'host/ios/release/Podfile.lock') }}-
-      # dev 通道(master push / workflow_dispatch)用本地 Podfile graph
+      # dev 通道(dev tag / workflow_dispatch)用本地 Podfile graph
       # (devtools: true)+ Debug configuration:侧载包自带 Lynx Inspector,
       # 可通过 agent-lynx 连接调试,与本地 Xcode Debug 构建同构
       # (bundle id org.pomelo.lynx.debug)。tag 正式发版仍用 release/Podfile
@@ -171,9 +198,11 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             echo "podfile_dir=release" >> "$GITHUB_OUTPUT"
             echo "configuration=Release" >> "$GITHUB_OUTPUT"
+            echo "channel=stable" >> "$GITHUB_OUTPUT"
           else
             echo "podfile_dir=." >> "$GITHUB_OUTPUT"
             echo "configuration=Debug" >> "$GITHUB_OUTPUT"
+            echo "channel=dev" >> "$GITHUB_OUTPUT"
           fi
       - name: pod install (CI graph)
         id: pods
@@ -223,6 +252,8 @@ jobs:
             COMPILATION_CACHE_ENABLE_CACHING=YES \
             COMPILATION_CACHE_ENABLE_DIAGNOSTIC_REMARKS=YES \
             COMPILATION_CACHE_CAS_PATH="$GITHUB_WORKSPACE/.build/ios-compilation-cache" \
+            POMELO_CHANNEL=${{ steps.mode.outputs.channel }} \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
             CODE_SIGN_ENTITLEMENTS='' CODE_SIGN_STYLE=Manual AD_HOC_CODE_SIGNING_ALLOWED=NO \
             build
@@ -260,6 +291,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v8
         with:
           name: pomelo-lynx-ios-nosign
@@ -277,21 +310,37 @@ jobs:
           POMELO_UPDATE_PRIVATE_KEY: ${{ secrets.POMELO_UPDATE_PRIVATE_KEY }}
         run: |
           set -euo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
+          PREV=$(git describe --tags --abbrev=0 --match 'v*' HEAD^ 2>/dev/null || true)
+          if [ -z "$PREV" ]; then
+            PREV=$(git rev-list --max-parents=0 HEAD | tail -1)
+          fi
+          node scripts/generate-changelog.mjs \
+            --from "$PREV" --to HEAD --max 20 \
+            --out release-notes.md --json changes.json
+          {
+            printf 'iOS:真机 arm64 未签名 IPA(TrollStore 或自行重签,iOS 15+)。\n\n'
+            cat release-notes.md
+            printf '\n完整变更: %s/%s/compare/%s...%s\n' \
+              "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$PREV" "$GITHUB_REF_NAME"
+          } > release-notes-final.md
+          mv release-notes-final.md release-notes.md
+
           mkdir -p release-files
           mv pomelo-lynx-ios-nosign.ipa release-files/pomelo-lynx-ios-nosign.ipa
           # version.json:与 js job 同源的构建身份(gen-native-host 同一时刻生成,
           # 保证 native-host.json 与 release 元数据完全一致——finalize 会逐字段对拍)
           cp js-bundles/.build/version.json release-files/version.json
           if [ -n "${POMELO_UPDATE_PRIVATE_KEY:-}" ]; then
+            POMELO_RELEASE_CHANGES=changes.json \
+            POMELO_BUILD_TAG="$GITHUB_REF_NAME" \
             node scripts/finalize-release.mjs release-files \
               js-bundles/host/android/app/src/main/assets/main.lynx.bundle \
               js-bundles/.build/native-host.json
           else
+            POMELO_RELEASE_CHANGES=changes.json \
+            POMELO_BUILD_TAG="$GITHUB_REF_NAME" \
             node scripts/finalize-release.mjs release-files
           fi
-          # 上传名带版本号;热更新资产(bundle/签名/manifest/checksums)保持固定名
-          cp release-files/pomelo-lynx-ios-nosign.ipa "pomelo-lynx-ios-${VERSION}-nosign.ipa"
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -299,27 +348,30 @@ jobs:
           set -euo pipefail
           gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
             --title "pomelo-lynx ${GITHUB_REF_NAME}" \
-            --notes "iOS:真机 arm64 未签名 IPA(TrollStore 或自行重签,iOS 15+)。dev 通道(master 构建)带 Inspector(Debug configuration,bundle id org.pomelo.lynx.debug);tag 正式版不带。热更新:配置签名密钥后附带 signed bundle(version.json/version.json.sig/pomelo-lynx-main.lynx.bundle/checksums.txt),dev 通道装 dev 包可热更。"
+            --notes-file release-notes.md
           gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
-            pomelo-lynx-ios-*.ipa \
-            release-files/version.json release-files/checksums.txt || true
+            release-files/pomelo-lynx-ios-nosign.ipa \
+            release-files/client.json \
+            release-files/version.json release-files/checksums.txt
           if [ -f release-files/version.json.sig ]; then
             gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
               release-files/version.json.sig release-files/pomelo-lynx-main.lynx.bundle
           fi
 
-  # 预发布:非 tag 构建(master push / workflow_dispatch)成功后,把产物滚动
-  # 发布到固定 `dev` Release(prerelease,固定资产名覆盖旧文件),并把 dev tag
-  # 移到本次 commit。它同时是热更新 dev 通道的更新源(JS 侧查 releases/tags/dev)。
+  # 预发布:dev tag 或 workflow_dispatch 成功后,把产物滚动发布到固定 `dev`
+  # Release(prerelease,固定资产名覆盖旧文件),并把 dev tag 移到本次 commit。
+  # 它同时是热更新 dev 通道的更新源(JS 侧查 releases/tags/dev)。
   prerelease:
     name: Prerelease (dev, rolling)
     needs: [ios]
-    if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+    if: ${{ startsWith(github.ref, 'refs/tags/dev-') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v8
         with:
           name: pomelo-lynx-ios-nosign
@@ -332,18 +384,55 @@ jobs:
           path: js-bundles
       - name: Assemble dev release directory
         env:
+          GH_TOKEN: ${{ github.token }}
           POMELO_UPDATE_PUBLIC_KEY: ${{ vars.POMELO_UPDATE_PUBLIC_KEY }}
           POMELO_UPDATE_PRIVATE_KEY: ${{ secrets.POMELO_UPDATE_PRIVATE_KEY }}
         run: |
           set -euo pipefail
+          PKG=$(node -p "require('./package.json').version")
+          if [[ "$GITHUB_REF" == refs/tags/dev-* ]]; then
+            BUILD_TAG="$GITHUB_REF_NAME"
+          else
+            BUILD_TAG="dev-v${PKG}-${GITHUB_SHA::7}"
+          fi
+          # 先取旧 dev release 的 target,再删除;用于生成“本次构建的变更”。
+          PREV_DEV=$(gh release view dev --repo "$GITHUB_REPOSITORY" \
+            --json targetCommitish --jq .targetCommitish 2>/dev/null || true)
+          FROM=""
+          if [ -n "$PREV_DEV" ] &&
+            git rev-parse --verify "${PREV_DEV}^{commit}" >/dev/null 2>&1 &&
+            git merge-base --is-ancestor "$PREV_DEV" HEAD; then
+            FROM="$PREV_DEV"
+          fi
+          if [ -z "$FROM" ]; then
+            FROM=$(git describe --tags --abbrev=0 --match 'v*' HEAD 2>/dev/null || true)
+          fi
+          if [ -z "$FROM" ]; then
+            FROM=$(git rev-list --max-parents=0 HEAD | tail -1)
+          fi
+          node scripts/generate-changelog.mjs \
+            --from "$FROM" --to HEAD --max 12 \
+            --out release-notes.md --json changes.json
+          {
+            printf '滚动预发布(dev@%s)。iOS:未签名 Debug IPA(TrollStore/自行重签,带 Inspector,org.pomelo.lynx.debug,可连 dev server 实时开发,见 docs/dev-server.md)。此 Release 是热更新 dev 通道的更新源,资产固定名,每次 dev 构建覆盖。\n\n' "${GITHUB_SHA::7}"
+            cat release-notes.md
+            printf '\n完整变更: %s/%s/compare/%s...%s\n' \
+              "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$FROM" "$GITHUB_SHA"
+          } > release-notes-final.md
+          mv release-notes-final.md release-notes.md
+
           mkdir -p release-files
           mv pomelo-lynx-ios-nosign.ipa release-files/pomelo-lynx-ios-nosign.ipa
           cp js-bundles/.build/version.json release-files/version.json
           if [ -n "${POMELO_UPDATE_PRIVATE_KEY:-}" ]; then
+            POMELO_RELEASE_CHANGES=changes.json \
+            POMELO_BUILD_TAG="$BUILD_TAG" \
             node scripts/finalize-release.mjs release-files \
               js-bundles/host/android/app/src/main/assets/main.lynx.bundle \
               js-bundles/.build/native-host.json
           else
+            POMELO_RELEASE_CHANGES=changes.json \
+            POMELO_BUILD_TAG="$BUILD_TAG" \
             node scripts/finalize-release.mjs release-files
           fi
       - name: Publish rolling dev prerelease
@@ -352,18 +441,25 @@ jobs:
         run: |
           set -euo pipefail
           SHORT="${GITHUB_SHA::7}"
+          PKG=$(node -p "require('./package.json').version")
+          if [[ "$GITHUB_REF" == refs/tags/dev-* ]]; then
+            BUILD_TAG="$GITHUB_REF_NAME"
+          else
+            BUILD_TAG="dev-v${PKG}-${SHORT}"
+          fi
           # 已存在的 dev release:删旧资产 + 覆盖;不存在则创建。
           if gh release view dev --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release delete dev --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag
           fi
           git push origin ":refs/tags/dev" 2>/dev/null || true
-          git tag dev "$GITHUB_SHA" && git push origin dev
+          git tag -f dev "$GITHUB_SHA" && git push -f origin refs/tags/dev:refs/tags/dev
           gh release create dev --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" --prerelease --latest=false \
-            --title "pomelo-lynx dev ($SHORT)" \
-            --notes "滚动预发布(master@$SHORT)。iOS:未签名 Debug IPA(TrollStore/自行重签,带 Inspector,org.pomelo.lynx.debug,可连 dev server 实时开发,见 docs/dev-server.md)。此 Release 是热更新 dev 通道的更新源,资产固定名,每次 master 构建覆盖。"
+            --title "pomelo-lynx ${BUILD_TAG}" \
+            --notes-file release-notes.md
           gh release upload dev --repo "$GITHUB_REPOSITORY" --clobber \
             release-files/pomelo-lynx-ios-nosign.ipa \
+            release-files/client.json \
             release-files/version.json release-files/checksums.txt
           if [ -f release-files/version.json.sig ]; then
             gh release upload dev --repo "$GITHUB_REPOSITORY" --clobber \

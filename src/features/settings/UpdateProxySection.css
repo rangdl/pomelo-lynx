@@ -1,0 +1,8 @@
+.update-proxy {
+  display: flex;
+  flex-direction: column;
+}
+
+.update-proxy__editor {
+  padding: 10px 14px var(--space-3);
+}

@@ -16,6 +16,42 @@
 - [x] 原生日志分享:现有 `PomeloLog.shareRecent` 已覆盖文本日志分享;
   原生日志 zip 快路径暂不做(pomelo 没有后端日志,收益不足)
 
+## 批次 1b:版本、发布与客户端更新
+
+- [x] 规范版本与展示版本分离:`0.0.3` / `dev-0.0.3 (125)`
+- [x] iOS 注入 `hostVersion`、`hostBuild`、`hostChannel`;iOS 增加
+      `PomeloChannel` build setting
+- [ ] **Android 注入 `hostBuild`/`hostChannel`(计划,待恢复 Android 构建)**
+  - `MainActivity` 的初始/`onNewIntent` globalProps 增加字段
+  - channel 由 `BuildConfig.DEBUG` 或构建字段决定;恢复 Android CI 后再提交
+- [x] 关于页拆成「加速设置」「客户端更新」与「Bundle 热更新」
+- [x] 新增 `client.json` 固定资产:客户端版本、构建号、IPA size/sha256、changelog
+- [x] iOS 下载合并为「打开下载地址」:代理开启走加速地址,否则走 GitHub
+      原始地址;不自动安装
+- [x] 加速设置:默认 `https://gh-proxy.org`、默认开启、自定义 HTTPS 地址、
+      开关同时作用于 Release API / version.json / client.json / Bundle 下载
+- [x] Release 资产固定文件名;正式版不再上传带版本号 IPA
+- [x] CI 支持 `v*` 正式 tag 与 `dev-v*` dev tag;master/dev 分支 push 不自动构建
+- [x] changelog 从 conventional commit 生成,同时用于 GitHub Release 和 App
+- [x] 移除 Release 上传里的 `|| true`,失败不再被吞
+- [ ] **Android APK 客户端更新(计划,待恢复 Android 构建)**
+  - `client.json.assets` 增加 android 资产;下载后走 PackageInstaller
+  - 需要 APK 签名/摘要校验后再提示安装
+- [ ] **iOS 真机验证**:关于页加速设置、单一下载入口、changelog 展示
+  - 本地 Linux 无法编译 iOS;iOS 编译与行为以 CI `iOS IPA` job 为准
+
+## 批次 1c:UI 框架收敛
+
+- [x] 共享原语:`Switch`/`SwitchRow`、`TextField`、`Button`、`Hint`、
+      `IconBadge`、`PaletteSwatches`
+- [x] 页面骨架 `SettingsSubPage` / `SettingsLargeTitle` / `PageTail`
+- [x] 设置/关于/开发者/主题色/日志页迁移到共享设置行与控件
+- [x] 非颜色设计 token(`layout-tokens.css`)
+- [x] 主题色卡片与 swatch 复用
+- [x] `docs/ui-kit.md` + UI 契约测试,禁止 feature 内重新手写
+- [ ] iOS 真机视觉回归:开发者页、日志设置、主题色卡片
+  - 本地 Linux 无法验证;iOS 以 CI IPA / dev server 为准
+
 ## 批次 2:系统外观 / 安全区 / 深色模式
 
 - [x] JS 主题 token(`src/shared/theme/tokens.css`)与深色模式

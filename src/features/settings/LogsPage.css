@@ -8,6 +8,10 @@
   background-color: var(--color-surface);
 }
 
+.logs__share {
+  padding: var(--space-2) var(--page-inline);
+}
+
 .logs__summary {
   padding-left: 16px;
   padding-right: 16px;
@@ -18,75 +22,11 @@
   text-align: right;
 }
 
-.logs__setting {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  background-color: var(--color-surface-container-low);
-  padding-left: 16px;
-  padding-right: 16px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-  margin-top: 8px;
-}
-
-.logs__setting-label {
-  font-size: 14px;
-  color: var(--color-on-surface);
-}
-
-.logs__setting-value {
-  font-size: 14px;
-  color: var(--color-on-surface-variant);
-}
-
-.logs__setting-value--on {
-  color: var(--color-primary);
-  font-weight: 600;
-}
-
-.logs__action {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--color-surface-container-low);
-  padding-top: 12px;
-  padding-bottom: 12px;
-  margin-top: 8px;
-}
-
-.logs__action--busy {
-  opacity: 0.5;
-}
-
-.logs__action-text {
-  font-size: 15px;
-  color: var(--color-primary);
-}
-
-.logs__note {
-  padding-left: 16px;
-  padding-right: 16px;
-  padding-top: 10px;
-  padding-bottom: 2px;
-}
-
-.logs__note-text {
-  font-size: 12px;
-  color: var(--color-on-surface-faint);
-}
-
 .logs__list {
   flex: 1;
   min-height: 0;
   margin-top: 8px;
   background-color: var(--color-surface-container-low);
-}
-
-.logs__tail {
-  height: calc(84px + env(safe-area-inset-bottom));
 }
 
 .logs__empty {

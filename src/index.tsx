@@ -4,6 +4,7 @@ import '@lynx-js/react/debug';
 import './shims/abort-controller.js';
 import './shared/theme/tokens.css';
 import './shared/theme/palettes.css';
+import './shared/theme/layout-tokens.css';
 import { root } from '@lynx-js/react';
 
 import { initLogging } from './core/log/index.js';

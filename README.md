@@ -78,12 +78,25 @@ docs/web-debug.md   Web 端调试:症状 → 根因 → 解法
   `cd host/android && ./gradlew assembleDebug`(需 JDK 17 + Android SDK);
   iOS 需 macOS:`cd host/ios && pod install && xcodebuild ...`(可走
   `.github/workflows/build-hosts.yml` 的 CI 产物)。
-- **发版**:`pnpm release:patch`(或 `release:minor` / `release:major`)用内置的
-  `pnpm version` 提升 `package.json` 版本,`version` 钩子同步 Xcode 的
-  `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`(Android 的 versionName/versionCode
-  在构建时从 `package.json` 推导),并生成 `vX.Y.Z` 提交与本地 tag。
-  确认后 `git push --follow-tags`:CI 校验 tag 与 `package.json` 一致,构建两端产物
-  并发布到同名 Release;日常 push 不触发构建,临时构建用 `workflow_dispatch`。
+- **发版**:
+  - `dev` 分支日常开发;开始下一版时把 `package.json` bump 到下一个 `X.Y.Z`
+    (`pnpm release:patch` 会同步 Xcode 的 `MARKETING_VERSION` /
+    `CURRENT_PROJECT_VERSION`;Android 的 versionName/versionCode 在构建时推导)。
+  - dev 构建从 `dev` 分支打唯一 tag,例如 `dev-v0.0.3-<shortsha>`,CI 构建
+    Debug IPA 并滚动发布到 `dev` prerelease。
+  - 正式版把 `dev` 合并到 `master`,在 `master` 打 `v0.0.3`;CI 校验 tag、
+    `package.json` 和分支归属后构建 Release IPA。
+  - 发布资产使用固定名:`pomelo-lynx-ios-nosign.ipa`、`client.json`、
+    `version.json`、签名和 `checksums.txt`;正式版不再生成带版本号的 IPA。
+  - 详见 [docs/release.md](docs/release.md)。
+- **客户端更新 / 热更新**:
+  - **客户端**:关于页「客户端更新」检查 native IPA 版本,展示 changelog,
+    提供单一下载入口:代理开启时走加速地址,否则走 GitHub 原始地址;
+    「加速设置」默认开启,地址默认 `https://gh-proxy.org`;iOS 只交给
+    系统浏览器,不自动安装。
+  - **Bundle**:`src/core/updater/` 走签名 manifest + `releases/tags/dev` /
+    `releases/latest`,下载、冷启动生效、回滚逻辑保持不变;关于页对应
+    「Bundle 热更新」分组。
 - **热更新**:完整链路已实现(移植自 songloft-player-lynx):
   - **原生**(`host/*/updater/`):`BundleUpdateStore` 含 RSA PKCS#1 v1.5+SHA-256
     验签、兼容契约校验(channel/engine/bridge/schema/能力)、独立系统 TLS 流式
@@ -96,8 +109,10 @@ docs/web-debug.md   Web 端调试:症状 → 根因 → 解法
     冷启动异步检查、10 分钟最小间隔、6 小时周期、30m/2h/6h 退避、恢复内置自动
     关开关);`UpdateStartup` 在路由挂载 1.5s 后按 bundleId 确认启动,渲染边界
     错误上报回滚。
-  - **UI**:底部导航(首页/设置),设置 → 关于 → 客户端更新区(检查/下载/取消/
-    待生效提示/恢复内置二次确认);Web 端只提示"随部署更新"。
+  - **UI**:底部导航(首页/设置),设置 → 关于 → 「加速设置」(代理开关/地址/
+    恢复默认)、「客户端更新」(native 安装包/changelog/单一下载入口)与
+    「Bundle 热更新」(检查/下载/取消/待生效提示/恢复内置二次确认);
+    Web 端只提示"随部署更新"。
   - **发布**(`scripts/update-release-lib.mjs`):CI Release job 组装
     version.json+签名+bundle;配 `POMELO_UPDATE_PRIVATE_KEY`(secrets)与
     `POMELO_UPDATE_PUBLIC_KEY`(vars)后附带签名热更新资产,未配钥只出完整包。
@@ -120,6 +135,9 @@ docs/web-debug.md   Web 端调试:症状 → 根因 → 解法
 
 ## 进一步阅读
 
+- [页面设计约束](docs/page-design.md)—— 页面壳、顶栏/底栏、安全区与检查清单
+- [UI 组件约束](docs/ui-kit.md)—— 共享原语、页面骨架与禁止手写项
+- [版本/发布/更新](docs/release.md)—— 版本语义、tag、固定资产与代理
 - [Web 端调试](docs/web-debug.md)—— 常见故障与工具链约束
 - [E2E 测试套件](e2e/README.md)—— driver 抽象与场景编写
 - [跨端对齐](e2e/alignment/README.md)—— 真机采集与几何比对

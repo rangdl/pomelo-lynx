@@ -236,6 +236,24 @@ test('Pomelo 原生模块在 buildConfig 与 pbxproj 中都有登记', () => {
   }
 });
 
+test('客户端更新可从宿主读取版本、构建号与通道', () => {
+  const viewController = read('ViewController.swift');
+  assert.match(
+    viewController,
+    /"hostVersion": info\["CFBundleShortVersionString"\]/,
+  );
+  assert.match(viewController, /"hostBuild": info\["CFBundleVersion"\]/);
+  assert.match(viewController, /"hostChannel": info\["PomeloChannel"\]/);
+
+  const info = readFileSync(join(IOS_DIR, 'Info.plist'), 'utf8');
+  assert.match(info, /<key>PomeloChannel<\/key>/);
+  assert.match(info, /\$\(POMELO_CHANNEL\)/);
+
+  const pbxproj = readFileSync(PBXPROJ, 'utf8');
+  assert.match(pbxproj, /POMELO_CHANNEL = dev;/);
+  assert.match(pbxproj, /POMELO_CHANNEL = stable;/);
+});
+
 test('methodLookup 的每个选择器都能对应到 @objc func', () => {
   const modules = swiftFiles.filter((name) =>
     /^Pomelo.*Module\.swift$/.test(name),

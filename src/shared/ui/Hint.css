@@ -1,0 +1,32 @@
+.hint {
+  padding: var(--space-2) var(--space-5);
+}
+
+.hint--flush {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.hint--muted {
+  font-size: var(--font-note);
+  line-height: var(--line-note);
+  color: var(--color-on-surface-variant);
+}
+
+.hint--caption {
+  font-size: var(--font-caption);
+  line-height: var(--line-caption);
+  color: var(--color-on-surface-faint);
+}
+
+.hint--warning {
+  font-size: var(--font-note);
+  line-height: var(--line-note);
+  color: var(--color-warning);
+}
+
+.hint--error {
+  font-size: var(--font-note);
+  line-height: var(--line-note);
+  color: var(--color-error);
+}

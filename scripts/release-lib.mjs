@@ -16,6 +16,34 @@ export function validateVersion(version) {
   return version;
 }
 
+/**
+ * 只允许两种发布 tag:
+ *   - vX.Y.Z            正式版(必须等于 package.json version)
+ *   - dev-vX.Y.Z-<id>   dev 构建(版本部分必须等于 package.json version)
+ *
+ * dev 构建的 GitHub Release 仍是滚动 `dev`,所以 Bundle manifest 的
+ * release_tag/version 继续是 `dev`,不能把 dev tag 写进签名契约。
+ */
+function releaseTagMetadata(tag, packageVersion) {
+  if (!tag) {
+    return { channel: 'dev', releaseTag: 'dev', version: 'dev' };
+  }
+  if (tag === `v${packageVersion}`) {
+    return {
+      channel: packageVersion.includes('-') ? 'preview' : 'stable',
+      releaseTag: tag,
+      version: packageVersion,
+    };
+  }
+  const dev = /^dev-v?(\d+\.\d+\.\d+)(?:-[0-9A-Za-z.]+)?$/.exec(tag);
+  if (dev && dev[1] === packageVersion) {
+    return { channel: 'dev', releaseTag: 'dev', version: 'dev' };
+  }
+  throw new Error(
+    `Tag ${tag} does not match package.json v${packageVersion} or dev-v${packageVersion}-<id>`,
+  );
+}
+
 /** 构建身份元数据(与 gen-native-host.mjs 的 buildMetadata 语义一致)。 */
 export function createBuildMetadata({
   packageVersion,
@@ -28,10 +56,7 @@ export function createBuildMetadata({
   const tag = ref.startsWith('refs/tags/')
     ? ref.slice('refs/tags/'.length)
     : '';
-  if (tag && tag !== `v${packageVersion}`)
-    throw new Error(
-      `Tag ${tag} does not match package.json v${packageVersion}`,
-    );
+  const release = releaseTagMetadata(tag, packageVersion);
   if (sha !== 'unknown' && !/^[0-9a-f]{7,40}$/.test(sha))
     throw new Error('Invalid git commit');
   const buildTime = now.toISOString();
@@ -40,18 +65,14 @@ export function createBuildMetadata({
   if (!Number.isSafeInteger(number) || number <= 0 || number > 2100000000)
     throw new Error('Invalid Android build number');
   return {
-    version: tag ? packageVersion : 'dev',
+    version: release.version,
     package_version: packageVersion,
     native_version: packageVersion.split('-')[0],
     build_number: number,
     git_commit: sha,
     build_time: buildTime,
-    channel: tag
-      ? packageVersion.includes('-')
-        ? 'preview'
-        : 'stable'
-      : 'dev',
-    release_tag: tag || 'dev',
+    channel: release.channel,
+    release_tag: release.releaseTag,
   };
 }
 

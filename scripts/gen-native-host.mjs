@@ -25,6 +25,7 @@ import { createHash, createPublicKey } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createBuildMetadata } from './release-lib.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const packageJson = JSON.parse(
@@ -60,30 +61,24 @@ function buildNumber(now) {
 }
 
 /**
- * version/channel/release_tag: a tag build (`GITHUB_REF=refs/tags/vX.Y.Z`) is
- * the stable channel; anything else is dev. `POMELO_UPDATE_CHANNEL` may force
- * the channel for local experiments but never changes version semantics.
+ * version/channel/release_tag: a tag build (`GITHUB_REF=refs/tags/vX.Y.Z` or
+ * `refs/tags/dev-vX.Y.Z-<id>`) selects the channel explicitly; anything else
+ * is dev. `POMELO_UPDATE_CHANNEL` may force the channel for local experiments
+ * but never changes version semantics.
  */
 function buildMetadata() {
   const now = new Date();
-  const ref = process.env.GITHUB_REF ?? '';
-  const tag = ref.startsWith('refs/tags/')
-    ? ref.slice('refs/tags/'.length)
-    : '';
-  const packageVersion = packageJson.version;
-  if (tag && tag !== `v${packageVersion}`) {
-    throw new Error(`Tag ${tag} 与 package.json v${packageVersion} 不一致`);
+  const metadata = createBuildMetadata({
+    packageVersion: packageJson.version,
+    ref: process.env.GITHUB_REF ?? '',
+    sha: process.env.GITHUB_SHA ?? gitCommit(),
+    now,
+    buildNumber: buildNumber(now),
+  });
+  if (process.env.POMELO_UPDATE_CHANNEL) {
+    metadata.channel = process.env.POMELO_UPDATE_CHANNEL;
   }
-  return {
-    version: tag ? packageVersion : 'dev',
-    package_version: packageVersion,
-    native_version: packageVersion.split('-')[0],
-    build_number: buildNumber(now),
-    git_commit: process.env.GITHUB_SHA ?? gitCommit(),
-    build_time: now.toISOString(),
-    channel: process.env.POMELO_UPDATE_CHANNEL || (tag ? 'stable' : 'dev'),
-    release_tag: tag || 'dev',
-  };
+  return metadata;
 }
 
 // ---- engine versions (parsed from the host projects) ----------------------

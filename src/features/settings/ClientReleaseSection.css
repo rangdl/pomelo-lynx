@@ -1,0 +1,38 @@
+.client-release {
+  display: flex;
+  flex-direction: column;
+}
+
+.client-release__changes {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px 12px 64px;
+}
+
+.client-release__changes-title {
+  font-size: var(--font-note);
+  font-weight: 600;
+  color: var(--color-on-surface-variant);
+  margin-bottom: 6px;
+}
+
+.client-release__change {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  margin-top: 3px;
+}
+
+.client-release__change-dot {
+  width: var(--space-3);
+  font-size: var(--font-note);
+  line-height: var(--line-note);
+  color: var(--color-primary);
+}
+
+.client-release__change-text {
+  flex: 1;
+  font-size: var(--font-note);
+  line-height: var(--line-note);
+  color: var(--color-on-surface-variant);
+}

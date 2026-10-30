@@ -4,6 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { finalizeRelease, loadNativeContract } from './update-release-lib.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const changesPath = process.env.POMELO_RELEASE_CHANGES
+  ? resolve(process.env.POMELO_RELEASE_CHANGES)
+  : '';
 const result = finalizeRelease({
   directory: resolve(process.argv[2] ?? 'release-files'),
   bundleSource: process.argv[3] ? resolve(process.argv[3]) : undefined,
@@ -16,6 +19,8 @@ const result = finalizeRelease({
   contract: loadNativeContract(root),
   publicKey: process.env.POMELO_UPDATE_PUBLIC_KEY ?? '',
   privateKey: process.env.POMELO_UPDATE_PRIVATE_KEY ?? '',
+  changes: changesPath ? JSON.parse(readFileSync(changesPath, 'utf8')) : [],
+  buildTag: process.env.POMELO_BUILD_TAG ?? '',
 });
 console.log(
   `Verified ${result.assetCount} release assets; signed bundle update: ${result.signedUpdate}`,

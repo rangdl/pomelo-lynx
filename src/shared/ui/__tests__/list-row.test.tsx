@@ -23,3 +23,11 @@ test('ListRow 支持自定义右侧内容且保留 testid', async () => {
   expect(await findByText('自定义')).toBeInTheDocument();
   expect(queryByTestId('row-logs')).toBeInTheDocument();
 });
+
+test('ListRow 同时渲染右侧值和箭头', async () => {
+  const { findByText } = render(
+    <ListRow label="显示级别" value="信息 · info" chevron />,
+  );
+  expect(await findByText('信息 · info')).toBeInTheDocument();
+  expect(await findByText('›')).toBeInTheDocument();
+});

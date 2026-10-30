@@ -10,6 +10,14 @@ import {
   probeDevServer,
   reloadBundle,
 } from '../../native/platform.js';
+import { Button } from '../../shared/ui/Button.js';
+import { Hint } from '../../shared/ui/Hint.js';
+import { ListRow } from '../../shared/ui/ListRow.js';
+import {
+  SettingsGroup,
+  SettingsGroupDivider,
+} from '../../shared/ui/SettingsGroup.js';
+import { TextField } from '../../shared/ui/TextField.js';
 import './DevServerSection.css';
 
 const PREF_KEY = 'dev_server_url';
@@ -69,7 +77,6 @@ export function DevServerSection() {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [inputFocused, setInputFocused] = useState(false);
   const [probe, setProbe] = useState<DevServerProbe | null>(null);
   const [checking, setChecking] = useState(false);
   const [autoRecovered, setAutoRecovered] = useState(false);
@@ -218,140 +225,79 @@ export function DevServerSection() {
   };
 
   return (
-    <view className="dev-server" data-testid="dev-server-section">
-      <text className="dev-server__section-title">Dev Server</text>
-      <view className="dev-server__row">
-        <text className="dev-server__status-label">已配置来源</text>
-        <text
-          className="dev-server__status-value"
-          data-testid="dev-server-current"
-        >
-          {current ? 'dev server' : '内嵌 bundle'}
-        </text>
-        {current ? (
-          <text
-            className="dev-server__status-value"
-            data-testid="dev-server-url"
-          >
-            {current}
-          </text>
-        ) : null}
+    <SettingsGroup title="Dev Server" testid="dev-server-section">
+      <ListRow
+        iconGlyph="⌁"
+        iconTone="sky"
+        label="已配置来源"
+        value={current ? 'dev server' : '内嵌 bundle'}
+        detail={current ?? undefined}
+        testid="dev-server-current"
+      />
+      <SettingsGroupDivider />
+      <ListRow
+        iconGlyph="◉"
+        iconTone="blue"
+        label="服务器状态"
+        value={probeText(probe, checking, supported, current)}
+        detail={
+          current && supported ? '每 3 秒探测;服务器恢复后自动重载' : undefined
+        }
+        testid="dev-server-status"
+      />
+      <SettingsGroupDivider />
+      <view className="dev-server__form">
+        <TextField
+          value={draft}
+          onChange={setDraft}
+          placeholder="http://192.168.x.x:3090/main.lynx.bundle"
+          inputKey={`dev-server-${current ?? 'embedded'}`}
+          onFocus={() => logger.info('devserver', 'input focused')}
+          testid="dev-server-input"
+        />
       </view>
-      <view className="dev-server__row">
-        <text className="dev-server__status-label">服务器状态</text>
-        <text
-          className="dev-server__status-value"
-          data-testid="dev-server-status"
-        >
-          {probeText(probe, checking, supported, current)}
-        </text>
-        {current && supported ? (
-          <text className="dev-server__status-value">
-            每 3 秒探测;服务器恢复后自动重载
-          </text>
-        ) : null}
-      </view>
-      <view className="dev-server__input-row">
-        <view
-          className={
-            inputFocused
-              ? 'dev-server__input-frame dev-server__input-frame--focused'
-              : 'dev-server__input-frame'
-          }
-        >
-          <input
-            default-value={draft}
-            placeholder="http://192.168.x.x:3090/main.lynx.bundle"
-            placeholder-class="dev-server__placeholder"
-            maxlength={1000}
-            avoid-keyboard={true}
-            avoid-keyboard-spacing="12px"
-            set-soft-input-mode="resize"
-            style={{
-              // Lynx 要求长度带单位:无单位数字会抛
-              // "CSS length need units (except 0)"(真机 DevTool 报 130300)。
-              flex: 1,
-              fontSize: '13px',
-              paddingLeft: '10px',
-              paddingRight: '10px',
-              height: '38px',
-              backgroundColor: 'transparent',
-              color: 'var(--color-on-surface)',
-            }}
-            bindinput={(e: { detail: { value: string } }) => {
-              'background only';
-              setDraft(e.detail.value);
-            }}
-            bindfocus={() => {
-              'background only';
-              setInputFocused(true);
-              logger.info('devserver', 'input focused');
-            }}
-            bindblur={() => {
-              'background only';
-              setInputFocused(false);
-            }}
-            data-testid="dev-server-input"
-          />
-        </view>
-      </view>
-      <text className="dev-server__draft" data-testid="dev-server-draft">
+      <Hint tone="caption" testid="dev-server-draft">
         {draft ? `待连接:${draft}` : '未输入 URL'}
-      </text>
+      </Hint>
       {error ? (
-        <text className="dev-server__error" data-testid="dev-server-error">
+        <Hint tone="error" testid="dev-server-error">
           {error}
-        </text>
+        </Hint>
       ) : null}
       {autoRecovered ? (
-        <text
-          className="dev-server__note"
-          data-testid="dev-server-auto-recovered"
-        >
+        <Hint tone="muted" testid="dev-server-auto-recovered">
           已检测到服务器恢复,并自动重新下载 bundle。
-        </text>
+        </Hint>
       ) : null}
       <view className="dev-server__actions">
-        <view
-          className={
-            saving || !draft.trim() || !supported
-              ? 'dev-server__btn dev-server__btn--disabled'
-              : 'dev-server__btn'
-          }
-          bindtap={connect}
-          data-testid="dev-server-connect"
-        >
-          <text className="dev-server__btn-text">连接并重载</text>
-        </view>
-        <view
-          className={
-            saving || !current || !supported
-              ? 'dev-server__btn dev-server__btn--disabled'
-              : 'dev-server__btn'
-          }
-          bindtap={refresh}
-          data-testid="dev-server-refresh"
-        >
-          <text className="dev-server__btn-text">刷新</text>
-        </view>
-        <view
-          className={
-            saving || !current || !supported
-              ? 'dev-server__btn dev-server__btn--disabled'
-              : 'dev-server__btn'
-          }
-          bindtap={disconnect}
-          data-testid="dev-server-disconnect"
-        >
-          <text className="dev-server__btn-text dev-server__btn-text--danger">
-            断开
-          </text>
-        </view>
+        <Button
+          grow
+          label="连接并重载"
+          disabled={saving || !draft.trim() || !supported}
+          onTap={connect}
+          testid="dev-server-connect"
+        />
+        <Button
+          grow
+          variant="secondary"
+          label="刷新"
+          disabled={saving || !current || !supported}
+          onTap={refresh}
+          testid="dev-server-refresh"
+        />
+        <Button
+          grow
+          variant="danger"
+          label="断开"
+          disabled={saving || !current || !supported}
+          onTap={disconnect}
+          testid="dev-server-disconnect"
+        />
       </view>
-      <text className="dev-server__note">
+      <Hint tone="caption">
         电脑运行 pnpm dev(3090 端口已映射),粘贴终端打印的 bundle URL。连接时
         先下载校验,成功后才重新加载;失败不会影响当前页面。
-      </text>
-    </view>
+      </Hint>
+    </SettingsGroup>
   );
 }

@@ -40,12 +40,25 @@ export type MessageKey =
   | 'about.title'
   | 'about.back'
   | 'about.group.update'
+  | 'about.group.acceleration'
+  | 'about.group.clientUpdate'
+  | 'about.group.bundleUpdate'
   | 'about.client'
   | 'about.bundleVersion'
   | 'about.copy'
   | 'about.copied'
   | 'about.copyFailed'
   | 'about.release'
+  | 'about.checkClientUpdate'
+  | 'about.checkClientUpdateDetail'
+  | 'about.checkingClient'
+  | 'about.clientUpdateAvailable'
+  | 'about.clientUpToDate'
+  | 'about.clientUpdateUnknown'
+  | 'about.changes'
+  | 'about.openDownload'
+  | 'about.viaProxy'
+  | 'about.directGithub'
   | 'about.webUpdate'
   | 'logs.title'
   | 'logs.back';
@@ -60,7 +73,7 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.title': '设置',
     'settings.about': '关于',
     'settings.group.app': '应用',
-    'settings.aboutDetail': '版本、更新与日志',
+    'settings.aboutDetail': '版本与更新',
     'settings.group.appearance': '外观',
     'settings.group.developer': '开发者',
     'settings.developer': 'Dev Server 与调试通道',
@@ -87,12 +100,25 @@ const MESSAGES: Record<Locale, Messages> = {
     'about.title': '关于',
     'about.back': '设置',
     'about.group.update': '更新',
+    'about.group.acceleration': '加速设置',
+    'about.group.clientUpdate': '客户端更新',
+    'about.group.bundleUpdate': 'Bundle 热更新',
     'about.client': '客户端',
     'about.bundleVersion': 'Bundle 版本',
     'about.copy': '复制版本信息',
     'about.copied': '已复制',
     'about.copyFailed': '复制失败',
     'about.release': '打开发布页',
+    'about.checkClientUpdate': '检查客户端更新',
+    'about.checkClientUpdateDetail': '检查是否有新的安装包',
+    'about.checkingClient': '正在检查…',
+    'about.clientUpdateAvailable': '有新版本',
+    'about.clientUpToDate': '已是最新',
+    'about.clientUpdateUnknown': '无法确定',
+    'about.changes': '更新内容',
+    'about.openDownload': '打开下载地址',
+    'about.viaProxy': '经代理加速',
+    'about.directGithub': 'GitHub 直连',
     'about.webUpdate': 'Web 端随部署更新,无独立热更新',
     'logs.title': '日志',
     'logs.back': '设置',
@@ -104,7 +130,7 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.title': 'Settings',
     'settings.about': 'About',
     'settings.group.app': 'App',
-    'settings.aboutDetail': 'Version, updates and logs',
+    'settings.aboutDetail': 'Version and updates',
     'settings.group.appearance': 'Appearance',
     'settings.group.developer': 'Developer',
     'settings.developer': 'Dev server & debug tunnel',
@@ -132,12 +158,25 @@ const MESSAGES: Record<Locale, Messages> = {
     'about.title': 'About',
     'about.back': 'Settings',
     'about.group.update': 'Updates',
+    'about.group.acceleration': 'Acceleration',
+    'about.group.clientUpdate': 'Client update',
+    'about.group.bundleUpdate': 'Bundle hot update',
     'about.client': 'Client',
     'about.bundleVersion': 'Bundle version',
     'about.copy': 'Copy version info',
     'about.copied': 'Copied',
     'about.copyFailed': 'Copy failed',
     'about.release': 'Open releases',
+    'about.checkClientUpdate': 'Check client update',
+    'about.checkClientUpdateDetail': 'Check for a new installer',
+    'about.checkingClient': 'Checking…',
+    'about.clientUpdateAvailable': 'Update available',
+    'about.clientUpToDate': 'Up to date',
+    'about.clientUpdateUnknown': 'Unable to determine',
+    'about.changes': "What's new",
+    'about.openDownload': 'Open download',
+    'about.viaProxy': 'Via proxy',
+    'about.directGithub': 'Direct from GitHub',
     'about.webUpdate': 'Web updates with the deployment',
     'logs.title': 'Logs',
     'logs.back': 'Settings',

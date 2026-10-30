@@ -220,7 +220,7 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     callback: ((String) -> Void)? = nil
   ) {
     guard configureAudioSession() else {
-      callback(errorJSON("player_audio_session_failed"))
+      callback?(errorJSON("player_audio_session_failed"))
       return
     }
     clearItemObservers()

@@ -10,10 +10,19 @@ describe('player state parsing', () => {
       position: 12.5,
       duration: 120,
       error: '',
+      queueIndex: 2,
     };
-    expect(parsePlayerState(value)).toEqual(value);
-    expect(parsePlayerState(JSON.stringify(value))).toEqual(value);
-    expect(parsePlayerState([JSON.stringify(value)])).toEqual(value);
+    const expected = {
+      state: 'playing',
+      url: 'https://example.com/a.mp3',
+      position: 12.5,
+      duration: 120,
+      error: '',
+      queueIndex: 2,
+    };
+    expect(parsePlayerState(value)).toEqual(expected);
+    expect(parsePlayerState(JSON.stringify(value))).toEqual(expected);
+    expect(parsePlayerState([JSON.stringify(value)])).toEqual(expected);
   });
 
   test('非法状态回退为 idle,负数时间归零', () => {
@@ -25,6 +34,7 @@ describe('player state parsing', () => {
       position: 0,
       duration: 0,
       error: '',
+      queueIndex: -1,
     });
     expect(parsePlayerState('{broken')).toBeNull();
     expect(parsePlayerState(null)).toBeNull();

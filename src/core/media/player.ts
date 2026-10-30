@@ -4,21 +4,32 @@ import { createStore } from 'zustand/vanilla';
 import {
   getPlayerState,
   loadPlayer,
+  nextPlayer,
   type PlayerState,
   type PlayerStatus,
   pausePlayer,
   playerAvailable,
   playPlayer,
+  previousPlayer,
   seekPlayer,
+  setPlayerQueue,
   stopPlayer,
   subscribePlayerState,
 } from '../../native/player.js';
+
+export interface MediaTrack {
+  url: string;
+  title: string;
+  artist?: string;
+  album?: string;
+  artwork?: string;
+}
 
 export interface MediaPlayerState extends PlayerState {
   available: boolean;
   busy: boolean;
   initialized: boolean;
-  queue: string[];
+  queue: MediaTrack[];
   currentIndex: number;
 }
 
@@ -34,6 +45,7 @@ function initial(): MediaPlayerState {
     initialized: false,
     queue: [],
     currentIndex: -1,
+    queueIndex: -1,
   };
 }
 
@@ -41,7 +53,6 @@ function initial(): MediaPlayerState {
 export const mediaPlayerStore = createStore<MediaPlayerState>(initial);
 
 let hydration: Promise<void> | null = null;
-let lastEndedUrl = '';
 
 function apply(state: PlayerState): void {
   mediaPlayerStore.setState({
@@ -50,19 +61,8 @@ function apply(state: PlayerState): void {
     position: state.position,
     duration: state.duration,
     error: state.error,
+    currentIndex: state.queueIndex,
   });
-  if (state.state !== 'ended') {
-    lastEndedUrl = '';
-    return;
-  }
-  if (lastEndedUrl === state.url) return;
-  lastEndedUrl = state.url;
-  const current = mediaPlayerStore.getState();
-  if (
-    current.currentIndex >= 0 &&
-    current.currentIndex + 1 < current.queue.length
-  )
-    playQueueAt(current.currentIndex + 1);
 }
 
 /** 首次进入播放页时读取原生状态并挂上事件订阅。 */
@@ -81,7 +81,7 @@ export function ensureMediaPlayer(): Promise<void> {
       subscribePlayerState(apply);
     })
     .catch(() => {
-      // 旧宿主没有播放器时保持 available=false,页面显示提示。
+      // 模块调用失败时标记不可用,页面显示提示。
       mediaPlayerStore.setState({ available: false });
     })
     .finally(() => {
@@ -90,7 +90,11 @@ export function ensureMediaPlayer(): Promise<void> {
   return hydration;
 }
 
-async function startMedia(url: string, index: number): Promise<void> {
+async function startMedia(
+  url: string,
+  index: number,
+  autoplay = true,
+): Promise<void> {
   await ensureMediaPlayer();
   if (!mediaPlayerStore.getState().available) return;
   const value = url.trim();
@@ -98,6 +102,8 @@ async function startMedia(url: string, index: number): Promise<void> {
     mediaPlayerStore.setState({ error: 'player_empty_url' });
     return;
   }
+  const queue = mediaPlayerStore.getState().queue;
+  setPlayerQueue(queue, index);
   mediaPlayerStore.setState({
     busy: true,
     error: '',
@@ -106,7 +112,7 @@ async function startMedia(url: string, index: number): Promise<void> {
     currentIndex: index,
   });
   try {
-    await loadPlayer(value, true);
+    await loadPlayer(value, autoplay);
   } catch (error) {
     mediaPlayerStore.setState({
       busy: false,
@@ -118,49 +124,171 @@ async function startMedia(url: string, index: number): Promise<void> {
   mediaPlayerStore.setState({ busy: false });
 }
 
-export async function loadMedia(url: string): Promise<void> {
-  const index = mediaPlayerStore.getState().queue.indexOf(url.trim());
-  await startMedia(url, index);
+/** 队列项没有标题时用 URL 文件名兜底,锁屏和播放页共用同一份。 */
+export function trackTitleFromURL(raw: string): string {
+  const clean = raw.split('?')[0]?.split('#')[0] ?? '';
+  const segment = clean.split('/').filter(Boolean).pop() ?? '';
+  if (!segment) return raw;
+  try {
+    return decodeURIComponent(segment) || raw;
+  } catch {
+    return segment;
+  }
 }
 
-export function enqueueMedia(url: string): void {
+export async function loadMedia(url: string): Promise<void> {
+  const value = url.trim();
+  const index = mediaPlayerStore
+    .getState()
+    .queue.findIndex((track) => track.url === value);
+  await startMedia(value, index);
+}
+
+export type QueueInsertPosition = 'end' | 'next';
+
+function buildTrack(
+  url: string,
+  meta?: Partial<Omit<MediaTrack, 'url'>>,
+): MediaTrack {
+  return {
+    url,
+    title: meta?.title?.trim() || trackTitleFromURL(url),
+    artist: meta?.artist?.trim() || undefined,
+    album: meta?.album?.trim() || undefined,
+    artwork: meta?.artwork?.trim() || undefined,
+  };
+}
+
+/**
+ * 把曲目加入队列。`end` 追加到末尾,`next` 插到当前曲目之后。
+ * 队列为空或没有当前曲目时,两种位置都会立即播放新曲目。
+ */
+export function enqueueMedia(
+  url: string,
+  meta?: Partial<Omit<MediaTrack, 'url'>>,
+  position: QueueInsertPosition = 'end',
+): void {
   const value = url.trim();
   if (!value) {
     mediaPlayerStore.setState({ error: 'player_empty_url' });
     return;
   }
   const current = mediaPlayerStore.getState();
-  const existing = current.queue.indexOf(value);
+  const existing = current.queue.findIndex((track) => track.url === value);
+
   if (existing >= 0) {
-    void playQueueAt(existing);
+    if (position !== 'next') return;
+    if (current.currentIndex < 0) {
+      void playQueueAt(existing);
+      return;
+    }
+    if (existing === current.currentIndex) return;
+    const queue = [...current.queue];
+    const [track] = queue.splice(existing, 1);
+    const currentIndex =
+      existing < current.currentIndex
+        ? current.currentIndex - 1
+        : current.currentIndex;
+    queue.splice(Math.min(currentIndex + 1, queue.length), 0, track);
+    mediaPlayerStore.setState({ queue, currentIndex });
+    setPlayerQueue(queue, currentIndex);
     return;
   }
-  const queue = [...current.queue, value];
+
+  const track = buildTrack(value, meta);
+
+  if (position === 'next' && current.currentIndex >= 0) {
+    const queue = [...current.queue];
+    queue.splice(current.currentIndex + 1, 0, track);
+    mediaPlayerStore.setState({ queue });
+    setPlayerQueue(queue, current.currentIndex);
+    return;
+  }
+
+  const queue = [...current.queue, track];
   mediaPlayerStore.setState({ queue });
+  setPlayerQueue(queue, current.currentIndex);
   if (current.currentIndex < 0 || current.state === 'idle')
     void playQueueAt(queue.length - 1);
+}
+
+/**
+ * 从队列移除一项。移除当前曲目时,有下一首就按原播放状态切过去,
+ * 否则停止播放并把当前索引置空。
+ */
+export function removeMediaAt(index: number): void {
+  const current = mediaPlayerStore.getState();
+  if (index < 0 || index >= current.queue.length) return;
+  const queue = current.queue.filter((_, itemIndex) => itemIndex !== index);
+
+  if (index !== current.currentIndex) {
+    const currentIndex =
+      index < current.currentIndex
+        ? current.currentIndex - 1
+        : current.currentIndex;
+    mediaPlayerStore.setState({ queue, currentIndex });
+    setPlayerQueue(queue, currentIndex);
+    return;
+  }
+
+  if (queue.length === 0) {
+    stopPlayer();
+    setPlayerQueue([], -1);
+    mediaPlayerStore.setState({
+      queue: [],
+      currentIndex: -1,
+      state: 'idle',
+      url: '',
+      position: 0,
+      duration: 0,
+      error: '',
+    });
+    return;
+  }
+
+  const shouldPlay = current.state === 'playing' || current.state === 'loading';
+  const nextIndex = index < queue.length ? index : -1;
+  if (nextIndex >= 0) {
+    mediaPlayerStore.setState({ queue, currentIndex: nextIndex });
+    void startMedia(queue[nextIndex].url, nextIndex, shouldPlay);
+    return;
+  }
+
+  stopPlayer();
+  setPlayerQueue(queue, -1);
+  mediaPlayerStore.setState({
+    queue,
+    currentIndex: -1,
+    state: 'idle',
+    url: '',
+    position: 0,
+    duration: 0,
+    error: '',
+  });
 }
 
 export function playQueueAt(index: number): Promise<void> | void {
   const queue = mediaPlayerStore.getState().queue;
   if (index < 0 || index >= queue.length) return;
-  return startMedia(queue[index], index);
+  setPlayerQueue(queue, index);
+  return startMedia(queue[index].url, index);
 }
 
 export function playNextMedia(): void {
   const current = mediaPlayerStore.getState();
   if (current.currentIndex + 1 >= current.queue.length) return;
-  void playQueueAt(current.currentIndex + 1);
+  nextPlayer();
 }
 
 export function playPreviousMedia(): void {
   const current = mediaPlayerStore.getState();
   if (current.currentIndex <= 0) return;
-  void playQueueAt(current.currentIndex - 1);
+  previousPlayer();
 }
 
 export function clearMediaQueue(): void {
   stopPlayer();
+  setPlayerQueue([], -1);
   mediaPlayerStore.setState({
     queue: [],
     currentIndex: -1,

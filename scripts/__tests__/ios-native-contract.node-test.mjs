@@ -287,5 +287,23 @@ test('播放器声明后台音频并接入锁屏控制', () => {
   assert.match(player, /MPNowPlayingInfoCenter/);
   assert.match(player, /MPRemoteCommandCenter/);
   assert.match(player, /changePlaybackPositionCommand/);
+  assert.match(player, /nextTrackCommand/);
+  assert.match(player, /previousTrackCommand/);
   assert.match(player, /AVAudioSession\.interruptionNotification/);
+  assert.match(player, /func setQueue\(/);
+  assert.match(player, /queueIndex/);
+  assert.doesNotMatch(player, /queue_index/);
+  assert.match(player, /private struct QueueItem/);
+  assert.match(player, /request\["items"\]/);
+  assert.doesNotMatch(player, /request\["urls"\]/);
+  assert.match(player, /MPMediaItemPropertyAlbumTitle/);
+  assert.match(player, /MPMediaItemPropertyArtwork/);
+  assert.match(player, /applyMetadata\(for:/);
+  assert.doesNotMatch(player, /!title\.isEmpty/);
+  assert.match(player, /title\.isEmpty \? url\.lastPathComponent : title/);
+
+  const bridge = readFileSync(join(ROOT, 'src/native/player.ts'), 'utf8');
+  assert.match(bridge, /items: items\.slice/);
+  assert.doesNotMatch(bridge, /urls: urls\.slice/);
+  assert.doesNotMatch(bridge, /queue_index/);
 });

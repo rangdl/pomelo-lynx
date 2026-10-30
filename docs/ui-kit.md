@@ -69,6 +69,7 @@ src/shared/ui/
   - `secondary`:次操作
   - `danger`:断开/删除
   - `text`:轻量文字操作
+- `ListRow` 行内尾随按钮使用 `stopPropagation`,避免点击冒泡到整行。
 - 不要再写 `.dev-server__btn` / `.logs__action`。
 
 ### 提示与错误

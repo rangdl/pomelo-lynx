@@ -321,11 +321,17 @@ test('播放页使用共享 UI 原语并接入第三个 tab', () => {
     'playQueueAt',
     'playNextMedia',
     'playPreviousMedia',
+    'removeMediaAt',
     'clearMediaQueue',
   ]) {
     assert.match(page, new RegExp(name), `播放页缺少队列动作 ${name}`);
   }
   assert.doesNotMatch(page, /<input|avoid-keyboard|iconColor=/);
+  assert.match(page, /track\.title/);
+  assert.match(page, /track\.artist/);
+  assert.match(page, /player-enqueue-next/);
+  assert.match(page, /player-remove-/);
+  assert.match(page, /stopPropagation/);
   const shell = read('src/shared/layouts/ShellLayout.tsx');
   assert.match(shell, /path: '\/player'/);
   assert.match(shell, /nav-item-player/);

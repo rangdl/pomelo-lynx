@@ -7,6 +7,7 @@ import {
   playNextMedia,
   playPreviousMedia,
   playQueueAt,
+  removeMediaAt,
   seekMedia,
   stopMedia,
   toggleMedia,
@@ -77,11 +78,19 @@ export function PlayerPage() {
   const loadSample = () => {
     'background only';
     setDraft(SAMPLE_AUDIO_URL);
-    enqueueMedia(SAMPLE_AUDIO_URL);
+    enqueueMedia(SAMPLE_AUDIO_URL, { title: '示例音频' });
   };
   const enqueue = () => {
     'background only';
     enqueueMedia(draft);
+  };
+  const enqueueNext = () => {
+    'background only';
+    enqueueMedia(draft, undefined, 'next');
+  };
+  const removeAt = (index: number) => {
+    'background only';
+    removeMediaAt(index);
   };
   const clearQueue = () => {
     'background only';
@@ -101,6 +110,7 @@ export function PlayerPage() {
   };
 
   const hasSource = !!player.url;
+  const currentTrack = player.queue[player.currentIndex];
   const busy = player.busy || player.state === 'loading';
   const error = player.error ? errorText(player.error) : null;
 
@@ -114,7 +124,13 @@ export function PlayerPage() {
             iconTone="violet"
             label="音频源"
             value={hasSource ? '已加载' : '未加载'}
-            detail={player.url || '还没有加载音频'}
+            detail={
+              hasSource
+                ? currentTrack?.title
+                  ? `${currentTrack.title} · ${player.url}`
+                  : player.url
+                : '还没有加载音频'
+            }
             testid="player-source"
           />
           <SettingsGroupDivider />
@@ -151,10 +167,20 @@ export function PlayerPage() {
             <Button
               grow
               variant="secondary"
-              label="加入队列"
+              label="添加到列表"
               disabled={busy || !draft.trim() || !player.available}
               onTap={enqueue}
               testid="player-enqueue"
+            />
+          </view>
+          <view className="player__actions">
+            <Button
+              grow
+              variant="secondary"
+              label="下一首播放"
+              disabled={busy || !draft.trim() || !player.available}
+              onTap={enqueueNext}
+              testid="player-enqueue-next"
             />
             <Button
               grow
@@ -171,18 +197,29 @@ export function PlayerPage() {
           title={`播放队列${player.queue.length ? ` · ${player.queue.length}` : ''}`}
         >
           {player.queue.length === 0 ? (
-            <Hint tone="caption">队列为空;输入 URL 后点「加入队列」。</Hint>
+            <Hint tone="caption">
+              队列为空;输入 URL 后点「添加到列表」或「下一首播放」。
+            </Hint>
           ) : (
             <>
-              {player.queue.map((url, index) => (
+              {player.queue.map((track, index) => (
                 <ListRow
-                  key={`${index}-${url}`}
+                  key={`${index}-${track.url}`}
                   iconGlyph={index === player.currentIndex ? '▶' : '♪'}
                   iconTone={index === player.currentIndex ? 'green' : 'indigo'}
-                  label={`音频 ${index + 1}`}
-                  value={index === player.currentIndex ? '当前' : undefined}
-                  detail={url}
-                  chevron
+                  label={track.title || `音频 ${index + 1}`}
+                  detail={`${index === player.currentIndex ? '当前 · ' : ''}${
+                    track.artist ? `${track.artist} · ` : ''
+                  }${track.url}`}
+                  trailing={
+                    <Button
+                      variant="text"
+                      label="移出"
+                      stopPropagation
+                      onTap={() => removeAt(index)}
+                      testid={`player-remove-${index}`}
+                    />
+                  }
                   onTap={() => playQueueAt(index)}
                   testid={`player-queue-${index}`}
                 />

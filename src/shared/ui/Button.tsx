@@ -9,6 +9,8 @@ export interface ButtonProps {
   disabled?: boolean;
   /** 触发布局中的等宽按钮。 */
   grow?: boolean;
+  /** 作为 ListRow 尾随动作时阻止点击冒泡到整行。 */
+  stopPropagation?: boolean;
   testid?: string;
 }
 
@@ -19,6 +21,7 @@ export function Button({
   variant = 'primary',
   disabled,
   grow,
+  stopPropagation,
   testid,
 }: ButtonProps) {
   const classes = ['button', `button--${variant}`];
@@ -27,7 +30,8 @@ export function Button({
   return (
     <view
       className={classes.join(' ')}
-      bindtap={disabled ? undefined : onTap}
+      bindtap={disabled || stopPropagation ? undefined : onTap}
+      catchtap={disabled || !stopPropagation ? undefined : onTap}
       accessibility-element={disabled ? undefined : true}
       accessibility-label={label}
       accessibility-traits={disabled ? undefined : 'button'}

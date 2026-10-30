@@ -15,6 +15,16 @@ export interface PlayerState {
   position: number;
   duration: number;
   error: string;
+  queueIndex: number;
+}
+
+export interface PlayerQueueItem {
+  url: string;
+  /** 可为空;原生会回退到 URL 文件名。 */
+  title?: string;
+  artist?: string;
+  album?: string;
+  artwork?: string;
 }
 
 interface PlayerModule {
@@ -24,9 +34,22 @@ interface PlayerModule {
   seek(seconds: number): void;
   stop(): void;
   getState(callback: (json: string) => void): void;
+  setQueue(request: string): void;
+  next(): void;
+  previous(): void;
 }
 
-const REQUIRED = ['load', 'play', 'pause', 'seek', 'stop', 'getState'] as const;
+const REQUIRED = [
+  'load',
+  'play',
+  'pause',
+  'seek',
+  'stop',
+  'getState',
+  'setQueue',
+  'next',
+  'previous',
+] as const;
 const CALLBACK_TIMEOUT_MS = 5000;
 
 function module(): PlayerModule | null {
@@ -81,12 +104,18 @@ export function parsePlayerState(raw: unknown): PlayerState | null {
     }
   }
   if (!isRecord(value)) return null;
+  const queueIndex =
+    typeof value.queueIndex === 'number' &&
+    Number.isSafeInteger(value.queueIndex)
+      ? value.queueIndex
+      : -1;
   return {
     state: status(value.state),
     url: typeof value.url === 'string' ? value.url : '',
     position: finite(value.position),
     duration: finite(value.duration),
     error: typeof value.error === 'string' ? value.error : '',
+    queueIndex,
   };
 }
 
@@ -155,6 +184,33 @@ export function seekPlayer(seconds: number): void {
 
 export function stopPlayer(): void {
   module()?.stop();
+}
+
+export function setPlayerQueue(
+  items: readonly PlayerQueueItem[],
+  index: number,
+): void {
+  const value = module();
+  if (!value) return;
+  const request = JSON.stringify({
+    items: items.slice(0, 50).map((item) => ({
+      url: item.url,
+      title: item.title ?? '',
+      artist: item.artist ?? '',
+      album: item.album ?? '',
+      artwork: item.artwork ?? '',
+    })),
+    index: Number.isSafeInteger(index) ? index : -1,
+  });
+  value.setQueue(request);
+}
+
+export function nextPlayer(): void {
+  module()?.next();
+}
+
+export function previousPlayer(): void {
+  module()?.previous();
 }
 
 export async function getPlayerState(): Promise<PlayerState> {

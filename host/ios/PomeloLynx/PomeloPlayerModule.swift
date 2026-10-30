@@ -1,6 +1,7 @@
 import AVFoundation
 import Foundation
 import MediaPlayer
+import UIKit
 
 /**
  * Lynx native module `NativeModules.PomeloPlayer`.
@@ -28,6 +29,23 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
   private var position: Double = 0
   private var duration: Double = 0
   private var errorCode = ""
+  private var queue: [QueueItem] = []
+  private var queueIndex = -1
+  private var currentTitle = ""
+  private var currentArtist = ""
+  private var currentAlbum = ""
+  private var currentArtworkURL: URL?
+  private var currentArtwork: MPMediaItemArtwork?
+  private var artworkCache: [String: MPMediaItemArtwork] = [:]
+  private var artworkLoadingKey = ""
+
+  private struct QueueItem {
+    let url: URL
+    let title: String
+    let artist: String
+    let album: String
+    let artwork: URL?
+  }
 
   @objc static var name: String { "PomeloPlayer" }
 
@@ -39,6 +57,9 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
       "seek": NSStringFromSelector(#selector(PomeloPlayerModule.seek(_:))),
       "stop": NSStringFromSelector(#selector(PomeloPlayerModule.stop)),
       "getState": NSStringFromSelector(#selector(PomeloPlayerModule.getState(_:))),
+      "setQueue": NSStringFromSelector(#selector(PomeloPlayerModule.setQueue(_:))),
+      "next": NSStringFromSelector(#selector(PomeloPlayerModule.next)),
+      "previous": NSStringFromSelector(#selector(PomeloPlayerModule.previous)),
     ]
   }
 
@@ -94,6 +115,8 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     center.togglePlayPauseCommand.isEnabled = true
     center.stopCommand.isEnabled = true
     center.changePlaybackPositionCommand.isEnabled = true
+    center.nextTrackCommand.isEnabled = false
+    center.previousTrackCommand.isEnabled = false
 
     remoteTargets.append((center.playCommand, center.playCommand.addTarget {
       [weak self] _ in
@@ -128,6 +151,16 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
         return .commandFailed
       }
       DispatchQueue.main.async { self?.seek(event.positionTime) }
+      return .success
+    }))
+    remoteTargets.append((center.nextTrackCommand, center.nextTrackCommand.addTarget {
+      [weak self] _ in
+      DispatchQueue.main.async { self?.next() }
+      return .success
+    }))
+    remoteTargets.append((center.previousTrackCommand, center.previousTrackCommand.addTarget {
+      [weak self] _ in
+      DispatchQueue.main.async { self?.previous() }
       return .success
     }))
 
@@ -180,7 +213,12 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     }
   }
 
-  private func load(url: URL, autoplay: Bool, callback: @escaping (String) -> Void) {
+  private func load(
+    url: URL,
+    autoplay: Bool,
+    index: Int? = nil,
+    callback: ((String) -> Void)? = nil
+  ) {
     guard configureAudioSession() else {
       callback(errorJSON("player_audio_session_failed"))
       return
@@ -190,6 +228,12 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     player.replaceCurrentItem(with: nil)
 
     currentURL = url.absoluteString
+    if let index {
+      queueIndex = index >= 0 && index < queue.count ? index : -1
+    } else {
+      queueIndex = queue.firstIndex { $0.url == url } ?? -1
+    }
+    applyMetadata(for: url)
     position = 0
     duration = 0
     errorCode = ""
@@ -208,10 +252,7 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
       object: nextItem,
       queue: .main
     ) { [weak self] _ in
-      guard let self else { return }
-      self.stateName = "ended"
-      self.player.pause()
-      self.emit()
+      self?.advanceAfterEnd()
     }
 
     player.replaceCurrentItem(with: nextItem)
@@ -219,7 +260,81 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     if autoplay {
       player.play()
     }
-    callback("{\"ok\":true}")
+    callback?("{\"ok\":true}")
+  }
+
+  private func advanceAfterEnd() {
+    if queueIndex >= 0, queueIndex + 1 < queue.count {
+      loadQueueItem(queueIndex + 1)
+      return
+    }
+    stateName = "ended"
+    player.pause()
+    emit()
+  }
+
+  private func loadQueueItem(_ index: Int) {
+    guard index >= 0, index < queue.count else { return }
+    load(url: queue[index].url, autoplay: true, index: index)
+  }
+
+  private func httpURL(_ raw: String) -> URL? {
+    guard
+      let url = URL(string: raw),
+      let scheme = url.scheme?.lowercased(),
+      scheme == "https" || scheme == "http",
+      url.host != nil
+    else { return nil }
+    return url
+  }
+
+  private func metadataText(_ raw: Any?, limit: Int = 200) -> String {
+    guard let text = raw as? String else { return "" }
+    return String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(limit))
+  }
+
+  private func applyMetadata(for url: URL) {
+    let item: QueueItem? =
+      queueIndex >= 0 && queueIndex < queue.count ? queue[queueIndex] : nil
+    let title = item?.title ?? ""
+    currentTitle = title.isEmpty ? url.lastPathComponent : title
+    let artist = item?.artist ?? ""
+    currentArtist = artist.isEmpty ? "Pomelo Lynx" : artist
+    currentAlbum = item?.album ?? ""
+    currentArtworkURL = item?.artwork
+    let key = item?.artwork?.absoluteString ?? ""
+    currentArtwork = key.isEmpty ? nil : artworkCache[key]
+    if let artworkURL = item?.artwork, currentArtwork == nil, artworkLoadingKey != key {
+      loadArtwork(url: artworkURL, key: key)
+    }
+  }
+
+  private func loadArtwork(url: URL, key: String) {
+    artworkLoadingKey = key
+    URLSession.shared.dataTask(with: url) { [weak self] data, response, _ in
+      var artwork: MPMediaItemArtwork?
+      if
+        let http = response as? HTTPURLResponse,
+        http.statusCode == 200,
+        let data,
+        data.count <= 8 * 1024 * 1024,
+        let image = UIImage(data: data)
+      {
+        artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+      }
+      DispatchQueue.main.async {
+        guard let self else { return }
+        if self.artworkLoadingKey == key {
+          self.artworkLoadingKey = ""
+        }
+        guard let artwork else { return }
+        self.artworkCache[key] = artwork
+        if self.currentArtworkURL?.absoluteString == key {
+          self.currentArtwork = artwork
+          self.updateNowPlaying()
+        }
+      }
+    }.resume()
   }
 
   private func itemStatusChanged(_ changed: AVPlayerItem) {
@@ -273,6 +388,7 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
       "position": position,
       "duration": duration,
       "error": errorCode,
+      "queueIndex": queueIndex,
     ]
   }
 
@@ -296,15 +412,26 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
       MPNowPlayingInfoCenter.default().playbackState = .stopped
       return
     }
-    let title = URL(string: currentURL)?.lastPathComponent ?? "Pomelo Audio"
-    MPNowPlayingInfoCenter.default().nowPlayingInfo = [
-      MPMediaItemPropertyTitle: title,
-      MPMediaItemPropertyArtist: "Pomelo Lynx",
+    let fallbackTitle = URL(string: currentURL)?.lastPathComponent ?? "Pomelo Audio"
+    var info: [String: Any] = [
+      MPMediaItemPropertyTitle: currentTitle.isEmpty ? fallbackTitle : currentTitle,
+      MPMediaItemPropertyArtist: currentArtist,
       MPMediaItemPropertyPlaybackDuration: duration,
       MPNowPlayingInfoPropertyElapsedPlaybackTime: position,
       MPNowPlayingInfoPropertyPlaybackRate: stateName == "playing" ? 1.0 : 0.0,
       MPNowPlayingInfoPropertyMediaType: MPNowPlayingInfoMediaType.audio.rawValue,
     ]
+    if !currentAlbum.isEmpty {
+      info[MPMediaItemPropertyAlbumTitle] = currentAlbum
+    }
+    if let currentArtwork {
+      info[MPMediaItemPropertyArtwork] = currentArtwork
+    }
+    if queueIndex >= 0 {
+      info[MPNowPlayingInfoPropertyPlaybackQueueIndex] = queueIndex
+      info[MPNowPlayingInfoPropertyPlaybackQueueCount] = queue.count
+    }
+    MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     MPNowPlayingInfoCenter.default().playbackState =
       stateName == "playing" ? .playing : stateName == "paused" ? .paused : .stopped
   }
@@ -320,10 +447,7 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
       let data = requestJSON.data(using: .utf8),
       let request = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
       let rawURL = request["url"] as? String,
-      let url = URL(string: rawURL),
-      let scheme = url.scheme?.lowercased(),
-      (scheme == "https" || scheme == "http"),
-      url.host != nil
+      let url = httpURL(rawURL)
     else {
       callback(errorJSON("player_invalid_url"))
       return
@@ -331,6 +455,63 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     let autoplay = request["autoplay"] as? Bool ?? true
     DispatchQueue.main.async {
       self.load(url: url, autoplay: autoplay, callback: callback)
+    }
+  }
+
+  @objc func setQueue(_ requestJSON: String) {
+    guard
+      let data = requestJSON.data(using: .utf8),
+      let request = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+      let rawItems = request["items"] as? [[String: Any]],
+      rawItems.count <= 50
+    else { return }
+    var items: [QueueItem] = []
+    for raw in rawItems {
+      let title = metadataText(raw["title"])
+      guard
+        let rawURL = raw["url"] as? String,
+        let url = httpURL(rawURL)
+      else { return }
+      items.append(
+        QueueItem(
+          url: url,
+          title: title,
+          artist: metadataText(raw["artist"]),
+          album: metadataText(raw["album"]),
+          artwork: (raw["artwork"] as? String).flatMap { httpURL($0) }
+        )
+      )
+    }
+    let rawIndex = request["index"] as? Int ?? -1
+    let index = rawIndex >= 0 && rawIndex < items.count ? rawIndex : -1
+    DispatchQueue.main.async {
+      self.queue = items
+      self.queueIndex = index
+      if index >= 0 {
+        self.applyMetadata(for: items[index].url)
+      }
+      let center = MPRemoteCommandCenter.shared()
+      let multiple = items.count > 1
+      center.nextTrackCommand.isEnabled = multiple
+      center.previousTrackCommand.isEnabled = multiple
+      self.emit()
+    }
+  }
+
+  @objc func next() {
+    DispatchQueue.main.async {
+      guard self.queueIndex + 1 < self.queue.count else { return }
+      self.loadQueueItem(self.queueIndex + 1)
+    }
+  }
+
+  @objc func previous() {
+    DispatchQueue.main.async {
+      guard self.queueIndex > 0 else {
+        self.seek(0)
+        return
+      }
+      self.loadQueueItem(self.queueIndex - 1)
     }
   }
 
@@ -373,10 +554,17 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
       self.clearItemObservers()
       self.item = nil
       self.currentURL = ""
+      self.currentTitle = ""
+      self.currentArtist = ""
+      self.currentAlbum = ""
+      self.currentArtworkURL = nil
+      self.currentArtwork = nil
+      self.artworkLoadingKey = ""
       self.stateName = "idle"
       self.position = 0
       self.duration = 0
       self.errorCode = ""
+      self.queueIndex = -1
       self.emit()
       try? AVAudioSession.sharedInstance().setActive(
         false, options: .notifyOthersOnDeactivation)

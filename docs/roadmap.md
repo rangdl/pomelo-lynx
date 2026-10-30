@@ -85,6 +85,16 @@
 - [ ] **Android i18n 注入(计划)**:`MainActivity` 把 `Locale.getDefault()` 写入
   `LynxLoadMeta.globalProps.language`
 
+## 媒体 MVP(0.1.0)
+
+- [x] iOS `PomeloPlayer` 原生模块(load/play/pause/seek/stop/getState)
+- [x] JS native facade + 单例播放器 store
+- [x] 第三个「播放」tab + 最小播放页
+- [ ] iOS 真机播放/seek/切 tab 后继续播放验证
+- [ ] 后台播放/锁屏控制(后续)
+- [ ] Android ExoPlayer(后续)
+- [ ] 视频/播放队列/缓存(后续)
+
 ## 开发者页与 dev server 热切换
 
 - [x] 设置页拆出独立子页 `/settings/developer`(Dev Server + 调试通道)
@@ -100,8 +110,8 @@
   在此之前只维护本计划,不提交无法编译的 Kotlin。
 - iOS 原生:本地 Linux 无 Xcode;每次改动运行 `pnpm run check:ios`,再以 CI
   的 `iOS IPA` job 为准。
-- 媒体(音频/视频/缓存/DLNA/歌词/Live Activity/EQ)不在本路线图,待单独确认
-  播放源、平台顺序、后台播放与 UI 位置。
+- 媒体 0.1.0 只做 iOS 音频 MVP;视频/缓存/歌词/Live Activity/EQ 等需要后续
+  单独确认,不混入当前批次。
 
 ## 底栏材质与动画
 

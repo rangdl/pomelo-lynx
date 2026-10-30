@@ -8,6 +8,7 @@ export type Locale = 'zh' | 'en';
 
 export type MessageKey =
   | 'nav.home'
+  | 'nav.player'
   | 'nav.settings'
   | 'nav.more'
   | 'settings.title'
@@ -68,6 +69,7 @@ type Messages = Record<MessageKey, string>;
 const MESSAGES: Record<Locale, Messages> = {
   zh: {
     'nav.home': '首页',
+    'nav.player': '播放',
     'nav.settings': '设置',
     'nav.more': '更多',
     'settings.title': '设置',
@@ -125,6 +127,7 @@ const MESSAGES: Record<Locale, Messages> = {
   },
   en: {
     'nav.home': 'Home',
+    'nav.player': 'Player',
     'nav.settings': 'Settings',
     'nav.more': 'More',
     'settings.title': 'Settings',

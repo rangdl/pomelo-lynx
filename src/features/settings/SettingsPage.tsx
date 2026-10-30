@@ -5,8 +5,8 @@ import { clientBuild } from '../../core/config/constants.js';
 import { t } from '../../i18n/index.js';
 import { isIosPlatform } from '../../native/web-platform.js';
 import {
+  PageLargeTitle,
   PageTail,
-  SettingsLargeTitle,
 } from '../../shared/layouts/SettingsSubPage.js';
 import {
   type AppearanceMode,
@@ -61,7 +61,7 @@ export function SettingsPage() {
       bindtap={appearanceOpen ? () => setAppearanceOpen(false) : undefined}
       data-testid="settings-page"
     >
-      <SettingsLargeTitle title={t('settings.title')} />
+      <PageLargeTitle title={t('settings.title')} />
       <scroll-view className="settings__scroll" scroll-orientation="vertical">
         <SettingsGroup title={t('settings.group.app')}>
           <ListRow

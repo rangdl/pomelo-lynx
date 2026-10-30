@@ -244,7 +244,7 @@ test('标准滚动子页统一使用 SettingsSubPage', () => {
     assert.doesNotMatch(source, /<PageTopBar/, file);
   }
   const settings = read('src/features/settings/SettingsPage.tsx');
-  assert.match(settings, /SettingsLargeTitle/);
+  assert.match(settings, /PageLargeTitle/);
   assert.match(settings, /PageTail/);
 });
 
@@ -300,4 +300,26 @@ test('feature CSS 不再重复共享控件样式', () => {
       );
     }
   }
+});
+
+test('播放页使用共享 UI 原语并接入第三个 tab', () => {
+  const page = read('src/features/player/PlayerPage.tsx');
+  for (const name of [
+    'PageLargeTitle',
+    'SettingsGroup',
+    'TextField',
+    'Button',
+    'Hint',
+    'PageTail',
+  ]) {
+    assert.match(page, new RegExp(name), `播放页缺少 ${name}`);
+  }
+  assert.doesNotMatch(page, /<input|avoid-keyboard|iconColor=/);
+  const shell = read('src/shared/layouts/ShellLayout.tsx');
+  assert.match(shell, /path: '\/player'/);
+  assert.match(shell, /nav-item-player/);
+  const router = read('src/router.tsx');
+  assert.match(router, /path: '\/player'/);
+  const i18n = read('src/i18n/index.ts');
+  assert.match(i18n, /'nav.player'/);
 });

@@ -10,6 +10,7 @@ import {
 import { reportUpdateStartupFailure } from './core/updater/native-updater.js';
 import { UpdateStartup } from './core/updater/UpdateStartup.js';
 import { HomePage } from './features/home/HomePage.js';
+import { PlayerPage } from './features/player/PlayerPage.js';
 import { AboutPage } from './features/settings/AboutPage.js';
 import { DeveloperPage } from './features/settings/DeveloperPage.js';
 import { LogsPage } from './features/settings/LogsPage.js';
@@ -73,6 +74,12 @@ const homeRoute = createRoute({
   component: HomePage,
 });
 
+const playerRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/player',
+  component: PlayerPage,
+});
+
 const settingsRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: '/settings',
@@ -106,6 +113,7 @@ const logsRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   shellRoute.addChildren([
     homeRoute,
+    playerRoute,
     settingsRoute,
     aboutRoute,
     developerRoute,

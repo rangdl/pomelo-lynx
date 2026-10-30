@@ -1,0 +1,200 @@
+import { useState } from '@lynx-js/react';
+
+import {
+  loadMedia,
+  seekMedia,
+  stopMedia,
+  toggleMedia,
+  useMediaPlayer,
+} from '../../core/media/player.js';
+import {
+  PageLargeTitle,
+  PageTail,
+} from '../../shared/layouts/SettingsSubPage.js';
+import { Button } from '../../shared/ui/Button.js';
+import { Hint } from '../../shared/ui/Hint.js';
+import { ListRow } from '../../shared/ui/ListRow.js';
+import {
+  SettingsGroup,
+  SettingsGroupDivider,
+} from '../../shared/ui/SettingsGroup.js';
+import { TextField } from '../../shared/ui/TextField.js';
+import './PlayerPage.css';
+
+const SEEK_STEP_SECONDS = 15;
+const SAMPLE_AUDIO_URL = 'https://cdn.truefilesize.com/mp3/sample-1mb.mp3';
+
+function formatTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+  const total = Math.floor(seconds);
+  const minutes = Math.floor(total / 60);
+  const rest = total % 60;
+  return `${minutes}:${String(rest).padStart(2, '0')}`;
+}
+
+function statusText(state: string): string {
+  switch (state) {
+    case 'loading':
+      return '加载中';
+    case 'playing':
+      return '播放中';
+    case 'paused':
+      return '已暂停';
+    case 'ended':
+      return '播放结束';
+    case 'error':
+      return '播放失败';
+    default:
+      return '未加载';
+  }
+}
+
+function errorText(error: string): string {
+  const known: Record<string, string> = {
+    player_empty_url: '请输入音频地址',
+    player_invalid_url: '音频地址无效,需要 http(s) 地址',
+    player_no_source: '请先加载音频',
+    player_audio_session_failed: '无法启用音频播放会话',
+    player_item_failed: '音频加载失败',
+    player_unavailable: '当前客户端不支持音视频播放',
+  };
+  return known[error] ?? (error || '播放失败');
+}
+
+export function PlayerPage() {
+  const player = useMediaPlayer();
+  const [draft, setDraft] = useState('');
+
+  const load = () => {
+    'background only';
+    void loadMedia(draft);
+  };
+  const loadSample = () => {
+    'background only';
+    setDraft(SAMPLE_AUDIO_URL);
+    void loadMedia(SAMPLE_AUDIO_URL);
+  };
+  const toggle = () => {
+    'background only';
+    toggleMedia();
+  };
+  const seek = (offset: number) => {
+    'background only';
+    seekMedia(player.position + offset);
+  };
+  const stop = () => {
+    'background only';
+    stopMedia();
+  };
+
+  const hasSource = !!player.url;
+  const busy = player.busy || player.state === 'loading';
+  const error = player.error ? errorText(player.error) : null;
+
+  return (
+    <view className="player" data-testid="player-page">
+      <PageLargeTitle title="播放" />
+      <scroll-view className="settings__scroll" scroll-orientation="vertical">
+        <SettingsGroup title="当前播放">
+          <ListRow
+            iconGlyph="♪"
+            iconTone="violet"
+            label="音频源"
+            value={hasSource ? '已加载' : '未加载'}
+            detail={player.url || '还没有加载音频'}
+            testid="player-source"
+          />
+          <SettingsGroupDivider />
+          <ListRow
+            iconGlyph="◉"
+            iconTone={player.state === 'error' ? 'danger' : 'blue'}
+            label="状态"
+            value={statusText(player.state)}
+            detail={`${formatTime(player.position)} / ${formatTime(player.duration)}`}
+            testid="player-status"
+          />
+        </SettingsGroup>
+
+        <SettingsGroup title="音频源">
+          <view className="player__form">
+            <TextField
+              label="音频 URL"
+              value={draft}
+              onChange={setDraft}
+              placeholder={SAMPLE_AUDIO_URL}
+              hint="当前 MVP 支持远程 HTTPS 音频;可点下方加载 1 MB 测试音频,暂不支持后台播放"
+              error={error}
+              testid="player-url-input"
+            />
+          </view>
+          <view className="player__actions">
+            <Button
+              grow
+              label={busy ? '加载中…' : '加载并播放'}
+              disabled={busy || !draft.trim() || !player.available}
+              onTap={load}
+              testid="player-load"
+            />
+            <Button
+              grow
+              variant="secondary"
+              label="加载示例"
+              disabled={busy || !player.available}
+              onTap={loadSample}
+              testid="player-load-sample"
+            />
+          </view>
+        </SettingsGroup>
+
+        <SettingsGroup title="控制">
+          <view className="player__actions">
+            <Button
+              grow
+              variant="secondary"
+              label="后退 15s"
+              disabled={!hasSource || busy}
+              onTap={() => seek(-SEEK_STEP_SECONDS)}
+              testid="player-back-15"
+            />
+            <Button
+              grow
+              label={player.state === 'playing' ? '暂停' : '播放'}
+              disabled={!hasSource || busy || !player.available}
+              onTap={toggle}
+              testid="player-toggle"
+            />
+            <Button
+              grow
+              variant="secondary"
+              label="前进 15s"
+              disabled={!hasSource || busy}
+              onTap={() => seek(SEEK_STEP_SECONDS)}
+              testid="player-forward-15"
+            />
+          </view>
+          <view className="player__actions">
+            <Button
+              grow
+              variant="danger"
+              label="停止并清空"
+              disabled={!hasSource || busy}
+              onTap={stop}
+              testid="player-stop"
+            />
+          </view>
+        </SettingsGroup>
+
+        {!player.available && player.initialized ? (
+          <Hint tone="warning">
+            当前客户端没有 PomeloPlayer 模块,请安装包含播放器的新版 IPA。
+          </Hint>
+        ) : null}
+        {player.state === 'ended' ? (
+          <Hint tone="caption">播放已结束,再次点击播放会从头开始。</Hint>
+        ) : null}
+
+        <PageTail />
+      </scroll-view>
+    </view>
+  );
+}

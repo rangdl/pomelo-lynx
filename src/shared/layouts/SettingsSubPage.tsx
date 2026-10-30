@@ -45,7 +45,8 @@ export function SettingsSubPage({
 }
 
 /** 根 tab 页的大标题;必须在滚动区外。 */
-export function SettingsLargeTitle({ title }: { title: string }) {
+export const SettingsLargeTitle = PageLargeTitle;
+export function PageLargeTitle({ title }: { title: string }) {
   return (
     <view className="settings__header">
       <text className="settings__title">{title}</text>

@@ -11,6 +11,7 @@ import type { MainThread } from '@lynx-js/types';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 
 import { HomePage } from '../../features/home/HomePage.js';
+import { PlayerPage } from '../../features/player/PlayerPage.js';
 import { AboutPage } from '../../features/settings/AboutPage.js';
 import { DeveloperPage } from '../../features/settings/DeveloperPage.js';
 import { LogsPage } from '../../features/settings/LogsPage.js';
@@ -36,7 +37,7 @@ import { TabIcon, type TabIconName } from './TabIcon.js';
 import './ShellLayout.css';
 
 interface TabItem {
-  path: '/' | '/settings';
+  path: '/' | '/player' | '/settings';
   labelKey: MessageKey;
   icon: TabIconName;
   testid: string;
@@ -44,6 +45,12 @@ interface TabItem {
 
 const TABS: TabItem[] = [
   { path: '/', labelKey: 'nav.home', icon: 'home', testid: 'nav-item-home' },
+  {
+    path: '/player',
+    labelKey: 'nav.player',
+    icon: 'player',
+    testid: 'nav-item-player',
+  },
   {
     path: '/settings',
     labelKey: 'nav.settings',
@@ -60,15 +67,17 @@ const BAR_EXTRA_WIDTH = 8;
 type PageDirection = 'push' | 'pop' | 'fade' | 'none';
 type AppPath =
   | '/'
+  | '/player'
   | '/settings'
   | '/settings/about'
   | '/settings/developer'
   | '/settings/theme'
   | '/settings/logs';
-type SettingsPath = Exclude<AppPath, '/'>;
+type SettingsPath = Exclude<AppPath, '/' | '/player'>;
 
 const ROUTE_DEPTH: Record<AppPath, number> = {
   '/': 0,
+  '/player': 0,
   '/settings': 1,
   '/settings/about': 2,
   '/settings/developer': 2,
@@ -78,6 +87,7 @@ const ROUTE_DEPTH: Record<AppPath, number> = {
 
 const PAGE_COMPONENTS: Record<AppPath, () => ReactNode> = {
   '/': HomePage,
+  '/player': PlayerPage,
   '/settings': SettingsPage,
   '/settings/about': AboutPage,
   '/settings/developer': DeveloperPage,
@@ -88,6 +98,7 @@ const PAGE_COMPONENTS: Record<AppPath, () => ReactNode> = {
 /** 每个 tab 一条栈;栈里保持祖先页面挂载,侧滑时父页就在下面。 */
 const PAGE_STACKS: Record<AppPath, readonly AppPath[]> = {
   '/': ['/'],
+  '/player': ['/player'],
   '/settings': ['/settings'],
   '/settings/about': ['/settings', '/settings/about'],
   '/settings/developer': ['/settings', '/settings/developer'],
@@ -121,14 +132,14 @@ function isSettingsPath(pathname: string): pathname is SettingsPath {
   return SETTINGS_PATHS.has(pathname as AppPath);
 }
 
-function tabOf(pathname: string): 'home' | 'settings' {
-  return pathname.startsWith('/settings') ? 'settings' : 'home';
+function tabOf(pathname: string): 'home' | 'player' | 'settings' {
+  if (pathname.startsWith('/settings')) return 'settings';
+  return pathname === '/player' ? 'player' : 'home';
 }
 
 /**
- * 底部导航外壳(仿 songloft-player-lynx 的窄屏底部导航样式,精简为双 tab)。
- * 当前激活项按路由前缀归属判断:/settings 及其子页(如 /settings/about)
- * 都点亮「设置」。
+ * 底部导航外壳(仿 songloft-player-lynx 的窄屏底部导航样式,当前为
+ * 首页/播放/设置三个 tab)。/settings 及其子页都点亮「设置」。
  */
 export function ShellLayout() {
   const navigate = useNavigate();
@@ -226,7 +237,7 @@ export function ShellLayout() {
     setNativeEdgeBackEnabled(pathname.startsWith('/settings/'));
   }, [pathname]);
 
-  // iOS 左边缘跟手返回:只有子页响应;根 tab(首页/设置)不响应。
+  // iOS 左边缘跟手返回:只有设置子页响应;根 tab(首页/播放/设置)不响应。
   useEffect(() => {
     if (!pathname.startsWith('/settings/')) return;
     let navTimer: ReturnType<typeof setTimeout> | undefined;
@@ -308,19 +319,26 @@ export function ShellLayout() {
   }, [clearPageMotion, followPage, navigate, pathname, settlePage]);
 
   const handleTab = (tab: TabItem) => {
-    if (tab.path === '/') {
-      if (pathname !== '/') navigate({ to: '/' });
-      return;
-    }
-    if (isSettingsPath(pathname)) {
+    const currentTab = tabOf(pathname);
+    const targetTab = tabOf(tab.path);
+    if (currentTab === targetTab) {
       // 再点当前 tab:回到该 tab 的栈根。
-      if (pathname !== '/settings') navigate({ to: '/settings' });
+      if (pathname !== tab.path) navigate({ to: tab.path });
       return;
     }
-    navigate({ to: lastSettingsPathRef.current });
+    if (targetTab === 'settings') {
+      navigate({ to: lastSettingsPathRef.current });
+      return;
+    }
+    navigate({ to: tab.path });
   };
 
-  const activePath = pathname.startsWith('/settings') ? '/settings' : '/';
+  const activePath: TabItem['path'] =
+    tabOf(pathname) === 'settings'
+      ? '/settings'
+      : tabOf(pathname) === 'player'
+        ? '/player'
+        : '/';
   const rawActiveIndex = TABS.findIndex((tab) => tab.path === activePath);
   const visibleTabs =
     TABS.length > MAX_VISIBLE_SLOTS

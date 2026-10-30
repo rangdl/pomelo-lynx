@@ -13,7 +13,7 @@ src/shared/theme/
 
 src/shared/layouts/
   PageTopBar.tsx       子页顶栏
-  SettingsSubPage.tsx  标准滚动子页骨架 + SettingsLargeTitle + PageTail
+  SettingsSubPage.tsx  标准滚动子页骨架 + PageLargeTitle + PageTail
 
 src/shared/ui/
   SettingsGroup.tsx    分组卡片/分隔线
@@ -41,7 +41,8 @@ src/shared/ui/
   - `.settings__scroll`
   - `.settings__tail`
   - 顶部安全区 `safe-area-inset-top`
-- 根 tab 页(设置)使用 `SettingsLargeTitle` + `scroll-view` + `PageTail`。
+- 根 tab 页(设置 / 播放)使用 `PageLargeTitle` + `scroll-view` + `PageTail`;
+  `SettingsLargeTitle` 保留为旧别名。
 - 日志页是列表型页面例外:使用 `PageTopBar` + 自定义 `.logs` 布局,但设置区
   仍必须使用 `SettingsGroup` / `ListRow` / `SwitchRow` / `Button` / `Hint`。
 

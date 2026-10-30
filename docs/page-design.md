@@ -39,12 +39,15 @@ ShellLayout(全局唯一)
 
 ## 2. 顶部标题栏
 
-### 根 tab 页(设置)
+### 根 tab 页(设置 / 播放)
 
 - 大标题是**滚动区外的固定 topbar**,不能放进 `scroll-view`。
-- 结构:`.settings__header` 在 `.settings__scroll` 之前。
+- 使用 `PageLargeTitle`(旧名 `SettingsLargeTitle`)。
+- 结构:`settings__header` 在 `settings__scroll` 之前。
 - 尺寸:标题 34px / 700;header `padding: 16px 20px 12px`。
 - 滚动容器从 header 下方开始,滚动内容不会进入状态栏区域。
+- 播放页是第三个根 tab,使用 `PageLargeTitle` + `SettingsGroup` +
+  `ListRow` + `TextField` + `Button` + `Hint` + `PageTail`。
 
 ### 子页(关于、日志等)
 
@@ -214,7 +217,7 @@ ShellLayout(全局唯一)
 
 - Android `blur-view` 依赖(`xelement-blur-view`)尚未加入;
 - iOS 26 液态玻璃/折射透镜未移植;
-- >4 tab 的 More 面板代码已存在,但目前只有 2 个 tab,未在真机验收;
+- >4 tab 的 More 面板代码已存在,但目前只有 3 个 tab,未在真机验收;
 - 开发者能力已移到独立子页,Dev Server/调试通道已迁移到
   `SettingsGroup`/`ListRow`/`TextField`/`Button`/`Hint`。
 - 日志入口已从关于页移到设置页「支持」分组,路由为 `/settings/logs`。

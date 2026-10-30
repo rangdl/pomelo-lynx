@@ -147,9 +147,9 @@ ShellLayout(全局唯一)
   切换 class 后不会恢复 `:root` 值;新增颜色角色时,所有 palette 的亮/暗
   变体都要同步补齐。`scripts/__tests__/theme-tokens.node-test.mjs` 会校验
   完整性、亮色覆盖和核心角色存在。
-- `ShellLayout` 的根 `<view>` 以 `key={themeVariant}` 强制重建:切换外观时整棵
-  shell 重新挂载,避免 iOS 继续使用旧的自定义属性缓存。切换主题会重置
-  当前页面内部状态(滚动位置等),这是可接受的低频操作。
+- `ShellLayout` 直接切换 `theme-<palette>-<scheme>` 完整变体 class,
+  **不要给根 view 加 `key={themeVariant}`**。每个变体都自包含全部 token,
+  切换时不应重建页面树,否则会丢失滚动/输入状态并重播页面进入动画。
 - 外观偏好持久化在 `PomeloStorage.prefs` 的 `appearance_mode`:
   `system`(默认)/`light`/`dark`;设置页「外观」分组提供三个选项。
 - 调色板偏好持久化在 `theme_palette`:当前 `default`/`violet`,默认

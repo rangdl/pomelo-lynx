@@ -349,9 +349,8 @@ export function ShellLayout() {
   const themeVariant = resolveThemeVariant(themePalette, theme);
 
   return (
-    // 主题变体变化时重建 shell,保证 iOS 重新解析完整 token 集。
+    // 每个变体都是完整 token 集,直接切 class,不重建页面树。
     <view
-      key={themeVariant}
       className={`shell theme-${themeVariant} scheme-${theme}${
         pathname === '/' ? ' shell--home' : ''
       }`}

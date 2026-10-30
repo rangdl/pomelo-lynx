@@ -111,8 +111,12 @@ test('开发者页输入框启用键盘避让', () => {
     assert.match(source, /avoid-keyboard=\{true\}/, file);
     assert.match(source, /avoid-keyboard-spacing="12px"/, file);
     assert.match(source, /set-soft-input-mode="resize"/, file);
-    assert.match(source, /borderWidth: '1px'/, file);
-    assert.match(source, /borderColor: inputFocused/, file);
+    assert.match(source, /dev-server__input-frame/, file);
     assert.match(source, /bindblur=/, file);
   }
+  const css = read('src/features/settings/DevServerSection.css');
+  assert.match(css, /\.dev-server__input-frame \{/);
+  assert.match(css, /border-width: 1px;/);
+  assert.match(css, /border-color: var\(--color-input-border\)/);
+  assert.match(css, /\.dev-server__input-frame--focused/);
 });

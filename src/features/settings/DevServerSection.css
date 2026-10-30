@@ -41,6 +41,24 @@
   margin-right: 20px;
 }
 
+.dev-server__input-frame {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1;
+  height: 40px;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-input-border);
+  border-radius: 10px;
+  background-color: var(--color-surface);
+  overflow: hidden;
+}
+
+.dev-server__input-frame--focused {
+  border-color: var(--color-accent);
+}
+
 .dev-server__placeholder {
   color: var(--color-text-tertiary);
 }

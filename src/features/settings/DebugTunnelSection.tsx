@@ -253,46 +253,48 @@ export function DebugTunnelSection() {
         </text>
       ) : null}
       <view className="dev-server__input-row">
-        <input
-          default-value={draft}
-          placeholder="ws://your-relay-ip:21783"
-          placeholder-class="dev-server__placeholder"
-          maxlength={1000}
-          avoid-keyboard={true}
-          avoid-keyboard-spacing="12px"
-          set-soft-input-mode="resize"
-          style={{
-            // Lynx 要求长度带单位:无单位数字会抛
-            // "CSS length need units (except 0)"(真机 DevTool 报 130300)。
-            flex: 1,
-            height: '40px',
-            fontSize: '13px',
-            paddingLeft: '10px',
-            paddingRight: '10px',
-            backgroundColor: 'var(--color-surface)',
-            borderRadius: '10px',
-            borderWidth: '1px',
-            borderStyle: 'solid',
-            borderColor: inputFocused
-              ? 'var(--color-accent)'
-              : 'var(--color-input-border)',
-            color: 'var(--color-text)',
-          }}
-          bindinput={(e: { detail: { value: string } }) => {
-            'background only';
-            setDraft(e.detail.value);
-          }}
-          bindfocus={() => {
-            'background only';
-            setInputFocused(true);
-            logger.info('debugtunnel', 'input focused');
-          }}
-          bindblur={() => {
-            'background only';
-            setInputFocused(false);
-          }}
-          data-testid="debug-tunnel-input"
-        />
+        <view
+          className={
+            inputFocused
+              ? 'dev-server__input-frame dev-server__input-frame--focused'
+              : 'dev-server__input-frame'
+          }
+        >
+          <input
+            default-value={draft}
+            placeholder="ws://your-relay-ip:21783"
+            placeholder-class="dev-server__placeholder"
+            maxlength={1000}
+            avoid-keyboard={true}
+            avoid-keyboard-spacing="12px"
+            set-soft-input-mode="resize"
+            style={{
+              // Lynx 要求长度带单位:无单位数字会抛
+              // "CSS length need units (except 0)"(真机 DevTool 报 130300)。
+              flex: 1,
+              fontSize: '13px',
+              paddingLeft: '10px',
+              paddingRight: '10px',
+              height: '38px',
+              backgroundColor: 'transparent',
+              color: 'var(--color-text)',
+            }}
+            bindinput={(e: { detail: { value: string } }) => {
+              'background only';
+              setDraft(e.detail.value);
+            }}
+            bindfocus={() => {
+              'background only';
+              setInputFocused(true);
+              logger.info('debugtunnel', 'input focused');
+            }}
+            bindblur={() => {
+              'background only';
+              setInputFocused(false);
+            }}
+            data-testid="debug-tunnel-input"
+          />
+        </view>
       </view>
       <text className="dev-server__draft" data-testid="debug-tunnel-draft">
         {draft ? `待连接:${draft}` : '未输入中继地址'}

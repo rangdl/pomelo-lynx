@@ -201,3 +201,203 @@
   --color-switch-track: rgba(120, 120, 128, 0.32);
   --color-switch-thumb: #ffffff;
 }
+
+.theme-sunset-light {
+  --color-surface: #fbf6f1;
+  --color-surface-container-low: #ffffff;
+  --color-surface-container: #ffffff;
+  --color-surface-container-high: #f7ece1;
+
+  --color-on-surface: #23150f;
+  --color-on-surface-variant: #6b5347;
+  --color-on-surface-faint: #9a8073;
+
+  --color-primary: #c2410c;
+  --color-on-primary: #ffffff;
+  --color-primary-container: rgba(194, 65, 12, 0.12);
+  --color-on-primary-container: #9a3412;
+
+  --color-secondary: #be123c;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: rgba(190, 18, 60, 0.12);
+  --color-on-secondary-container: #881337;
+
+  --color-tertiary: #a16207;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: rgba(161, 98, 7, 0.12);
+  --color-on-tertiary-container: #854d0e;
+
+  --color-outline: rgba(80, 50, 30, 0.22);
+  --color-outline-variant: rgba(70, 40, 20, 0.08);
+
+  --color-error: #d93025;
+  --color-on-error: #ffffff;
+  --color-error-container: rgba(217, 48, 37, 0.12);
+  --color-on-error-container: #8a1c14;
+  --color-warning: #b54708;
+  --color-success: #16a34a;
+
+  --color-shadow: rgba(60, 30, 10, 0.12);
+  --color-scrim: rgba(0, 0, 0, 0.32);
+
+  --color-nav-bg: rgba(255, 255, 255, 0.96);
+  --color-nav-bg-top: rgba(255, 255, 255, 0.98);
+  --color-nav-bg-bottom: rgba(255, 255, 255, 0.84);
+  --color-nav-highlight: rgba(255, 255, 255, 0.72);
+  --color-nav-shadow: rgba(60, 30, 10, 0.14);
+  --color-nav-glass-top: rgba(255, 255, 255, 0.58);
+  --color-nav-glass-bottom: rgba(255, 255, 255, 0.34);
+
+  --color-switch-track: rgba(120, 120, 128, 0.16);
+  --color-switch-thumb: #ffffff;
+}
+
+.theme-sunset-dark {
+  --color-surface: #17110d;
+  --color-surface-container-low: #211812;
+  --color-surface-container: #211812;
+  --color-surface-container-high: #2d2119;
+
+  --color-on-surface: #fbf0e7;
+  --color-on-surface-variant: #d0b8a8;
+  --color-on-surface-faint: #9f8878;
+
+  --color-primary: #ff9a5a;
+  --color-on-primary: #2a1204;
+  --color-primary-container: rgba(255, 154, 90, 0.18);
+  --color-on-primary-container: #ffd2b8;
+
+  --color-secondary: #ff7d9c;
+  --color-on-secondary: #2a0b14;
+  --color-secondary-container: rgba(255, 125, 156, 0.18);
+  --color-on-secondary-container: #ffc1d1;
+
+  --color-tertiary: #fbbf24;
+  --color-on-tertiary: #2a1a04;
+  --color-tertiary-container: rgba(251, 191, 36, 0.18);
+  --color-on-tertiary-container: #fde68a;
+
+  --color-outline: rgba(255, 255, 255, 0.2);
+  --color-outline-variant: rgba(255, 255, 255, 0.12);
+
+  --color-error: #ff6b5e;
+  --color-on-error: #111318;
+  --color-error-container: rgba(255, 107, 94, 0.18);
+  --color-on-error-container: #ffb4ab;
+  --color-warning: #fbbf24;
+  --color-success: #30d158;
+
+  --color-shadow: rgba(0, 0, 0, 0.45);
+  --color-scrim: rgba(0, 0, 0, 0.32);
+
+  --color-nav-bg: rgba(33, 24, 18, 0.96);
+  --color-nav-bg-top: rgba(45, 33, 25, 0.98);
+  --color-nav-bg-bottom: rgba(27, 19, 14, 0.86);
+  --color-nav-highlight: rgba(255, 255, 255, 0.1);
+  --color-nav-shadow: rgba(0, 0, 0, 0.55);
+  --color-nav-glass-top: rgba(41, 30, 22, 0.6);
+  --color-nav-glass-bottom: rgba(23, 16, 11, 0.42);
+
+  --color-switch-track: rgba(120, 120, 128, 0.32);
+  --color-switch-thumb: #ffffff;
+}
+
+.theme-teal-light {
+  --color-surface: #f1faf8;
+  --color-surface-container-low: #ffffff;
+  --color-surface-container: #ffffff;
+  --color-surface-container-high: #e4f3ef;
+
+  --color-on-surface: #0c211e;
+  --color-on-surface-variant: #496a64;
+  --color-on-surface-faint: #7c9994;
+
+  --color-primary: #0f766e;
+  --color-on-primary: #ffffff;
+  --color-primary-container: rgba(15, 118, 110, 0.12);
+  --color-on-primary-container: #115e59;
+
+  --color-secondary: #0369a1;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: rgba(3, 105, 161, 0.12);
+  --color-on-secondary-container: #075985;
+
+  --color-tertiary: #7c3aed;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: rgba(124, 58, 237, 0.12);
+  --color-on-tertiary-container: #5b21b6;
+
+  --color-outline: rgba(20, 70, 65, 0.22);
+  --color-outline-variant: rgba(10, 50, 45, 0.08);
+
+  --color-error: #d93025;
+  --color-on-error: #ffffff;
+  --color-error-container: rgba(217, 48, 37, 0.12);
+  --color-on-error-container: #8a1c14;
+  --color-warning: #b54708;
+  --color-success: #16a34a;
+
+  --color-shadow: rgba(10, 50, 45, 0.12);
+  --color-scrim: rgba(0, 0, 0, 0.32);
+
+  --color-nav-bg: rgba(255, 255, 255, 0.96);
+  --color-nav-bg-top: rgba(255, 255, 255, 0.98);
+  --color-nav-bg-bottom: rgba(255, 255, 255, 0.84);
+  --color-nav-highlight: rgba(255, 255, 255, 0.72);
+  --color-nav-shadow: rgba(10, 50, 45, 0.14);
+  --color-nav-glass-top: rgba(255, 255, 255, 0.58);
+  --color-nav-glass-bottom: rgba(255, 255, 255, 0.34);
+
+  --color-switch-track: rgba(120, 120, 128, 0.16);
+  --color-switch-thumb: #ffffff;
+}
+
+.theme-teal-dark {
+  --color-surface: #0b1513;
+  --color-surface-container-low: #13211e;
+  --color-surface-container: #13211e;
+  --color-surface-container-high: #1c2d29;
+
+  --color-on-surface: #e8f5f1;
+  --color-on-surface-variant: #a9c7c1;
+  --color-on-surface-faint: #7c9994;
+
+  --color-primary: #5eead4;
+  --color-on-primary: #042f2e;
+  --color-primary-container: rgba(94, 234, 212, 0.18);
+  --color-on-primary-container: #99f6e4;
+
+  --color-secondary: #7dd3fc;
+  --color-on-secondary: #082f49;
+  --color-secondary-container: rgba(125, 211, 252, 0.18);
+  --color-on-secondary-container: #bae6fd;
+
+  --color-tertiary: #c4b5fd;
+  --color-on-tertiary: #1e1b4b;
+  --color-tertiary-container: rgba(196, 181, 253, 0.18);
+  --color-on-tertiary-container: #ddd6fe;
+
+  --color-outline: rgba(255, 255, 255, 0.2);
+  --color-outline-variant: rgba(255, 255, 255, 0.12);
+
+  --color-error: #ff6b5e;
+  --color-on-error: #111318;
+  --color-error-container: rgba(255, 107, 94, 0.18);
+  --color-on-error-container: #ffb4ab;
+  --color-warning: #fbbf24;
+  --color-success: #30d158;
+
+  --color-shadow: rgba(0, 0, 0, 0.45);
+  --color-scrim: rgba(0, 0, 0, 0.32);
+
+  --color-nav-bg: rgba(19, 33, 30, 0.96);
+  --color-nav-bg-top: rgba(28, 45, 41, 0.98);
+  --color-nav-bg-bottom: rgba(15, 27, 24, 0.86);
+  --color-nav-highlight: rgba(255, 255, 255, 0.1);
+  --color-nav-shadow: rgba(0, 0, 0, 0.55);
+  --color-nav-glass-top: rgba(24, 38, 34, 0.6);
+  --color-nav-glass-bottom: rgba(12, 21, 19, 0.42);
+
+  --color-switch-track: rgba(120, 120, 128, 0.32);
+  --color-switch-thumb: #ffffff;
+}

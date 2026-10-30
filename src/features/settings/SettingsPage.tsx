@@ -9,8 +9,13 @@ import {
   appearancePreference,
   useAppearanceMode,
 } from '../../shared/theme/appearance-preference.js';
+import { useThemePalette } from '../../shared/theme/theme-palette-preference.js';
+import { THEME_PALETTE_OPTIONS } from '../../shared/theme/theme-palettes.js';
 import { ListRow } from '../../shared/ui/ListRow.js';
-import { SettingsGroup } from '../../shared/ui/SettingsGroup.js';
+import {
+  SettingsGroup,
+  SettingsGroupDivider,
+} from '../../shared/ui/SettingsGroup.js';
 import './settings.css';
 
 const APPEARANCE_OPTIONS: readonly {
@@ -26,7 +31,12 @@ const APPEARANCE_OPTIONS: readonly {
 export function SettingsPage() {
   const navigate = useNavigate();
   const appearanceMode = useAppearanceMode();
+  const themePalette = useThemePalette();
   const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const paletteLabel = t(
+    THEME_PALETTE_OPTIONS.find((option) => option.id === themePalette)
+      ?.labelKey ?? 'themePalette.default',
+  );
   const appearanceLabel = t(
     APPEARANCE_OPTIONS.find((option) => option.mode === appearanceMode)
       ?.labelKey ?? 'appearance.system',
@@ -142,6 +152,25 @@ export function SettingsPage() {
                 </view>
               ) : null}
             </view>
+            <SettingsGroupDivider />
+            <ListRow
+              icon={<text className="list-row__icon-text">◨</text>}
+              iconColor="#7c3aed"
+              label={t('settings.themePalette')}
+              accessibilityLabel={`${t('settings.themePalette')}, ${paletteLabel}`}
+              onTap={() => navigate({ to: '/settings/theme' })}
+              testid="settings-row-theme-palette"
+              trailing={
+                <view className="theme-palette-value">
+                  <view className="theme-palette-value__swatches">
+                    <view className="theme-palette-value__dot" />
+                    <view className="theme-palette-value__dot theme-palette-value__dot--secondary" />
+                  </view>
+                  <text className="list-row__value">{paletteLabel}</text>
+                  <text className="list-row__arrow">›</text>
+                </view>
+              }
+            />
           </SettingsGroup>
         </view>
         {showDeveloperEntry ? (

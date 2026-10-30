@@ -7,11 +7,13 @@ import {
 import type { ColorScheme } from '../../native/system-appearance.js';
 
 /** 调色板 ID;新增 palette 时同步新增 CSS 变体并更新契约测试。 */
-export type ThemePaletteId = 'default' | 'violet';
+export type ThemePaletteId = 'default' | 'violet' | 'sunset' | 'teal';
 
 export const THEME_PALETTE_IDS: readonly ThemePaletteId[] = [
   'default',
   'violet',
+  'sunset',
+  'teal',
 ];
 export const DEFAULT_THEME_PALETTE: ThemePaletteId = 'default';
 export const THEME_PALETTE_PREF_KEY = 'theme_palette';

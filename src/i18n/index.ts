@@ -16,9 +16,18 @@ export type MessageKey =
   | 'settings.aboutDetail'
   | 'settings.group.appearance'
   | 'settings.group.developer'
+  | 'settings.themePalette'
   | 'settings.developer'
   | 'settings.developerDetail'
   | 'developer.title'
+  | 'themePalette.title'
+  | 'themePalette.default'
+  | 'themePalette.violet'
+  | 'themePalette.sunset'
+  | 'themePalette.teal'
+  | 'themePalette.note'
+  | 'themePalette.sample'
+  | 'themePalette.sampleMuted'
   | 'appearance.theme'
   | 'appearance.system'
   | 'appearance.light'
@@ -55,6 +64,15 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.group.developer': '开发者',
     'settings.developer': 'Dev Server 与调试通道',
     'settings.developerDetail': '连接、刷新与调试中继',
+    'settings.themePalette': '主题色',
+    'themePalette.title': '主题色',
+    'themePalette.default': '默认蓝',
+    'themePalette.violet': '紫罗兰',
+    'themePalette.sunset': '日落橙',
+    'themePalette.teal': '青绿',
+    'themePalette.note': '选择后立即应用,浅色和深色共用同一调色板。',
+    'themePalette.sample': '主题文字',
+    'themePalette.sampleMuted': '次要文字',
     'developer.title': '开发者',
     'appearance.theme': '主题',
     'appearance.system': '跟随系统',
@@ -89,6 +107,16 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.group.developer': 'Developer',
     'settings.developer': 'Dev server & debug tunnel',
     'settings.developerDetail': 'Connect, reload and debug relay',
+    'settings.themePalette': 'Theme color',
+    'themePalette.title': 'Theme color',
+    'themePalette.default': 'Default blue',
+    'themePalette.violet': 'Violet',
+    'themePalette.sunset': 'Sunset',
+    'themePalette.teal': 'Teal',
+    'themePalette.note':
+      'Applied immediately. Light and dark share the same palette.',
+    'themePalette.sample': 'Primary text',
+    'themePalette.sampleMuted': 'Secondary text',
     'developer.title': 'Developer',
     'appearance.theme': 'Theme',
     'appearance.system': 'System',

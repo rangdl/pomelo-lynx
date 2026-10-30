@@ -33,7 +33,7 @@ function variables(source) {
   );
 }
 
-const PALETTES_IDS = ['default', 'violet'];
+const PALETTES_IDS = ['default', 'violet', 'sunset', 'teal'];
 const VARIANTS = PALETTES_IDS.flatMap((palette) => [
   `.theme-${palette}-light`,
   `.theme-${palette}-dark`,

@@ -107,6 +107,33 @@
   transform: rotate(225deg);
 }
 
+.theme-palette-value {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.theme-palette-value__swatches {
+  display: flex;
+  flex-direction: row;
+  margin-right: 8px;
+}
+
+.theme-palette-value__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-outline-variant);
+  background-color: var(--color-primary);
+}
+
+.theme-palette-value__dot--secondary {
+  margin-left: 4px;
+  background-color: var(--color-secondary);
+}
+
 .appearance-group {
   position: relative;
   z-index: 1;

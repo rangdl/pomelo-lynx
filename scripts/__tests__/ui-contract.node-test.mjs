@@ -102,6 +102,20 @@ test('侧滑跟手由主线程平移并与路由开关联动', () => {
   assert.match(navigation, /PomeloNavigation\.swipe/);
 });
 
+test('主题色子页覆盖四个调色板并接入设置与路由', () => {
+  const meta = read('src/shared/theme/theme-palettes.ts');
+  for (const id of ['default', 'violet', 'sunset', 'teal']) {
+    assert.match(meta, new RegExp(`id: '${id}'`));
+  }
+  const page = read('src/features/settings/ThemePalettePage.tsx');
+  assert.match(page, /theme-\$\{option\.id\}-\$\{scheme\}/);
+  assert.match(page, /themePalettePreference\.setPalette/);
+  const settings = read('src/features/settings/SettingsPage.tsx');
+  assert.match(settings, /settings-row-theme-palette/);
+  const router = read('src/router.tsx');
+  assert.match(router, /path: '\/settings\/theme'/);
+});
+
 test('开发者页输入框启用键盘避让', () => {
   for (const file of [
     'src/features/settings/DevServerSection.tsx',

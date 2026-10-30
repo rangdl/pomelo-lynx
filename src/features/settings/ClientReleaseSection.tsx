@@ -86,6 +86,9 @@ export function ClientReleaseSection() {
 
   const asset = check?.asset ?? null;
   const changes = check?.changes.slice(0, 8) ?? [];
+  // 代理开启时优先打开加速地址;关闭或地址非法时回退 GitHub 原始地址。
+  const downloadURL =
+    check?.acceleratedDownloadURL ?? check?.downloadURL ?? null;
 
   return (
     <view className="client-release" data-testid="client-release-section">
@@ -134,32 +137,20 @@ export function ClientReleaseSection() {
         </>
       ) : null}
 
-      {check && asset && check.downloadURL ? (
+      {check && asset && downloadURL ? (
         <>
           <SettingsGroupDivider />
           <ListRow
             icon={<text className="list-row__icon-text">↓</text>}
             iconColor="#007aff"
-            label={t('about.downloadGithub')}
-            detail={`${asset.name} · ${sizeText(asset.size)} · ${asset.sha256.slice(0, 12)}`}
+            label={t('about.openDownload')}
+            detail={`${asset.name} · ${sizeText(asset.size)} · ${
+              check.accelerator ? t('about.viaProxy') : t('about.directGithub')
+            }`}
             chevron
-            onTap={() => open(check.downloadURL)}
-            testid="client-release-download-github"
+            onTap={() => open(downloadURL)}
+            testid="client-release-download"
           />
-          {check.acceleratedDownloadURL ? (
-            <>
-              <SettingsGroupDivider />
-              <ListRow
-                icon={<text className="list-row__icon-text">⇣</text>}
-                iconColor="#f59e0b"
-                label={t('about.downloadAccelerated')}
-                detail={t('about.downloadAcceleratedDetail')}
-                chevron
-                onTap={() => open(check.acceleratedDownloadURL)}
-                testid="client-release-download-accelerated"
-              />
-            </>
-          ) : null}
         </>
       ) : null}
 
@@ -200,7 +191,8 @@ export function ClientReleaseSection() {
       {ios ? (
         <text className="client-release__note">
           iOS 会先下载到「文件」，无法直接点击安装；请使用 TrollStore
-          或自行重签。国内加速为第三方地址，仅用于改善下载速度。
+          或自行重签。使用代理更新时下载地址会走加速地址，否则走 GitHub
+          原始地址。
         </text>
       ) : null}
     </view>

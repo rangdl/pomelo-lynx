@@ -12,6 +12,7 @@ import {
 } from './release-resolver.js';
 import { compareStableVersions } from './update-contract.js';
 import { fetchUpdateMetadata } from './update-metadata.js';
+import { DEFAULT_UPDATE_PROXY } from './update-preferences.js';
 
 const RELEASE_API = 'https://api.github.com/repos/rangdl/pomelo-lynx/releases';
 const MAX_RELEASE_BYTES = 512 * 1024;
@@ -45,7 +46,7 @@ export const CLIENT_RELEASE_ASSET = 'client.json';
  * 国内加速默认前缀。只用于 IPA/APK 下载,不作为元数据或安全校验的来源;
  * 用户配置了 update_proxy 时优先使用自定义地址。
  */
-export const DEFAULT_CLIENT_DOWNLOAD_PROXY = 'https://gh-proxy.org';
+export const DEFAULT_CLIENT_DOWNLOAD_PROXY = DEFAULT_UPDATE_PROXY;
 
 export type ClientPlatform = 'ios' | 'android' | 'harmony';
 
@@ -396,25 +397,20 @@ export function buildClientDownloadLinks(input: {
   accelerated: string | null;
   accelerator: string | null;
 } {
-  const prefixes = [input.proxy?.trim(), DEFAULT_CLIENT_DOWNLOAD_PROXY].filter(
-    (value): value is string => !!value,
-  );
-  for (const prefix of prefixes) {
-    try {
-      return {
-        official: input.assetURL,
-        accelerated: withGithubProxy(input.assetURL, prefix),
-        accelerator: prefix,
-      };
-    } catch {
-      // 非法自定义代理不能阻断官方下载;继续尝试默认加速。
-    }
+  const prefix = input.proxy?.trim();
+  if (!prefix) {
+    return { official: input.assetURL, accelerated: null, accelerator: null };
   }
-  return {
-    official: input.assetURL,
-    accelerated: null,
-    accelerator: null,
-  };
+  try {
+    return {
+      official: input.assetURL,
+      accelerated: withGithubProxy(input.assetURL, prefix),
+      accelerator: prefix,
+    };
+  } catch {
+    // 开关开启但地址非法时只保留官方下载;不要在下载阶段悄悄换代理。
+    return { official: input.assetURL, accelerated: null, accelerator: null };
+  }
 }
 
 function currentPlatform(): ClientPlatform | null {

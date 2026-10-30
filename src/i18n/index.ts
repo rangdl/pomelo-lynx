@@ -40,6 +40,7 @@ export type MessageKey =
   | 'about.title'
   | 'about.back'
   | 'about.group.update'
+  | 'about.group.acceleration'
   | 'about.group.clientUpdate'
   | 'about.group.bundleUpdate'
   | 'about.client'
@@ -55,9 +56,9 @@ export type MessageKey =
   | 'about.clientUpToDate'
   | 'about.clientUpdateUnknown'
   | 'about.changes'
-  | 'about.downloadGithub'
-  | 'about.downloadAccelerated'
-  | 'about.downloadAcceleratedDetail'
+  | 'about.openDownload'
+  | 'about.viaProxy'
+  | 'about.directGithub'
   | 'about.webUpdate'
   | 'logs.title'
   | 'logs.back';
@@ -99,6 +100,7 @@ const MESSAGES: Record<Locale, Messages> = {
     'about.title': '关于',
     'about.back': '设置',
     'about.group.update': '更新',
+    'about.group.acceleration': '加速设置',
     'about.group.clientUpdate': '客户端更新',
     'about.group.bundleUpdate': 'Bundle 热更新',
     'about.client': '客户端',
@@ -114,9 +116,9 @@ const MESSAGES: Record<Locale, Messages> = {
     'about.clientUpToDate': '已是最新',
     'about.clientUpdateUnknown': '无法确定',
     'about.changes': '更新内容',
-    'about.downloadGithub': 'GitHub 官方下载',
-    'about.downloadAccelerated': '国内加速下载',
-    'about.downloadAcceleratedDetail': '第三方加速地址，仅用于改善下载速度',
+    'about.openDownload': '打开下载地址',
+    'about.viaProxy': '经代理加速',
+    'about.directGithub': 'GitHub 直连',
     'about.webUpdate': 'Web 端随部署更新,无独立热更新',
     'logs.title': '日志',
     'logs.back': '设置',
@@ -156,6 +158,7 @@ const MESSAGES: Record<Locale, Messages> = {
     'about.title': 'About',
     'about.back': 'Settings',
     'about.group.update': 'Updates',
+    'about.group.acceleration': 'Acceleration',
     'about.group.clientUpdate': 'Client update',
     'about.group.bundleUpdate': 'Bundle hot update',
     'about.client': 'Client',
@@ -171,10 +174,9 @@ const MESSAGES: Record<Locale, Messages> = {
     'about.clientUpToDate': 'Up to date',
     'about.clientUpdateUnknown': 'Unable to determine',
     'about.changes': "What's new",
-    'about.downloadGithub': 'Download from GitHub',
-    'about.downloadAccelerated': 'Accelerated download',
-    'about.downloadAcceleratedDetail':
-      'Third-party mirror, transfer acceleration only',
+    'about.openDownload': 'Open download',
+    'about.viaProxy': 'Via proxy',
+    'about.directGithub': 'Direct from GitHub',
     'about.webUpdate': 'Web updates with the deployment',
     'logs.title': 'Logs',
     'logs.back': 'Settings',

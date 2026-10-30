@@ -166,15 +166,25 @@ describe('client release comparison', () => {
 describe('client download links', () => {
   const assetURL = `${RELEASE_REPOSITORY}/releases/download/v0.0.3/${IPA}`;
 
-  test('官方直链和默认国内加速同时生成', () => {
-    expect(buildClientDownloadLinks({ assetURL })).toEqual({
+  test('开关开启时生成官方直链和国内加速', () => {
+    expect(
+      buildClientDownloadLinks({
+        assetURL,
+        proxy: DEFAULT_CLIENT_DOWNLOAD_PROXY,
+      }),
+    ).toEqual({
       official: assetURL,
       accelerated: `${DEFAULT_CLIENT_DOWNLOAD_PROXY}/${assetURL}`,
       accelerator: DEFAULT_CLIENT_DOWNLOAD_PROXY,
     });
   });
 
-  test('自定义代理优先;非法代理回退默认加速', () => {
+  test('关闭开关不生成加速;非法代理只保留官方下载', () => {
+    expect(buildClientDownloadLinks({ assetURL })).toEqual({
+      official: assetURL,
+      accelerated: null,
+      accelerator: null,
+    });
     expect(
       buildClientDownloadLinks({
         assetURL,
@@ -185,8 +195,12 @@ describe('client download links', () => {
       buildClientDownloadLinks({
         assetURL,
         proxy: 'http://user:pass@proxy.example',
-      }).accelerated,
-    ).toBe(`${DEFAULT_CLIENT_DOWNLOAD_PROXY}/${assetURL}`);
+      }),
+    ).toEqual({
+      official: assetURL,
+      accelerated: null,
+      accelerator: null,
+    });
   });
 });
 
@@ -195,6 +209,7 @@ describe('client release check', () => {
     const result = await checkClientRelease({
       current: current(),
       platform: 'ios',
+      proxy: DEFAULT_CLIENT_DOWNLOAD_PROXY,
       resolver: new ClientReleaseResolver(fetchFor('stable')),
     });
     expect(result.comparison).toBe('newer');

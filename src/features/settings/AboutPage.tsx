@@ -18,6 +18,7 @@ import {
 } from '../../shared/ui/SettingsGroup.js';
 import { BundleUpdateSection } from './BundleUpdateSection.js';
 import { ClientReleaseSection } from './ClientReleaseSection.js';
+import { UpdateProxySection } from './UpdateProxySection.js';
 import './settings.css';
 
 /**
@@ -98,6 +99,9 @@ export function AboutPage() {
           </SettingsGroup>
         ) : (
           <>
+            <SettingsGroup title={t('about.group.acceleration')}>
+              <UpdateProxySection />
+            </SettingsGroup>
             <SettingsGroup title={t('about.group.clientUpdate')}>
               <ClientReleaseSection />
             </SettingsGroup>

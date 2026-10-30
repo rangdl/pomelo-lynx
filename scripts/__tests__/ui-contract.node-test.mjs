@@ -140,7 +140,7 @@ test('更新区使用 ListRow,且不再渲染重复版本行', () => {
   assert.doesNotMatch(section, /Bundle 版本|宿主版本/);
 });
 
-test('客户端更新与 Bundle 热更新拆成两个分组,并提供官方/加速下载', () => {
+test('客户端更新与 Bundle 热更新拆成两个分组,下载合并为单入口', () => {
   const about = read('src/features/settings/AboutPage.tsx');
   assert.match(about, /ClientReleaseSection/);
   assert.match(about, /BundleUpdateSection/);
@@ -153,8 +153,10 @@ test('客户端更新与 Bundle 热更新拆成两个分组,并提供官方/加�
   );
 
   const client = read('src/features/settings/ClientReleaseSection.tsx');
-  assert.match(client, /client-release-download-github/);
-  assert.match(client, /client-release-download-accelerated/);
+  assert.match(client, /client-release-download/);
+  assert.match(client, /about\.openDownload/);
+  assert.doesNotMatch(client, /client-release-download-github/);
+  assert.doesNotMatch(client, /client-release-download-accelerated/);
   assert.match(client, /about-row-release/);
   assert.match(client, /checkClientRelease/);
   assert.match(client, /readUpdateProxy/);
@@ -162,6 +164,28 @@ test('客户端更新与 Bundle 热更新拆成两个分组,并提供官方/加�
 
   const bundle = read('src/features/settings/BundleUpdateSection.tsx');
   assert.doesNotMatch(bundle, /client-release-download/);
+});
+
+test('加速设置同时接入两个更新链路并支持默认地址/自定义/开关', () => {
+  const about = read('src/features/settings/AboutPage.tsx');
+  assert.match(about, /UpdateProxySection/);
+  assert.match(about, /about\.group\.acceleration/);
+
+  const section = read('src/features/settings/UpdateProxySection.tsx');
+  assert.match(section, /使用代理更新/);
+  assert.doesNotMatch(section, /使用更新代理/);
+  assert.match(section, /update-proxy-switch/);
+  assert.match(section, /update-proxy-input/);
+  assert.match(section, /DEFAULT_UPDATE_PROXY/);
+  assert.match(section, /readUpdateProxySettings/);
+  assert.match(section, /writeUpdateProxySettings/);
+  assert.match(section, /avoid-keyboard=\{true\}/);
+  assert.match(section, /set-soft-input-mode="resize"/);
+
+  const prefs = read('src/core/updater/update-preferences.ts');
+  assert.match(prefs, /update_proxy_enabled/);
+  assert.match(prefs, /DEFAULT_UPDATE_PROXY/);
+  assert.match(prefs, /readUpdateProxy\(/);
 });
 
 test('主题色子页覆盖四个调色板并接入设置与路由', () => {

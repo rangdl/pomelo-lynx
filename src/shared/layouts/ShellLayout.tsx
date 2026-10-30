@@ -52,7 +52,7 @@ const MAX_VISIBLE_SLOTS = 4;
 const SLOT_WIDTH = 84;
 const BAR_EXTRA_WIDTH = 8;
 
-type PageDirection = 'push' | 'pop' | 'fade';
+type PageDirection = 'push' | 'pop' | 'fade' | 'none';
 type AppPath =
   | '/'
   | '/settings'
@@ -138,17 +138,18 @@ export function ShellLayout() {
   // ref 只在 pathname 真正变化时更新,避免普通重渲染重播动画。
   const lastPathRef = useRef(pathname);
   const lastDepthRef = useRef(routeDepth(pathname));
-  const pageDirectionRef = useRef<PageDirection>('fade');
+  const pageDirectionRef = useRef<PageDirection>('none');
   if (lastPathRef.current !== pathname) {
     const nextDepth = routeDepth(pathname);
     if (tabOf(lastPathRef.current) !== tabOf(pathname)) {
-      pageDirectionRef.current = 'fade';
+      // 切 tab 是栈切换,不是页面 push;直接显示恢复点,避免底层页闪一下。
+      pageDirectionRef.current = 'none';
     } else if (nextDepth > lastDepthRef.current) {
       pageDirectionRef.current = 'push';
     } else if (nextDepth < lastDepthRef.current) {
       pageDirectionRef.current = 'pop';
     } else {
-      pageDirectionRef.current = 'fade';
+      pageDirectionRef.current = 'none';
     }
     lastPathRef.current = pathname;
     lastDepthRef.current = nextDepth;
@@ -166,10 +167,7 @@ export function ShellLayout() {
         if (!page) return;
         pageAnimationRef.current?.cancel();
         pageAnimationRef.current = null;
-        page.setStyleProperty(
-          'transform',
-          offset === 0 ? 'none' : `translateX(${offset}px)`,
-        );
+        page.setStyleProperty('transform', `translateX(${offset}px)`);
       }),
     [],
   );
@@ -182,10 +180,7 @@ export function ShellLayout() {
         pageAnimationRef.current?.cancel();
         pageAnimationRef.current = null;
         if (typeof page.animate !== 'function') {
-          page.setStyleProperty(
-            'transform',
-            to === 0 ? 'none' : `translateX(${to}px)`,
-          );
+          page.setStyleProperty('transform', `translateX(${to}px)`);
           return;
         }
         page.setStyleProperty('transform', `translateX(${from}px)`);
@@ -209,7 +204,7 @@ export function ShellLayout() {
         'main thread';
         pageAnimationRef.current?.cancel();
         pageAnimationRef.current = null;
-        pageRef.current?.setStyleProperty('transform', 'none');
+        pageRef.current?.setStyleProperty('transform', 'translateX(0px)');
       }),
     [],
   );
@@ -232,6 +227,7 @@ export function ShellLayout() {
     let watchdog: ReturnType<typeof setTimeout> | undefined;
     let translation = 0;
     let committed = false;
+    let ended = false;
 
     const armWatchdog = () => {
       if (watchdog) clearTimeout(watchdog);
@@ -260,19 +256,22 @@ export function ShellLayout() {
 
       if (event.phase === 'begin') {
         committed = false;
+        ended = false;
         translation = 0;
         followPage(0);
         armWatchdog();
         return;
       }
       if (event.phase === 'change') {
-        if (committed) return;
+        // end 之后可能还有排队中的 change;忽略,避免页面又被推回半途。
+        if (committed || ended) return;
         translation = Math.max(0, event.translation);
         followPage(translation);
         armWatchdog();
         return;
       }
 
+      ended = true;
       if (event.commit && !committed) {
         committed = true;
         const offscreen = event.width > 0 ? event.width : 400;
@@ -286,6 +285,11 @@ export function ShellLayout() {
 
       settlePage(translation, 0, 220);
       clearTimer = setTimeout(() => clearPageMotion(), 240);
+      // 第二道保险:动画/清理任一步失败时强制归零。
+      watchdog = setTimeout(() => {
+        followPage(0);
+        clearPageMotion();
+      }, 700);
     });
 
     return () => {
@@ -348,7 +352,8 @@ export function ShellLayout() {
             const Page = PAGE_COMPONENTS[path];
             const top = index === stack.length - 1;
             if (top) {
-              const animate = pageDirection !== 'pop';
+              const animate =
+                pageDirection === 'push' || pageDirection === 'fade';
               return (
                 <view
                   key={path}

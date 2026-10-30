@@ -87,31 +87,35 @@ export function SettingsPage() {
                 className="appearance-popover"
                 data-testid="appearance-menu"
               >
-                {APPEARANCE_OPTIONS.map((option) => {
+                {APPEARANCE_OPTIONS.map((option, index) => {
                   const selected = appearanceMode === option.mode;
                   return (
-                    <view
-                      key={option.mode}
-                      className={
-                        selected
-                          ? 'appearance-option appearance-option--selected'
-                          : 'appearance-option'
-                      }
-                      bindtap={() => {
-                        void appearancePreference.setMode(option.mode);
-                        setAppearanceOpen(false);
-                      }}
-                      accessibility-element={true}
-                      accessibility-label={t(option.labelKey)}
-                      accessibility-traits="button"
-                      data-testid={`appearance-${option.mode}`}
-                    >
-                      <text className="appearance-option__label">
-                        {t(option.labelKey)}
-                      </text>
-                      {selected ? (
-                        <text className="appearance-check">✓</text>
+                    <view key={option.mode}>
+                      {index > 0 ? (
+                        <view className="appearance-option-divider" />
                       ) : null}
+                      <view
+                        className={
+                          selected
+                            ? 'appearance-option appearance-option--selected'
+                            : 'appearance-option'
+                        }
+                        bindtap={() => {
+                          void appearancePreference.setMode(option.mode);
+                          setAppearanceOpen(false);
+                        }}
+                        accessibility-element={true}
+                        accessibility-label={t(option.labelKey)}
+                        accessibility-traits="button"
+                        data-testid={`appearance-${option.mode}`}
+                      >
+                        <text className="appearance-option__label">
+                          {t(option.labelKey)}
+                        </text>
+                        {selected ? (
+                          <text className="appearance-check">✓</text>
+                        ) : null}
+                      </view>
                     </view>
                   );
                 })}

@@ -114,9 +114,13 @@ ShellLayout(全局唯一)
 - 分隔线:1px,`margin-left: 64px`(与图标列对齐)。
 - 旧 `.settings-row` 只允许在未迁移的更新区使用;
   新页面优先 `ListRow`。
-- 外观设置只保留一个「主题」条目:右侧显示当前值和 `▾`;展开的是锚定在
-  行右下角的绝对定位浮层 `appearance-anchor/appearance-popover`,不是把三行
-  塞进分组。选项行用 `appearance-option`,点遮罩关闭,选中后收起。
+- 外观设置只保留一个「主题」条目:右侧是浅灰圆角控件(当前值 + `▾`);
+  展开的是锚定在行右下角的绝对定位浮层 `appearance-anchor/appearance-popover`,
+  不是把三行塞进分组。浮层宽 208px、选项行高 46px、带分隔线和 150ms
+  scale/fade 展开动画;选项行用 `appearance-option`,点外部关闭,选中后收起。
+- 「自动检查更新」用右侧 iOS 风格开关(`client-update__switch`,51×31,
+  命中区 44px),不要再用「已开启/已关闭」文字。切换用现有
+  `settings-row` 行布局,整行不绑 tap,避免与开关冒泡叠加。
 - 输入框统一下发:
   `avoid-keyboard={true}`、`avoid-keyboard-spacing="12px"`、
   `set-soft-input-mode="resize"`;聚焦时由 Lynx 抬升根视图,避免键盘

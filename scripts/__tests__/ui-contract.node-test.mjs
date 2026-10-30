@@ -39,6 +39,19 @@ test('外观下拉是右侧锚定的绝对定位浮层', () => {
   const popover = css.match(/\.appearance-popover \{([\s\S]*?)\n\}/)?.[1] ?? '';
   assert.match(popover, /position: absolute;/);
   assert.match(popover, /right: 0;/);
+  assert.match(popover, /width: 208px;/);
+  assert.match(css, /appearance-popover-in/);
+  assert.match(css, /appearance-option-divider/);
+});
+
+test('自动更新使用开关而不是文字状态', () => {
+  const section = read('src/features/settings/ClientUpdateSection.tsx');
+  assert.match(section, /client-update__switch/);
+  assert.match(section, /client-update__switch-hit/);
+  assert.doesNotMatch(section, /已开启|已关闭/);
+  const css = read('src/features/settings/ClientUpdateSection.css');
+  assert.match(css, /translateX\(20px\)/);
+  assert.match(css, /height: 44px;/);
 });
 
 test('页面切换有 push/pop/fade 挂载动画', () => {

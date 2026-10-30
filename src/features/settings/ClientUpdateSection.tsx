@@ -158,15 +158,27 @@ export function ClientUpdateSection({
           data-testid="client-update-automatic"
         >
           <text className="settings-row__label">自动检查更新</text>
-          <text
-            className="client-update__toggle"
+          <view
+            className="client-update__switch-hit"
             bindtap={() => {
               'background only';
               changeAutomatic(!automatic.enabled);
             }}
+            accessibility-element={true}
+            accessibility-label="自动检查更新"
+            accessibility-traits="button"
+            data-testid="client-update-automatic-switch"
           >
-            {automatic.enabled ? '已开启' : '已关闭'}
-          </text>
+            <view
+              className={
+                automatic.enabled
+                  ? 'client-update__switch client-update__switch--on'
+                  : 'client-update__switch'
+              }
+            >
+              <view className="client-update__switch-thumb" />
+            </view>
+          </view>
         </view>
       ) : null}
 

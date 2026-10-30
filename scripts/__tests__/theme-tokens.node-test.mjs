@@ -108,7 +108,7 @@ test('ShellLayout 使用完整 variant class 并在切换时重建', () => {
     join(ROOT, 'src/shared/layouts/ShellLayout.tsx'),
     'utf8',
   );
-  assert.match(source, /const themeVariant = `default-\$\{theme\}`/);
+  assert.match(source, /resolveThemeVariant\(themePalette, theme\)/);
   assert.match(source, /key=\{themeVariant\}/);
   assert.match(source, /theme-\$\{themeVariant\}/);
   assert.match(source, /scheme-\$\{theme\}/);

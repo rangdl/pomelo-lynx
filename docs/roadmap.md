@@ -41,6 +41,8 @@
 - [x] 输入框键盘避让:`avoid-keyboard` + 12px spacing(待真机验证)
 - [x] 外观设置改为单条目 + 右侧锚定浮层;底栏指示器固定高度居中
 - [x] 页面 push/pop/fade 挂载动画(Lynx 无原生导航栈)
+- [x] Flutter ColorScheme 风格 token 与 default/violet 完整变体
+- [ ] 主题色设置子页(default/violet 预览卡片,待实现)
 - [x] JS `ListRow` 原语(设置/关于页复用,统一 leading/content/trailing)
 - [x] i18n 基础设施:`lynx.__globalProps.language` + 中英文核心文案
   - 首版覆盖导航、设置、关于、日志标题;开发者区/更新区文案暂留中文

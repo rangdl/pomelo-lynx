@@ -27,6 +27,10 @@ import {
   resolveTheme,
   useAppearanceMode,
 } from '../theme/appearance-preference.js';
+import {
+  resolveThemeVariant,
+  useThemePalette,
+} from '../theme/theme-palette-preference.js';
 import { TabIcon, type TabIconName } from './TabIcon.js';
 import './ShellLayout.css';
 
@@ -129,6 +133,7 @@ export function ShellLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [appearance, setAppearance] = useState(readSystemAppearance);
   const appearanceMode = useAppearanceMode();
+  const themePalette = useThemePalette();
   const [showMore, setShowMore] = useState(false);
   // 记住设置 tab 的最后位置;从其它 tab 切回来时恢复整条栈。
   const lastSettingsPathRef = useRef<SettingsPath>('/settings');
@@ -335,8 +340,7 @@ export function ShellLayout() {
   const iconColor = (active: boolean): string =>
     active ? (dark ? '#4da3ff' : '#007aff') : dark ? '#b0b7c3' : '#666666';
   const stack = stackFor(pathname);
-  // 调色板选择在下一阶段接入偏好;当前固定 default。
-  const themeVariant = `default-${theme}`;
+  const themeVariant = resolveThemeVariant(themePalette, theme);
 
   return (
     // 主题变体变化时重建 shell,保证 iOS 重新解析完整 token 集。

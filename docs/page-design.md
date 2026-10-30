@@ -147,6 +147,9 @@ ShellLayout(全局唯一)
   当前页面内部状态(滚动位置等),这是可接受的低频操作。
 - 外观偏好持久化在 `PomeloStorage.prefs` 的 `appearance_mode`:
   `system`(默认)/`light`/`dark`;设置页「外观」分组提供三个选项。
+- 调色板偏好持久化在 `theme_palette`:当前 `default`/`violet`,默认
+  `default`;与 `appearance_mode` 正交。两者合成
+  `theme-<palette>-<scheme>` 完整变体,切换时重建 shell。
 - 固定浅色/深色时,JS 通过 `PomeloPlatform.setAppearanceMode` 同步
   `overrideUserInterfaceStyle`;状态栏、键盘、系统弹窗都跟随应用选择。
   冷启动由 `ViewController` 读取同一 prefs key 并先行应用。

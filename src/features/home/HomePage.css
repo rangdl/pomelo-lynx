@@ -10,7 +10,7 @@
   --home-gradient-glow: rgba(255, 210, 141, 0.28);
 }
 
-.theme-dark .Home {
+.scheme-dark .Home {
   --home-gradient-mid: rgba(239, 155, 255, 0.3);
   --home-gradient-end: #ff6448;
   --home-gradient-glow: #ffd28db2;
@@ -63,7 +63,7 @@
 }
 
 /* 白色 Lynx logo 在亮色背景上不可见,浅色模式给一个深色圆角底。 */
-.theme-light .Logo {
+.scheme-light .Logo {
   padding: 14px;
   border-radius: 24px;
   background-color: #111111;

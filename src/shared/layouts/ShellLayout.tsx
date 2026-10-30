@@ -335,13 +335,14 @@ export function ShellLayout() {
   const iconColor = (active: boolean): string =>
     active ? (dark ? '#4da3ff' : '#007aff') : dark ? '#b0b7c3' : '#666666';
   const stack = stackFor(pathname);
+  // 调色板选择在下一阶段接入偏好;当前固定 default。
+  const themeVariant = `default-${theme}`;
 
   return (
-    // iOS Lynx 移除 `.theme-dark` 后可能保留旧 CSS 变量;主题变化时重建
-    // 整棵 shell,保证页面以新主题重新解析样式。
+    // 主题变体变化时重建 shell,保证 iOS 重新解析完整 token 集。
     <view
-      key={theme}
-      className={`shell theme-${theme}${
+      key={themeVariant}
+      className={`shell theme-${themeVariant} scheme-${theme}${
         pathname === '/' ? ' shell--home' : ''
       }`}
       data-testid="shell-root"

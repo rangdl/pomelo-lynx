@@ -137,12 +137,12 @@ ShellLayout(全局唯一)
   `surface / on-surface / primary / secondary / tertiary / *-container /
   outline / outline-variant / error`;旧 `bg / accent / text-*` 名称已迁移,
   新增代码不要再使用旧名。
-- 深色模式由 `.theme-dark` 覆盖 token;主题类挂在 `.shell`。
-- **`.theme-light` 必须显式覆盖 `.theme-dark` 的每个 token**。iOS Lynx
-  移除 `.theme-dark` 后不会恢复 `:root` 值,d→浅切换时背景/文字会继续
-  沿用深色 token;新增深色 token 时必须同步补浅色值。
-  `scripts/__tests__/theme-tokens.node-test.mjs` 会校验这一点。
-- `ShellLayout` 的根 `<view>` 以 `key={theme}` 强制重建:切换外观时整棵
+- 主题变体 class 形如 `.theme-default-light` / `.theme-default-dark`;Shell 同时挂 `.scheme-light` / `.scheme-dark` 供首页等非颜色逻辑使用。
+- **每个 `theme-<palette>-<scheme>` 变体必须自包含全部 token**。iOS Lynx
+  切换 class 后不会恢复 `:root` 值;新增颜色角色时,所有 palette 的亮/暗
+  变体都要同步补齐。`scripts/__tests__/theme-tokens.node-test.mjs` 会校验
+  完整性、亮色覆盖和核心角色存在。
+- `ShellLayout` 的根 `<view>` 以 `key={themeVariant}` 强制重建:切换外观时整棵
   shell 重新挂载,避免 iOS 继续使用旧的自定义属性缓存。切换主题会重置
   当前页面内部状态(滚动位置等),这是可接受的低频操作。
 - 外观偏好持久化在 `PomeloStorage.prefs` 的 `appearance_mode`:

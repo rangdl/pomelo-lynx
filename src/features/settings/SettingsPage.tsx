@@ -1,4 +1,4 @@
-import { Fragment, useState } from '@lynx-js/react';
+import { useState } from '@lynx-js/react';
 import { useNavigate } from '@tanstack/react-router';
 
 import { clientBuild } from '../../core/config/constants.js';
@@ -95,33 +95,32 @@ export function SettingsPage() {
                 {APPEARANCE_OPTIONS.map((option, index) => {
                   const selected = appearanceMode === option.mode;
                   return (
-                    <Fragment key={option.mode}>
+                    <view
+                      key={option.mode}
+                      className={
+                        selected
+                          ? 'appearance-option appearance-option--selected'
+                          : 'appearance-option'
+                      }
+                      bindtap={() => {
+                        void appearancePreference.setMode(option.mode);
+                        setAppearanceOpen(false);
+                      }}
+                      accessibility-element={true}
+                      accessibility-label={t(option.labelKey)}
+                      accessibility-traits="button"
+                      data-testid={`appearance-${option.mode}`}
+                    >
                       {index > 0 ? (
                         <view className="appearance-option-divider" />
                       ) : null}
-                      <view
-                        className={
-                          selected
-                            ? 'appearance-option appearance-option--selected'
-                            : 'appearance-option'
-                        }
-                        bindtap={() => {
-                          void appearancePreference.setMode(option.mode);
-                          setAppearanceOpen(false);
-                        }}
-                        accessibility-element={true}
-                        accessibility-label={t(option.labelKey)}
-                        accessibility-traits="button"
-                        data-testid={`appearance-${option.mode}`}
-                      >
-                        <text className="appearance-option__label">
-                          {t(option.labelKey)}
-                        </text>
-                        {selected ? (
-                          <text className="appearance-check">✓</text>
-                        ) : null}
-                      </view>
-                    </Fragment>
+                      <text className="appearance-option__label">
+                        {t(option.labelKey)}
+                      </text>
+                      {selected ? (
+                        <text className="appearance-check">✓</text>
+                      ) : null}
+                    </view>
                   );
                 })}
               </view>

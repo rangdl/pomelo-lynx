@@ -31,7 +31,7 @@ test('外观下拉是右侧锚定的绝对定位浮层', () => {
   assert.match(page, /appearance-anchor/);
   assert.match(page, /appearance-popover/);
   assert.match(page, /appearance-trigger/);
-  assert.match(page, /Fragment/);
+  assert.match(page, /appearance-option-divider/);
   assert.doesNotMatch(
     page,
     /onTap=\{toggleAppearanceMenu\}/,

@@ -24,9 +24,12 @@
 - [ ] **Android 注入 `hostBuild`/`hostChannel`(计划,待恢复 Android 构建)**
   - `MainActivity` 的初始/`onNewIntent` globalProps 增加字段
   - channel 由 `BuildConfig.DEBUG` 或构建字段决定;恢复 Android CI 后再提交
-- [x] 关于页拆成「客户端更新」与「Bundle 热更新」;发布页入口移入客户端更新
+- [x] 关于页拆成「加速设置」「客户端更新」与「Bundle 热更新」
 - [x] 新增 `client.json` 固定资产:客户端版本、构建号、IPA size/sha256、changelog
-- [x] iOS 下载入口:GitHub 官方直链 + 可配置国内加速;不自动安装
+- [x] iOS 下载合并为「打开下载地址」:代理开启走加速地址,否则走 GitHub
+      原始地址;不自动安装
+- [x] 加速设置:默认 `https://gh-proxy.org`、默认开启、自定义 HTTPS 地址、
+      开关同时作用于 Release API / version.json / client.json / Bundle 下载
 - [x] Release 资产固定文件名;正式版不再上传带版本号 IPA
 - [x] CI 支持 `v*` 正式 tag 与 `dev-v*` dev tag;master/dev 分支 push 不自动构建
 - [x] changelog 从 conventional commit 生成,同时用于 GitHub Release 和 App
@@ -34,7 +37,7 @@
 - [ ] **Android APK 客户端更新(计划,待恢复 Android 构建)**
   - `client.json.assets` 增加 android 资产;下载后走 PackageInstaller
   - 需要 APK 签名/摘要校验后再提示安装
-- [ ] **iOS 真机验证**:关于页客户端更新、官方/加速下载、changelog 展示
+- [ ] **iOS 真机验证**:关于页加速设置、单一下载入口、changelog 展示
   - 本地 Linux 无法编译 iOS;iOS 编译与行为以 CI `iOS IPA` job 为准
 
 ## 批次 2:系统外观 / 安全区 / 深色模式

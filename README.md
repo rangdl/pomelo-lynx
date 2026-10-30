@@ -91,7 +91,9 @@ docs/web-debug.md   Web 端调试:症状 → 根因 → 解法
   - 详见 [docs/release.md](docs/release.md)。
 - **客户端更新 / 热更新**:
   - **客户端**:关于页「客户端更新」检查 native IPA 版本,展示 changelog,
-    提供 GitHub 官方下载与国内加速下载;iOS 只交给系统浏览器,不自动安装。
+    提供单一下载入口:代理开启时走加速地址,否则走 GitHub 原始地址;
+    「加速设置」默认开启,地址默认 `https://gh-proxy.org`;iOS 只交给
+    系统浏览器,不自动安装。
   - **Bundle**:`src/core/updater/` 走签名 manifest + `releases/tags/dev` /
     `releases/latest`,下载、冷启动生效、回滚逻辑保持不变;关于页对应
     「Bundle 热更新」分组。
@@ -107,9 +109,10 @@ docs/web-debug.md   Web 端调试:症状 → 根因 → 解法
     冷启动异步检查、10 分钟最小间隔、6 小时周期、30m/2h/6h 退避、恢复内置自动
     关开关);`UpdateStartup` 在路由挂载 1.5s 后按 bundleId 确认启动,渲染边界
     错误上报回滚。
-  - **UI**:底部导航(首页/设置),设置 → 关于 → 「客户端更新」(native 安装包/
-    changelog/官方与加速下载)与「Bundle 热更新」(检查/下载/取消/待生效提示/
-    恢复内置二次确认);Web 端只提示"随部署更新"。
+  - **UI**:底部导航(首页/设置),设置 → 关于 → 「加速设置」(代理开关/地址/
+    恢复默认)、「客户端更新」(native 安装包/changelog/单一下载入口)与
+    「Bundle 热更新」(检查/下载/取消/待生效提示/恢复内置二次确认);
+    Web 端只提示"随部署更新"。
   - **发布**(`scripts/update-release-lib.mjs`):CI Release job 组装
     version.json+签名+bundle;配 `POMELO_UPDATE_PRIVATE_KEY`(secrets)与
     `POMELO_UPDATE_PUBLIC_KEY`(vars)后附带签名热更新资产,未配钥只出完整包。

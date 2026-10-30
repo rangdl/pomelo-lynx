@@ -124,6 +124,8 @@ dev 的 `release_tag` 仍然是 `dev`,`display_version` 是 `dev-0.0.3`,
 
 App 通过 GitHub Release API 获取资产,校验通道、tag、资产名、大小、sha256 和
 下载 URL 后再展示更新。`client.json` 里的 URL 不作为可信重定向来源。
+「加速设置」开启时,Release API 和 `client.json` 请求都会带代理前缀;
+代理失败会回退同一地址的直连请求。
 
 ## 5. Changelog
 
@@ -141,15 +143,19 @@ squash 合并会把逐条提交压成一条,changelog 会明显变少。
 
 ## 6. 客户端更新 UI
 
-关于页拆成两个分组:
+关于页拆成三个分组:
 
 ```text
+加速设置
+  使用代理更新开关
+  代理地址输入
+  恢复默认地址
+
 客户端更新
   检查客户端更新
   有新版本 / 已是最新 / 无法确定
   更新内容
-  GitHub 官方下载
-  国内加速下载
+  打开下载地址
   打开发布页
 
 Bundle 热更新
@@ -159,9 +165,14 @@ Bundle 热更新
   下载更新 / 取消 / 待生效 / 恢复内置
 ```
 
+「加速设置」默认开启,地址默认 `https://gh-proxy.org`,也可以输入自定义
+`https://` 代理。开启后 Release API、`version.json`、`version.json.sig`、
+`client.json`、Bundle 下载和 IPA 加速统一走该前缀;关闭后全部直连 GitHub。
+地址必须是 HTTPS,且不能带凭据或查询串。
+
 iOS 点击下载只会打开系统浏览器,IPA 保存到“文件”,**不能直接安装**;需要
-TrollStore 或自行重签。国内加速使用 `update_proxy` 偏好,未配置时默认
-`https://gh-proxy.org`;它只是第三方传输加速,官方 GitHub 下载始终保留。
+TrollStore 或自行重签。加速下载使用「加速设置」里的代理地址;它只是第三方
+传输加速,关闭代理后必须保留 GitHub 原始地址下载。
 
 ## 7. 本地命令
 

@@ -118,14 +118,18 @@ ShellLayout(全局唯一)
 - 关于页版本行统一为“右侧短版本号 + detail 具体信息”:
   「客户端」右值显示宿主版本的展示值(dev 带 `dev-` 前缀),detail 显示版本号与 commit;
   「Bundle 版本」右值显示 bundle 的展示版本,detail 显示 channel 与 commit。
-- 更新区域拆成两张卡片:
-  - 「客户端更新」:检查 native 安装包、更新内容、GitHub 官方下载、
-    国内加速下载、打开发布页;iOS 必须提示“先下载到文件,不能直接安装”。
+- 更新区域拆成三张卡片:
+  - 「加速设置」:代理开关 + HTTPS 地址输入 + 恢复默认;默认
+    `https://gh-proxy.org`,关闭时全部直连。
+  - 「客户端更新」:检查 native 安装包、更新内容、打开下载地址、
+    打开发布页;iOS 必须提示“先下载到文件,不能直接安装”。
+    下载入口只有一个:代理开启时打开加速地址,否则打开 GitHub 原始地址。
   - 「Bundle 热更新」:通道、自动检查更新、检查/下载/取消/待生效/恢复内置。
   - 两套链路不要混用 `client.json` 与 `version.json`;
-    加速下载只影响 IPA,不改变 GitHub API / 签名 manifest。
+    代理开关同时作用于 Release API、更新元数据和 Bundle/IPA 下载。
 - 客户端下载入口只在检查成功且存在当前平台资产时显示;没有资产时只保留
-  发布页。官方下载放在加速下载之前,加速地址标注第三方。
+  发布页。入口只有一个「打开下载地址」,detail 标注当前走「经代理加速」
+  还是「GitHub 直连」,不要再拆成两行。
 - 更新内容最多展示 8 条,不渲染 Markdown;完整记录通过发布页查看。
 - 分隔线:1px,`margin-left: 64px`(与图标列对齐)。
 - 设置页/关于页/更新区统一使用 `ListRow`;旧 `.settings-row`
@@ -143,7 +147,7 @@ ShellLayout(全局唯一)
 - 输入框统一下发:
   `avoid-keyboard={true}`、`avoid-keyboard-spacing="12px"`、
   `set-soft-input-mode="resize"`;聚焦时由 Lynx 抬升根视图,避免键盘
-  遮挡输入框。不要自己猜键盘高度。
+  遮挡输入框。不要自己猜键盘高度。更新代理地址输入同样遵守这套约束。
 - 输入框边框用内联样式(原生 input 的 className CSS 不可靠):
   默认 `1px solid var(--color-outline)`,focus 时切
   `var(--color-primary)`;配 `bindfocus/bindblur` 控制状态。

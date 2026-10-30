@@ -20,9 +20,15 @@ test('CI 只由正式 tag 和 dev tag 触发,不再跟随分支 push', () => {
 });
 
 test('正式 tag 校验 master,dev tag 校验 dev,且都校验 package 版本', () => {
-  assert.match(workflow, /git fetch origin master/);
+  assert.match(
+    workflow,
+    /git fetch origin refs\/heads\/master:refs\/remotes\/origin\/master/,
+  );
   assert.match(workflow, /正式版 tag 必须打在 master 上/);
-  assert.match(workflow, /git fetch origin dev/);
+  assert.match(
+    workflow,
+    /git fetch origin refs\/heads\/dev:refs\/remotes\/origin\/dev/,
+  );
   assert.match(workflow, /dev tag 必须打在 dev 分支上/);
   assert.match(workflow, /dev tag \$TAG_VERSION 的版本/);
 });

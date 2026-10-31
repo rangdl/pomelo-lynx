@@ -1,4 +1,5 @@
 import Foundation
+import Lynx
 import UIKit
 import UniformTypeIdentifiers
 
@@ -14,10 +15,11 @@ import UniformTypeIdentifiers
  * Lynx 模块方法可能运行在 JS 线程,所有 UIKit / 剪贴板 / 分享面板操作都
  * 切到主线程。回调约定与 JS facade 一致:成功 `nil`,失败为非空字符串错误码。
  */
-final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate {
-  @objc static var name: String { "PomeloPlatform" }
+@objc(PomeloPlatformModule)
+public final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate {
+  @objc public static var name: String { "PomeloPlatform" }
 
-  @objc static var methodLookup: [String: String] {
+  @objc public static var methodLookup: [String: String] {
     [
       "openURL": NSStringFromSelector(#selector(PomeloPlatformModule.openURL(_:))),
       "setKeepScreenOn": NSStringFromSelector(
@@ -32,41 +34,29 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
         #selector(
           PomeloPlatformModule.pickAndUploadFile(
             _:fieldName:mimeType:callback:))),
-      "applyDevServer": NSStringFromSelector(
-        #selector(PomeloPlatformModule.applyDevServer(_:callback:))),
-      "clearDevServer": NSStringFromSelector(
-        #selector(PomeloPlatformModule.clearDevServer(_:))),
-      "reloadBundle": NSStringFromSelector(
-        #selector(PomeloPlatformModule.reloadBundle(_:))),
-      "probeDevServer": NSStringFromSelector(
-        #selector(PomeloPlatformModule.probeDevServer(_:callback:))),
-      "setAppearanceMode": NSStringFromSelector(
-        #selector(PomeloPlatformModule.setAppearanceMode(_:))),
-      "setEdgeBackEnabled": NSStringFromSelector(
-        #selector(PomeloPlatformModule.setEdgeBackEnabled(_:))),
       "openTrollStore": NSStringFromSelector(
         #selector(PomeloPlatformModule.openTrollStore(_:))),
     ]
   }
 
   @objc(initWithParam:)
-  convenience init(param: Any) { self.init() }
+  public convenience init(param: Any) { self.init() }
 
   // MARK: - 打开 URL
 
   /// 只接受 http/https,避免把 `javascript:` / `file:` 交给系统。
-  @objc func openURL(_ url: String) {
+  @objc public func openURL(_ url: String) {
     guard let parsed = URL(string: url),
       let scheme = parsed.scheme?.lowercased(),
       scheme == "http" || scheme == "https",
       parsed.host != nil
     else {
-      Log.warn("platform", "openURL rejected unsupported url")
+      NSLog("PomeloPlatform: openURL rejected unsupported url")
       return
     }
     DispatchQueue.main.async {
       UIApplication.shared.open(parsed, options: [:]) { opened in
-        if !opened { Log.warn("platform", "openURL could not open") }
+        if !opened { NSLog("PomeloPlatform: openURL could not open") }
       }
     }
   }
@@ -74,18 +64,18 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
   // MARK: - TrollStore 安装
 
   /// TrollStore 1.3+ 接管 apple-magnifier scheme;只允许 install 路径。
-  @objc func openTrollStore(_ url: String) {
+  @objc public func openTrollStore(_ url: String) {
     guard let parsed = URL(string: url),
       parsed.scheme?.lowercased() == "apple-magnifier",
       parsed.host?.lowercased() == "install",
       parsed.query?.hasPrefix("url=") == true
     else {
-      Log.warn("platform", "openTrollStore rejected unsupported url")
+      NSLog("PomeloPlatform: openTrollStore rejected unsupported url")
       return
     }
     DispatchQueue.main.async {
       UIApplication.shared.open(parsed, options: [:]) { opened in
-        if !opened { Log.warn("platform", "openTrollStore could not open") }
+        if !opened { NSLog("PomeloPlatform: openTrollStore could not open") }
       }
     }
   }
@@ -93,123 +83,19 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
   // MARK: - 屏幕常亮
 
   /// 进程级开关;App 进入后台时系统会自行恢复休眠。
-  @objc func setKeepScreenOn(_ enabled: Bool) {
+  @objc public func setKeepScreenOn(_ enabled: Bool) {
     DispatchQueue.main.async {
       UIApplication.shared.isIdleTimerDisabled = enabled
     }
   }
 
-  // MARK: - Dev server 热切换
-
-  /// 下载校验成功后才切换 dev server 并重建 LynxView;失败不动当前页面。
-  @objc func applyDevServer(_ url: String, callback: @escaping (Any) -> Void) {
-    guard Self.isDevServerURL(url) else {
-      callback("devserver_invalid_url")
-      return
-    }
-    DispatchQueue.main.async {
-      guard let host = Self.hostViewController() else {
-        callback("devserver_no_host")
-        return
-      }
-      host.applyDevServer(url) { error in
-        if let error {
-          callback(error)
-        } else {
-          callback(NSNull())
-        }
-      }
-    }
-  }
-
-  /// 清配置并立即回到内嵌 bundle,不需要冷启动。
-  @objc func clearDevServer(_ callback: @escaping (Any) -> Void) {
-    DispatchQueue.main.async {
-      guard let host = Self.hostViewController() else {
-        callback("devserver_no_host")
-        return
-      }
-      host.clearDevServer {
-        callback(NSNull())
-      }
-    }
-  }
-
-  /// 重新下载当前 dev URL(或重建内嵌 bundle),用于手动刷新与断线恢复。
-  @objc func reloadBundle(_ callback: @escaping (Any) -> Void) {
-    DispatchQueue.main.async {
-      guard let host = Self.hostViewController() else {
-        callback("devserver_no_host")
-        return
-      }
-      host.reloadCurrentBundle { error in
-        if let error {
-          callback(error)
-        } else {
-          callback(NSNull())
-        }
-      }
-    }
-  }
-
-  /// 轻量健康探测:`HEAD` 请求 bundle URL,返回 `[error, status]`。
-  /// 只用于开发者页的状态轮询,不会下载完整 bundle。
-  @objc func probeDevServer(_ urlString: String, callback: @escaping (Any) -> Void) {
-    guard Self.isDevServerURL(urlString), let url = URL(string: urlString) else {
-      callback(["devserver_invalid_url", -1] as NSArray)
-      return
-    }
-    var request = URLRequest(url: url)
-    request.httpMethod = "HEAD"
-    request.timeoutInterval = 4
-    request.cachePolicy = .reloadIgnoringLocalCacheData
-    URLSession.shared.dataTask(with: request) { _, response, error in
-      DispatchQueue.main.async {
-        if let error {
-          callback([error.localizedDescription, -1] as NSArray)
-          return
-        }
-        let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-        if (200...399).contains(status) {
-          callback([NSNull(), status] as NSArray)
-        } else {
-          callback(["devserver_http_\(status)", status] as NSArray)
-        }
-      }
-    }.resume()
-  }
-
-  // MARK: - 边缘返回开关
-
-  /// JS 按路由开关左边缘手势;根 tab 关闭,避免冻结触摸却不移动页面。
-  @objc func setEdgeBackEnabled(_ enabled: Bool) {
-    DispatchQueue.main.async {
-      Self.hostViewController()?.setEdgeBackEnabled(enabled)
-    }
-  }
-
-  // MARK: - 应用外观
-
-  /// 把 `system/light/dark` 同步到 UIKit,让状态栏和系统控件跟随应用选择。
-  /// 同时写入 prefs,保证下次冷启动首帧就是正确的外观。
-  @objc func setAppearanceMode(_ mode: String) {
-    guard mode == "system" || mode == "light" || mode == "dark" else {
-      return
-    }
-    let prefs = UserDefaults(suiteName: "pomelo_prefs") ?? .standard
-    prefs.set(mode, forKey: "appearance_mode")
-    DispatchQueue.main.async {
-      Self.hostViewController()?.applyAppearanceMode(mode)
-    }
-  }
-
   // MARK: - 剪贴板
 
-  @objc func setClipboard(_ text: String) {
+  @objc public func setClipboard(_ text: String) {
     writeClipboard(text, callback: nil)
   }
 
-  @objc func setClipboardWithResult(_ text: String, callback: @escaping (Any) -> Void) {
+  @objc public func setClipboardWithResult(_ text: String, callback: @escaping (Any) -> Void) {
     writeClipboard(text, callback: callback)
   }
 
@@ -224,7 +110,7 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
 
   /// 把 base64 写入临时目录后调起分享面板。文件名和 MIME 在 JS 侧已校验,
   /// 这里再做一次纵深防御;分享结束后删除临时文件。
-  @objc func shareFile(
+  @objc public func shareFile(
     _ base64: String,
     fileName: String,
     mimeType: String,
@@ -301,7 +187,7 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
 
   /// 回调形状固定为 `[error, body]`(与 Android 后续实现、JS facade 逐字对齐)。
   /// 空 error 表示成功;body 是服务器响应文本。
-  @objc func pickAndUploadFile(
+  @objc public func pickAndUploadFile(
     _ uploadUrl: String,
     fieldName: String,
     mimeType: String,
@@ -346,7 +232,7 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
     }
   }
 
-  func documentPicker(
+  public func documentPicker(
     _ controller: UIDocumentPickerViewController,
     didPickDocumentsAt urls: [URL]
   ) {
@@ -376,7 +262,7 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
     }
   }
 
-  func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+  public func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
     pendingUpload?.callback(["upload_cancelled", NSNull()] as NSArray)
     pendingUpload = nil
   }
@@ -438,25 +324,6 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
       parsed.host != nil
     else { return false }
     return true
-  }
-
-  /// dev server 地址必须指向 `.lynx.bundle`;bundle 内容由宿主下载后校验。
-  private static func isDevServerURL(_ value: String) -> Bool {
-    guard isHTTPURL(value), let parsed = URL(string: value) else { return false }
-    return parsed.path.hasSuffix(".lynx.bundle")
-  }
-
-  /// 当前 key window 的 `ViewController`。Lynx 模块可能在 JS 线程调用,
-  /// 调用方负责先切主线程。
-  private static func hostViewController() -> ViewController? {
-    for scene in UIApplication.shared.connectedScenes {
-      guard let windowScene = scene as? UIWindowScene,
-        let root = windowScene.windows.first(where: { $0.isKeyWindow })?
-          .rootViewController
-      else { continue }
-      if let host = root as? ViewController { return host }
-    }
-    return nil
   }
 
   /// multipart 头部里的文件名只保留安全字符,避免引号/换行破坏请求体。

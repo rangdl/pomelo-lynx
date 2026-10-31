@@ -80,6 +80,7 @@ previous()
 
 - 队列最多 50 项;`url` / `artwork` 只接受 http(s)
 - `url` 必填;`title` 可空,空标题由原生回退到 URL 文件名
+- 每项可以带 `headers`,用于 Navidrome 等需要认证的音频源
 - JS 入队时也会用 URL 文件名兜底标题
 - 标题/歌手/专辑截断到 200 字符
 - 封面最大 8 MiB,加载失败不影响播放
@@ -149,3 +150,5 @@ https://cdn.truefilesize.com/mp3/sample-1mb.mp3
 - iOS 真机:播放/暂停/seek/停止、切 tab 后继续播放、后台播放、锁屏控制、
   锁屏标题/歌手/专辑/封面、队列切歌元数据同步
 - iOS 真机:「加载 5sing 歌单」能拉取 8 首、加入队列并正常播放
+- iOS 真机:锁屏歌词 `title/artist` 模式、切歌清空歌词
+- iOS 真机:带 headers 的音频源、rate/volume、capabilities

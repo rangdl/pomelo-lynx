@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import Lynx
 import MediaPlayer
 import UIKit
 
@@ -15,7 +16,8 @@ import UIKit
  * 播放状态通过 `PomeloPlayer.state` 全局事件推送。播放器单例挂在本模块实例上,
  * 页面切换不会停止音频;是否后台播放留到后续版本。
  */
-final class PomeloPlayerModule: NSObject, LynxContextModule {
+@objc(PomeloPlayerModule)
+public final class PomeloPlayerModule: NSObject, LynxContextModule {
   private weak var context: LynxContext?
   private let player = AVPlayer()
   private var item: AVPlayerItem?
@@ -38,6 +40,15 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
   private var currentArtwork: MPMediaItemArtwork?
   private var artworkCache: [String: MPMediaItemArtwork] = [:]
   private var artworkLoadingKey = ""
+  private var playbackRate: Float = 1.0
+  private var engineName = "system"
+  private var lyricLines: [LyricLine] = []
+  private var lyricMode = "title"
+  private var currentLyric = ""
+  private var overrideTitle = ""
+  private var overrideArtist = ""
+  private var overrideAlbum = ""
+  private var overrideLyrics = ""
 
   private struct QueueItem {
     let url: URL
@@ -45,11 +56,17 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     let artist: String
     let album: String
     let artwork: URL?
+    let headers: [String: String]
   }
 
-  @objc static var name: String { "PomeloPlayer" }
+  private struct LyricLine {
+    let time: Double
+    let text: String
+  }
 
-  @objc static var methodLookup: [String: String] {
+  @objc public static var name: String { "PomeloPlayer" }
+
+  @objc public static var methodLookup: [String: String] {
     [
       "load": NSStringFromSelector(#selector(PomeloPlayerModule.load(_:callback:))),
       "play": NSStringFromSelector(#selector(PomeloPlayerModule.play)),
@@ -60,17 +77,28 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
       "setQueue": NSStringFromSelector(#selector(PomeloPlayerModule.setQueue(_:))),
       "next": NSStringFromSelector(#selector(PomeloPlayerModule.next)),
       "previous": NSStringFromSelector(#selector(PomeloPlayerModule.previous)),
+      "setLyrics": NSStringFromSelector(#selector(PomeloPlayerModule.setLyrics(_:))),
+      "clearLyrics": NSStringFromSelector(#selector(PomeloPlayerModule.clearLyrics)),
+      "setNowPlayingOverride": NSStringFromSelector(
+        #selector(PomeloPlayerModule.setNowPlayingOverride(_:))),
+      "clearNowPlayingOverride": NSStringFromSelector(
+        #selector(PomeloPlayerModule.clearNowPlayingOverride)),
+      "setRate": NSStringFromSelector(#selector(PomeloPlayerModule.setRate(_:))),
+      "setVolume": NSStringFromSelector(#selector(PomeloPlayerModule.setVolume(_:))),
+      "getCapabilities": NSStringFromSelector(
+        #selector(PomeloPlayerModule.getCapabilities(_:))),
+      "setEngine": NSStringFromSelector(#selector(PomeloPlayerModule.setEngine(_:callback:))),
     ]
   }
 
   @objc(initWithParam:)
-  convenience init(param: Any) { self.init(context: nil) }
+  public convenience init(param: Any) { self.init(context: nil) }
 
   @objc(initWithLynxContext:)
-  convenience init(lynxContext context: LynxContext) { self.init(context: context) }
+  public convenience init(lynxContext context: LynxContext) { self.init(context: context) }
 
   @objc(initWithLynxContext:WithParam:)
-  convenience init(lynxContext context: LynxContext, withParam param: Any) {
+  public convenience init(lynxContext context: LynxContext, withParam param: Any) {
     self.init(context: context)
   }
 
@@ -217,6 +245,7 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     url: URL,
     autoplay: Bool,
     index: Int? = nil,
+    headers: [String: String] = [:],
     callback: ((String) -> Void)? = nil
   ) {
     guard configureAudioSession() else {
@@ -233,13 +262,30 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     } else {
       queueIndex = queue.firstIndex { $0.url == url } ?? -1
     }
+    let effectiveHeaders =
+      headers.isEmpty && queueIndex >= 0 && queueIndex < queue.count
+      ? queue[queueIndex].headers : headers
     applyMetadata(for: url)
+    lyricLines = []
+    currentLyric = ""
+    overrideTitle = ""
+    overrideArtist = ""
+    overrideAlbum = ""
+    overrideLyrics = ""
     position = 0
     duration = 0
     errorCode = ""
     stateName = "loading"
 
-    let nextItem = AVPlayerItem(url: url)
+    let asset: AVURLAsset
+    if effectiveHeaders.isEmpty {
+      asset = AVURLAsset(url: url)
+    } else {
+      asset = AVURLAsset(
+        url: url,
+        options: ["AVURLAssetHTTPHeaderFieldsKey": effectiveHeaders])
+    }
+    let nextItem = AVPlayerItem(asset: asset)
     item = nextItem
     statusObservation = nextItem.observe(\.status, options: [.initial, .new]) {
       [weak self] observed, _ in
@@ -275,7 +321,11 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
 
   private func loadQueueItem(_ index: Int) {
     guard index >= 0, index < queue.count else { return }
-    load(url: queue[index].url, autoplay: true, index: index)
+    load(
+      url: queue[index].url,
+      autoplay: true,
+      index: index,
+      headers: queue[index].headers)
   }
 
   private func httpURL(_ raw: String) -> URL? {
@@ -291,6 +341,25 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
   private func metadataText(_ raw: Any?, limit: Int = 200) -> String {
     guard let text = raw as? String else { return "" }
     return String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(limit))
+  }
+
+  private static func parseHeaders(_ raw: Any?) -> [String: String] {
+    guard let raw = raw as? [String: Any], raw.count <= 16 else { return [:] }
+    var headers: [String: String] = [:]
+    for (key, value) in raw {
+      guard
+        let text = value as? String,
+        !key.isEmpty,
+        key.count <= 128,
+        text.count <= 2048,
+        !key.contains("\n"),
+        !key.contains("\r"),
+        !text.contains("\n"),
+        !text.contains("\r")
+      else { continue }
+      headers[key] = text
+    }
+    return headers
   }
 
   private func applyMetadata(for url: URL) {
@@ -363,6 +432,7 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     let seconds = CMTimeGetSeconds(time)
     if seconds.isFinite && seconds >= 0 {
       position = seconds
+      updateLyric(at: seconds)
     }
     guard stateName != "error", stateName != "ended" else {
       emit()
@@ -389,6 +459,10 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
       "duration": duration,
       "error": errorCode,
       "queueIndex": queueIndex,
+      "lyric": currentLyric,
+      "rate": Double(playbackRate),
+      "volume": Double(player.volume),
+      "engine": engineName,
     ]
   }
 
@@ -412,17 +486,35 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
       MPNowPlayingInfoCenter.default().playbackState = .stopped
       return
     }
+    var displayTitle = currentTitle
+    var displayArtist = currentArtist
+    var displayAlbum = currentAlbum
+    if !currentLyric.isEmpty {
+      switch lyricMode {
+      case "artist": displayArtist = currentLyric
+      case "album": displayAlbum = currentLyric
+      default: displayTitle = currentLyric
+      }
+    }
+    if !overrideTitle.isEmpty { displayTitle = overrideTitle }
+    if !overrideArtist.isEmpty { displayArtist = overrideArtist }
+    if !overrideAlbum.isEmpty { displayAlbum = overrideAlbum }
     let fallbackTitle = URL(string: currentURL)?.lastPathComponent ?? "Pomelo Audio"
     var info: [String: Any] = [
-      MPMediaItemPropertyTitle: currentTitle.isEmpty ? fallbackTitle : currentTitle,
-      MPMediaItemPropertyArtist: currentArtist,
+      MPMediaItemPropertyTitle: displayTitle.isEmpty ? fallbackTitle : displayTitle,
+      MPMediaItemPropertyArtist: displayArtist,
       MPMediaItemPropertyPlaybackDuration: duration,
       MPNowPlayingInfoPropertyElapsedPlaybackTime: position,
-      MPNowPlayingInfoPropertyPlaybackRate: stateName == "playing" ? 1.0 : 0.0,
+      MPNowPlayingInfoPropertyPlaybackRate: stateName == "playing" ? Double(playbackRate) : 0.0,
       MPNowPlayingInfoPropertyMediaType: MPNowPlayingInfoMediaType.audio.rawValue,
     ]
-    if !currentAlbum.isEmpty {
-      info[MPMediaItemPropertyAlbumTitle] = currentAlbum
+    if !displayAlbum.isEmpty {
+      info[MPMediaItemPropertyAlbumTitle] = displayAlbum
+    }
+    let lyricText = !overrideLyrics.isEmpty
+      ? overrideLyrics : lyricLines.map(\.text).joined(separator: "\n")
+    if !lyricText.isEmpty {
+      info[MPMediaItemPropertyLyrics] = lyricText
     }
     if let currentArtwork {
       info[MPMediaItemPropertyArtwork] = currentArtwork
@@ -442,7 +534,7 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     context.sendGlobalEvent("PomeloPlayer.state", withParams: [stateJSON()])
   }
 
-  @objc func load(_ requestJSON: String, callback: @escaping (String) -> Void) {
+  @objc public func load(_ requestJSON: String, callback: @escaping (String) -> Void) {
     guard
       let data = requestJSON.data(using: .utf8),
       let request = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
@@ -453,12 +545,13 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
       return
     }
     let autoplay = request["autoplay"] as? Bool ?? true
+    let headers = Self.parseHeaders(request["headers"])
     DispatchQueue.main.async {
-      self.load(url: url, autoplay: autoplay, callback: callback)
+      self.load(url: url, autoplay: autoplay, headers: headers, callback: callback)
     }
   }
 
-  @objc func setQueue(_ requestJSON: String) {
+  @objc public func setQueue(_ requestJSON: String) {
     guard
       let data = requestJSON.data(using: .utf8),
       let request = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
@@ -478,7 +571,8 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
           title: title,
           artist: metadataText(raw["artist"]),
           album: metadataText(raw["album"]),
-          artwork: (raw["artwork"] as? String).flatMap { httpURL($0) }
+          artwork: (raw["artwork"] as? String).flatMap { httpURL($0) },
+          headers: Self.parseHeaders(raw["headers"])
         )
       )
     }
@@ -498,14 +592,14 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     }
   }
 
-  @objc func next() {
+  @objc public func next() {
     DispatchQueue.main.async {
       guard self.queueIndex + 1 < self.queue.count else { return }
       self.loadQueueItem(self.queueIndex + 1)
     }
   }
 
-  @objc func previous() {
+  @objc public func previous() {
     DispatchQueue.main.async {
       guard self.queueIndex > 0 else {
         self.seek(0)
@@ -515,16 +609,16 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     }
   }
 
-  @objc func play() {
+  @objc public func play() {
     DispatchQueue.main.async {
       guard self.item != nil else { return }
-      self.player.play()
+      self.player.rate = self.playbackRate
       self.stateName = "playing"
       self.emit()
     }
   }
 
-  @objc func pause() {
+  @objc public func pause() {
     DispatchQueue.main.async {
       self.player.pause()
       if self.item != nil { self.stateName = "paused" }
@@ -532,7 +626,7 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     }
   }
 
-  @objc func seek(_ seconds: Double) {
+  @objc public func seek(_ seconds: Double) {
     DispatchQueue.main.async {
       guard self.item != nil, seconds.isFinite else { return }
       let maximum = self.duration > 0 ? self.duration : seconds
@@ -547,7 +641,7 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     }
   }
 
-  @objc func stop() {
+  @objc public func stop() {
     DispatchQueue.main.async {
       self.player.pause()
       self.player.replaceCurrentItem(with: nil)
@@ -560,6 +654,12 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
       self.currentArtworkURL = nil
       self.currentArtwork = nil
       self.artworkLoadingKey = ""
+      self.lyricLines = []
+      self.currentLyric = ""
+      self.overrideTitle = ""
+      self.overrideArtist = ""
+      self.overrideAlbum = ""
+      self.overrideLyrics = ""
       self.stateName = "idle"
       self.position = 0
       self.duration = 0
@@ -571,7 +671,138 @@ final class PomeloPlayerModule: NSObject, LynxContextModule {
     }
   }
 
-  @objc func getState(_ callback: @escaping (String) -> Void) {
+  @objc public func setLyrics(_ requestJSON: String) {
+    guard
+      let data = requestJSON.data(using: .utf8),
+      let request = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+      let rawLines = request["lines"] as? [[String: Any]],
+      rawLines.count <= 5000
+    else { return }
+    var lines: [LyricLine] = []
+    for raw in rawLines {
+      guard
+        let rawTime = raw["time"] as? NSNumber,
+        let text = raw["text"] as? String
+      else { continue }
+      let time = rawTime.doubleValue
+      guard time.isFinite, time >= 0 else { continue }
+      let clean = String(text.prefix(240))
+      if clean.isEmpty { continue }
+      lines.append(LyricLine(time: time, text: clean))
+    }
+    lines.sort { $0.time < $1.time }
+    let rawMode = request["mode"] as? String ?? "title"
+    let mode = ["title", "artist", "album"].contains(rawMode) ? rawMode : "title"
+    DispatchQueue.main.async {
+      self.lyricMode = mode
+      self.lyricLines = lines
+      self.currentLyric = ""
+      self.updateLyric(at: self.position)
+      self.updateNowPlaying()
+      self.emit()
+    }
+  }
+
+  @objc public func clearLyrics() {
+    DispatchQueue.main.async {
+      self.lyricLines = []
+      self.currentLyric = ""
+      self.updateNowPlaying()
+      self.emit()
+    }
+  }
+
+  @objc public func setNowPlayingOverride(_ requestJSON: String) {
+    guard
+      let data = requestJSON.data(using: .utf8),
+      let request = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+    else { return }
+    let title = metadataText(request["title"])
+    let artist = metadataText(request["artist"])
+    let album = metadataText(request["album"])
+    let lyrics = String((request["lyrics"] as? String ?? "").prefix(4000))
+    DispatchQueue.main.async {
+      self.overrideTitle = title
+      self.overrideArtist = artist
+      self.overrideAlbum = album
+      self.overrideLyrics = lyrics
+      self.updateNowPlaying()
+    }
+  }
+
+  @objc public func clearNowPlayingOverride() {
+    DispatchQueue.main.async {
+      self.overrideTitle = ""
+      self.overrideArtist = ""
+      self.overrideAlbum = ""
+      self.overrideLyrics = ""
+      self.updateNowPlaying()
+    }
+  }
+
+  @objc public func setRate(_ rate: Double) {
+    guard rate.isFinite, rate >= 0.1, rate <= 4.0 else { return }
+    DispatchQueue.main.async {
+      self.playbackRate = Float(rate)
+      if self.stateName == "playing" { self.player.rate = self.playbackRate }
+      self.emit()
+    }
+  }
+
+  @objc public func setVolume(_ volume: Double) {
+    guard volume.isFinite, volume >= 0.0, volume <= 1.0 else { return }
+    DispatchQueue.main.async {
+      self.player.volume = Float(volume)
+      self.emit()
+    }
+  }
+
+  @objc public func getCapabilities(_ callback: @escaping (String) -> Void) {
+    let value: [String: Any] = [
+      "engine": "system",
+      "audio": true,
+      "video": false,
+      "rate": true,
+      "volume": true,
+      "background": true,
+      "lyrics": true,
+      "queue": true,
+      "headers": true,
+    ]
+    guard
+      let data = try? JSONSerialization.data(withJSONObject: value),
+      let json = String(data: data, encoding: .utf8)
+    else {
+      callback(errorJSON("player_capabilities_failed"))
+      return
+    }
+    callback(json)
+  }
+
+  @objc public func setEngine(_ engine: String, callback: @escaping (String) -> Void) {
+    guard engine == "system" || engine == "avplayer" else {
+      callback(errorJSON("player_engine_unsupported"))
+      return
+    }
+    engineName = "system"
+    callback("{\"ok\":true}")
+  }
+
+  private func updateLyric(at seconds: Double) {
+    guard !lyricLines.isEmpty else { return }
+    var text = ""
+    for line in lyricLines {
+      if line.time <= seconds + 0.05 { text = line.text } else { break }
+    }
+    guard text != currentLyric else { return }
+    currentLyric = text
+    updateNowPlaying()
+    context?.sendGlobalEvent(
+      "PomeloPlayer.lyric",
+      withParams: [["text": text, "time": position]])
+  }
+
+  @objc public func getState(_ callback: @escaping (String) -> Void) {
     DispatchQueue.main.async {
       callback(self.stateJSON())
     }

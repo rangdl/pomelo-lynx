@@ -41,6 +41,28 @@ export interface PomeloPlatformNativeModule {
   openTrollStore?(url: string): void;
 }
 
+/** 宿主专用能力:dev server、外观、边缘返回。 */
+export interface PomeloHostNativeModule {
+  applyDevServer?: (url: string, callback: (error: unknown) => void) => void;
+  clearDevServer?: (callback: (error: unknown) => void) => void;
+  reloadBundle?: (callback: (error: unknown) => void) => void;
+  probeDevServer?: (url: string, callback: (result: unknown) => void) => void;
+  setAppearanceMode?: (mode: 'system' | 'light' | 'dark') => void;
+  setEdgeBackEnabled?: (enabled: boolean) => void;
+}
+
+/**
+ * 优先读 `PomeloHost`;过渡期允许旧壳把同样方法放在 `PomeloPlatform`。
+ * 拆包完成后可删除后者。
+ */
+function readHostModule(): PomeloHostNativeModule | null {
+  const modules = readNativeModules();
+  const candidate = (modules?.PomeloHost ?? modules?.PomeloPlatform) as
+    | PomeloHostNativeModule
+    | undefined;
+  return candidate ?? null;
+}
+
 /** 模块存在所必需的方法;缺一个就视为旧壳,整体降级。 */
 const REQUIRED_METHODS = ['openURL', 'setKeepScreenOn'] as const;
 
@@ -185,13 +207,13 @@ export function setKeepScreenOn(enabled: boolean): boolean {
  * 返回是否真的下发给宿主。
  */
 export function setNativeEdgeBackEnabled(enabled: boolean): void {
-  readPlatformModule()?.setEdgeBackEnabled?.(enabled);
+  readHostModule()?.setEdgeBackEnabled?.(enabled);
 }
 
 export function setNativeAppearanceMode(
   mode: 'system' | 'light' | 'dark',
 ): boolean {
-  const setMode = readPlatformModule()?.setAppearanceMode;
+  const setMode = readHostModule()?.setAppearanceMode;
   if (!setMode) return false;
   try {
     setMode(mode);
@@ -289,7 +311,7 @@ export function pickAndUploadFile(input: PickAndUploadInput): Promise<string> {
  * 旧壳/Web 返回 false,开发者页据此提示安装新包。
  */
 export function hasDevServerControl(): boolean {
-  const module = readPlatformModule();
+  const module = readHostModule();
   return Boolean(
     module?.applyDevServer &&
       module.clearDevServer &&
@@ -309,7 +331,7 @@ function isDevServerURL(value: string): boolean {
  * 返回 resolve 表示下载成功(随后页面会重载);失败时当前页面不动。
  */
 export function applyDevServer(url: string): Promise<void> {
-  const method = readPlatformModule()?.applyDevServer;
+  const method = readHostModule()?.applyDevServer;
   if (!method) return Promise.reject(new Error('devserver_unsupported'));
   const target = url.trim();
   if (!isDevServerURL(target))
@@ -322,14 +344,14 @@ export function applyDevServer(url: string): Promise<void> {
 
 /** 断开 dev server:清配置并立即重建内嵌 bundle,无需冷启动。 */
 export function clearDevServer(): Promise<void> {
-  const method = readPlatformModule()?.clearDevServer;
+  const method = readHostModule()?.clearDevServer;
   if (!method) return Promise.reject(new Error('devserver_unsupported'));
   return callbackPromise((callback) => method(callback), DOWNLOAD_TIMEOUT_MS);
 }
 
 /** 刷新当前来源(优先已配置的 dev URL),下载成功后重建 LynxView。 */
 export function reloadBundle(): Promise<void> {
-  const method = readPlatformModule()?.reloadBundle;
+  const method = readHostModule()?.reloadBundle;
   if (!method) return Promise.reject(new Error('devserver_unsupported'));
   return callbackPromise((callback) => method(callback), DOWNLOAD_TIMEOUT_MS);
 }
@@ -348,7 +370,7 @@ const PROBE_TIMEOUT_MS = 6000;
  * 只有缺方法或 URL 非法才 reject。
  */
 export function probeDevServer(url: string): Promise<DevServerProbe> {
-  const probe = readPlatformModule()?.probeDevServer;
+  const probe = readHostModule()?.probeDevServer;
   if (!probe) return Promise.reject(new Error('devserver_unsupported'));
   const target = url.trim();
   if (!isDevServerURL(target))

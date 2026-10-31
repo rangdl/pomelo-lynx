@@ -154,6 +154,17 @@ jobs:
         with:
           name: js-bundles
           path: .
+      # Autolink 从 node_modules 扫描 lynx.lib.json;iOS job 与 prepare 分属
+      # 不同 runner,必须自己安装 workspace 依赖,否则只能生成空 registry。
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 10
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install workspace packages for Autolink
+        run: pnpm install --frozen-lockfile
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"

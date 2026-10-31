@@ -1,5 +1,7 @@
 import UIKit
 import PomeloLynxStorage
+import PomeloLynxPlatform
+import PomeloLynxMedia
 import PomeloLynxFilesystem
 
 /**
@@ -483,6 +485,7 @@ final class ViewController: UIViewController {
     config.register(PomeloPlayerModule.self)
     config.register(PomeloStorageModule.self)
     config.register(PomeloFileSystemModule.self)
+    config.register(PomeloHostModule.self)
     return config
   }
 }

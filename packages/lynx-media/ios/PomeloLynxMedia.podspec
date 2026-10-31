@@ -7,7 +7,14 @@ Pod::Spec.new do |s|
   s.author = 'Pomelo'
   s.platform = :ios, '15.0'
   s.source = { :path => '.' }
-  s.source_files = 'src/**/*.swift'
   s.swift_version = '5.0'
-  s.dependency 'Lynx'
+  s.default_subspecs = ['Audio']
+
+  s.subspec 'Audio' do |a|
+    a.source_files = 'src/**/*.swift'
+    a.dependency 'Lynx'
+  end
+
+  # Video/MPV subspecs will be added when their sources land. Keeping the
+  # Audio subspec as default means `pod 'PomeloLynxMedia'` is audio-only.
 end

@@ -85,6 +85,17 @@
 - [ ] **Android i18n 注入(计划)**:`MainActivity` 把 `Locale.getDefault()` 写入
   `LynxLoadMeta.globalProps.language`
 
+## 原生包与 Autolink
+
+- [x] pnpm workspace 与 `packages/*`
+- [x] `lynx-storage` 原生包(iOS)
+- [x] `lynx-filesystem` 原生包(iOS 目录 + 文件 API)
+- [x] iOS Autolink pod 发现/链接,Swift 模块暂手动注册
+- [ ] `lynx-platform` 迁移
+- [ ] `lynx-media` 迁移 + 原生歌词时序
+- [ ] 视频 Surface / MPV 后端
+- [ ] Android 原生包(计划,等待 Android CI 恢复)
+
 ## 媒体 MVP(0.1.0)
 
 - [x] iOS `PomeloPlayer` 原生模块(load/play/pause/seek/stop/getState)

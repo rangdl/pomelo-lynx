@@ -16,6 +16,29 @@ export interface PlayerState {
   duration: number;
   error: string;
   queueIndex: number;
+  lyric: string;
+  rate: number;
+  volume: number;
+  engine: string;
+}
+
+export interface PlayerLyricLine {
+  time: number;
+  text: string;
+}
+
+export type PlayerLyricMode = 'title' | 'artist' | 'album';
+
+export interface PlayerCapabilities {
+  engine: string;
+  audio: boolean;
+  video: boolean;
+  rate: boolean;
+  volume: boolean;
+  background: boolean;
+  lyrics: boolean;
+  queue: boolean;
+  headers: boolean;
 }
 
 export interface PlayerQueueItem {
@@ -25,6 +48,8 @@ export interface PlayerQueueItem {
   artist?: string;
   album?: string;
   artwork?: string;
+  /** 音频请求头,例如 Navidrome 的认证头。 */
+  headers?: Record<string, string>;
 }
 
 interface PlayerModule {
@@ -37,6 +62,14 @@ interface PlayerModule {
   setQueue(request: string): void;
   next(): void;
   previous(): void;
+  setLyrics(request: string): void;
+  clearLyrics(): void;
+  setNowPlayingOverride(request: string): void;
+  clearNowPlayingOverride(): void;
+  setRate(rate: number): void;
+  setVolume(volume: number): void;
+  getCapabilities(callback: (json: string) => void): void;
+  setEngine(engine: string, callback: (json: string) => void): void;
 }
 
 const REQUIRED = [
@@ -49,6 +82,14 @@ const REQUIRED = [
   'setQueue',
   'next',
   'previous',
+  'setLyrics',
+  'clearLyrics',
+  'setNowPlayingOverride',
+  'clearNowPlayingOverride',
+  'setRate',
+  'setVolume',
+  'getCapabilities',
+  'setEngine',
 ] as const;
 const CALLBACK_TIMEOUT_MS = 5000;
 
@@ -116,6 +157,10 @@ export function parsePlayerState(raw: unknown): PlayerState | null {
     duration: finite(value.duration),
     error: typeof value.error === 'string' ? value.error : '',
     queueIndex,
+    lyric: typeof value.lyric === 'string' ? value.lyric : '',
+    rate: finite(value.rate) || 1,
+    volume: typeof value.volume === 'number' ? value.volume : 1,
+    engine: typeof value.engine === 'string' ? value.engine : 'system',
   };
 }
 
@@ -163,10 +208,14 @@ function callbackPromise(
   });
 }
 
-export async function loadPlayer(url: string, autoplay = true): Promise<void> {
+export async function loadPlayer(
+  url: string,
+  autoplay = true,
+  headers: Record<string, string> = {},
+): Promise<void> {
   const value = module();
   if (!value) throw new Error('player_unavailable');
-  const request = JSON.stringify({ url, autoplay });
+  const request = JSON.stringify({ url, autoplay, headers });
   await callbackPromise((callback) => value.load(request, callback));
 }
 
@@ -199,6 +248,7 @@ export function setPlayerQueue(
       artist: item.artist ?? '',
       album: item.album ?? '',
       artwork: item.artwork ?? '',
+      headers: item.headers ?? {},
     })),
     index: Number.isSafeInteger(index) ? index : -1,
   });
@@ -211,6 +261,87 @@ export function nextPlayer(): void {
 
 export function previousPlayer(): void {
   module()?.previous();
+}
+
+export function setPlayerLyrics(
+  lines: readonly PlayerLyricLine[],
+  mode: PlayerLyricMode = 'title',
+): void {
+  const value = module();
+  if (!value) return;
+  const items = lines
+    .filter((line) => Number.isFinite(line.time) && line.time >= 0)
+    .slice(0, 5000)
+    .map((line) => ({
+      time: line.time,
+      text: line.text.slice(0, 240),
+    }));
+  value.setLyrics(JSON.stringify({ lines: items, mode }));
+}
+
+export function clearPlayerLyrics(): void {
+  module()?.clearLyrics();
+}
+
+export interface NowPlayingOverride {
+  title?: string;
+  artist?: string;
+  album?: string;
+  lyrics?: string;
+}
+
+export function setPlayerNowPlayingOverride(input: NowPlayingOverride): void {
+  const value = module();
+  if (!value) return;
+  value.setNowPlayingOverride(
+    JSON.stringify({
+      title: input.title?.slice(0, 200) ?? '',
+      artist: input.artist?.slice(0, 200) ?? '',
+      album: input.album?.slice(0, 200) ?? '',
+      lyrics: input.lyrics?.slice(0, 4000) ?? '',
+    }),
+  );
+}
+
+export function clearPlayerNowPlayingOverride(): void {
+  module()?.clearNowPlayingOverride();
+}
+
+export function setPlayerRate(rate: number): void {
+  if (Number.isFinite(rate) && rate >= 0.1 && rate <= 4.0) {
+    module()?.setRate(rate);
+  }
+}
+
+export function setPlayerVolume(volume: number): void {
+  if (Number.isFinite(volume) && volume >= 0 && volume <= 1) {
+    module()?.setVolume(volume);
+  }
+}
+
+export async function getPlayerCapabilities(): Promise<PlayerCapabilities> {
+  const value = module();
+  if (!value) throw new Error('player_unavailable');
+  const result = await callbackPromise((callback) =>
+    value.getCapabilities(callback),
+  );
+  return {
+    engine: typeof result.engine === 'string' ? result.engine : 'system',
+    audio: result.audio === true,
+    video: result.video === true,
+    rate: result.rate === true,
+    volume: result.volume === true,
+    background: result.background === true,
+    lyrics: result.lyrics === true,
+    queue: result.queue === true,
+    headers: result.headers === true,
+  };
+}
+
+export async function setPlayerEngine(engine: string): Promise<void> {
+  const value = module();
+  if (!value) throw new Error('player_unavailable');
+  await callbackPromise((callback) => value.setEngine(engine, callback));
 }
 
 export async function getPlayerState(): Promise<PlayerState> {

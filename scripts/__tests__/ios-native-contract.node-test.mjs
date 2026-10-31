@@ -154,7 +154,7 @@ test('应用外观偏好同步 UIKit 并在冷启动读取 prefs', () => {
     '冷启动必须读取 appearance_mode,避免首帧外观错误',
   );
 
-  const module = read('PomeloPlatformModule.swift');
+  const module = read('PomeloHostModule.swift');
   assert.match(module, /"setAppearanceMode"/);
   assert.match(module, /@objc func setAppearanceMode\(/);
 });
@@ -283,7 +283,10 @@ test('播放器声明后台音频并接入锁屏控制', () => {
   const info = readFileSync(join(IOS_DIR, 'Info.plist'), 'utf8');
   assert.match(info, /<key>UIBackgroundModes<\/key>/);
   assert.match(info, /<string>audio<\/string>/);
-  const player = read('PomeloPlayerModule.swift');
+  const player = readFileSync(
+    join(ROOT, 'packages/lynx-media/ios/src/PomeloPlayerModule.swift'),
+    'utf8',
+  );
   assert.match(player, /MPNowPlayingInfoCenter/);
   assert.match(player, /MPRemoteCommandCenter/);
   assert.match(player, /changePlaybackPositionCommand/);
@@ -309,7 +312,24 @@ test('播放器声明后台音频并接入锁屏控制', () => {
 });
 
 test('5sing 测试保持纯 JS 并可运行诊断', () => {
-  const platform = read('PomeloPlatformModule.swift');
+  const media = readFileSync(
+    join(ROOT, 'packages/lynx-media/ios/src/PomeloPlayerModule.swift'),
+    'utf8',
+  );
+  assert.match(media, /@objc\(PomeloPlayerModule\)/);
+  assert.match(media, /func setLyrics\(/);
+  assert.match(media, /func clearLyrics\(/);
+  assert.match(media, /func setNowPlayingOverride\(/);
+  assert.match(media, /func getCapabilities\(/);
+  assert.match(media, /AVURLAssetHTTPHeaderFieldsKey/);
+  assert.match(media, /MPMediaItemPropertyLyrics/);
+  assert.match(media, /updateLyric\(at:/);
+  assert.match(media, /playbackRate/);
+
+  const platform = readFileSync(
+    join(ROOT, 'packages/lynx-platform/ios/src/PomeloPlatformModule.swift'),
+    'utf8',
+  );
   assert.doesNotMatch(platform, /fetchFiveSingText/);
 
   const facade = readFileSync(join(ROOT, 'src/native/platform.ts'), 'utf8');
@@ -351,27 +371,42 @@ test('Autolink 包与 Swift 手动注册并存', () => {
   const viewController = read('ViewController.swift');
   assert.match(viewController, /import PomeloLynxStorage/);
   assert.match(viewController, /import PomeloLynxFilesystem/);
+  assert.match(viewController, /import PomeloLynxPlatform/);
+  assert.match(viewController, /import PomeloLynxMedia/);
   assert.match(viewController, /config\.register\(PomeloStorageModule\.self\)/);
   assert.match(
     viewController,
     /config\.register\(PomeloFileSystemModule\.self\)/,
+  );
+  assert.match(
+    viewController,
+    /config\.register\(PomeloPlatformModule\.self\)/,
+  );
+  assert.match(viewController, /config\.register\(PomeloHostModule\.self\)/);
+  assert.equal(
+    existsSync(join(ROOT, 'host/ios/PomeloLynx/PomeloPlatformModule.swift')),
+    false,
+    'PomeloPlatformModule 已迁移到 packages/lynx-platform',
   );
   assert.doesNotMatch(
     viewController,
     /config\.register\(PomeloStorageModule\.self\)[\s\S]{0,200}config\.register\(PomeloStorageModule\.self\)/,
   );
 
-  for (const packageName of ['lynx-storage', 'lynx-filesystem']) {
+  for (const packageName of [
+    'lynx-storage',
+    'lynx-filesystem',
+    'lynx-platform',
+    'lynx-media',
+  ]) {
     const root = join(ROOT, 'packages', packageName);
     const manifest = JSON.parse(
       readFileSync(join(root, 'lynx.lib.json'), 'utf8'),
     );
     assert.equal(manifest.platforms.ios.sourceDir, 'ios');
-    assert.ok(
-      readFileSync(
-        join(root, manifest.platforms.ios.podspecPath),
-        'utf8',
-      ).includes("s.dependency 'Lynx'"),
+    assert.match(
+      readFileSync(join(root, manifest.platforms.ios.podspecPath), 'utf8'),
+      /\.dependency 'Lynx'/,
       `${packageName}: podspec 必须依赖 Lynx`,
     );
     assert.ok(
@@ -381,6 +416,29 @@ test('Autolink 包与 Swift 手动注册并存', () => {
       `${packageName}: pnpm workspace 未链接到 node_modules`,
     );
   }
+
+  const media = readFileSync(
+    join(ROOT, 'packages/lynx-media/ios/src/PomeloPlayerModule.swift'),
+    'utf8',
+  );
+  assert.match(media, /@objc\(PomeloPlayerModule\)/);
+  assert.match(media, /func setLyrics\(/);
+  assert.match(media, /func clearLyrics\(/);
+  assert.match(media, /func setNowPlayingOverride\(/);
+  assert.match(media, /func getCapabilities\(/);
+  assert.match(media, /AVURLAssetHTTPHeaderFieldsKey/);
+  assert.match(media, /MPMediaItemPropertyLyrics/);
+  assert.match(media, /updateLyric\(at:/);
+  assert.match(media, /playbackRate/);
+
+  const platform = readFileSync(
+    join(ROOT, 'packages/lynx-platform/ios/src/PomeloPlatformModule.swift'),
+    'utf8',
+  );
+  assert.match(platform, /@objc\(PomeloPlatformModule\)/);
+  assert.match(platform, /public final class PomeloPlatformModule/);
+  assert.doesNotMatch(platform, /applyDevServer/);
+  assert.match(platform, /pickAndUploadFile/);
 
   const storage = readFileSync(
     join(ROOT, 'packages/lynx-storage/ios/src/PomeloStorageModule.swift'),

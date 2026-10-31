@@ -1,10 +1,14 @@
 import { useEffect, useState } from '@lynx-js/react';
 import { createStore } from 'zustand/vanilla';
-
 import {
+  clearPlayerLyrics,
+  clearPlayerNowPlayingOverride,
+  getPlayerCapabilities,
   getPlayerState,
   loadPlayer,
+  type NowPlayingOverride,
   nextPlayer,
+  type PlayerLyricMode,
   type PlayerState,
   type PlayerStatus,
   pausePlayer,
@@ -12,10 +16,16 @@ import {
   playPlayer,
   previousPlayer,
   seekPlayer,
+  setPlayerEngine,
+  setPlayerLyrics,
+  setPlayerNowPlayingOverride,
   setPlayerQueue,
+  setPlayerRate,
+  setPlayerVolume,
   stopPlayer,
   subscribePlayerState,
 } from '../../native/player.js';
+import { parseLrc } from './lyrics.js';
 
 export interface MediaTrack {
   url: string;
@@ -23,6 +33,7 @@ export interface MediaTrack {
   artist?: string;
   album?: string;
   artwork?: string;
+  headers?: Record<string, string>;
 }
 
 export interface MediaPlayerState extends PlayerState {
@@ -46,6 +57,10 @@ function initial(): MediaPlayerState {
     queue: [],
     currentIndex: -1,
     queueIndex: -1,
+    lyric: '',
+    rate: 1,
+    volume: 1,
+    engine: 'system',
   };
 }
 
@@ -62,6 +77,10 @@ function apply(state: PlayerState): void {
     duration: state.duration,
     error: state.error,
     currentIndex: state.queueIndex,
+    lyric: state.lyric,
+    rate: state.rate,
+    volume: state.volume,
+    engine: state.engine,
   });
 }
 
@@ -156,6 +175,7 @@ function buildTrack(
     artist: meta?.artist?.trim() || undefined,
     album: meta?.album?.trim() || undefined,
     artwork: meta?.artwork?.trim() || undefined,
+    headers: meta?.headers,
   };
 }
 
@@ -378,3 +398,39 @@ export function useMediaPlayer(): MediaPlayerState {
 }
 
 export type { PlayerStatus };
+
+/** 把 LRC 解析成原生时序行;原生在后台/锁屏继续更新 Now Playing。 */
+export function setMediaLyrics(
+  lrc: string,
+  mode: PlayerLyricMode = 'title',
+): void {
+  setPlayerLyrics(parseLrc(lrc), mode);
+}
+
+export function clearMediaLyrics(): void {
+  clearPlayerLyrics();
+}
+
+export function setMediaNowPlayingOverride(input: NowPlayingOverride): void {
+  setPlayerNowPlayingOverride(input);
+}
+
+export function clearMediaNowPlayingOverride(): void {
+  clearPlayerNowPlayingOverride();
+}
+
+export function setMediaRate(rate: number): void {
+  setPlayerRate(rate);
+}
+
+export function setMediaVolume(volume: number): void {
+  setPlayerVolume(volume);
+}
+
+export function getMediaCapabilities() {
+  return getPlayerCapabilities();
+}
+
+export function setMediaEngine(engine: string): Promise<void> {
+  return setPlayerEngine(engine);
+}

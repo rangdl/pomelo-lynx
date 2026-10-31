@@ -11,6 +11,10 @@ describe('player state parsing', () => {
       duration: 120,
       error: '',
       queueIndex: 2,
+      lyric: '',
+      rate: 1,
+      volume: 1,
+      engine: 'system',
     };
     const expected = {
       state: 'playing',
@@ -19,6 +23,10 @@ describe('player state parsing', () => {
       duration: 120,
       error: '',
       queueIndex: 2,
+      lyric: '',
+      rate: 1,
+      volume: 1,
+      engine: 'system',
     };
     expect(parsePlayerState(value)).toEqual(expected);
     expect(parsePlayerState(JSON.stringify(value))).toEqual(expected);
@@ -35,6 +43,10 @@ describe('player state parsing', () => {
       duration: 0,
       error: '',
       queueIndex: -1,
+      lyric: '',
+      rate: 1,
+      volume: 1,
+      engine: 'system',
     });
     expect(parsePlayerState('{broken')).toBeNull();
     expect(parsePlayerState(null)).toBeNull();

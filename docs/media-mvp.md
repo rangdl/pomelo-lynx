@@ -131,9 +131,10 @@ https://cdn.truefilesize.com/mp3/sample-1mb.mp3
 - 播放地址需要插件脚本里的 MD5 时间签名,每次加载重新获取
 - 标题、歌手来自歌单,专辑固定为「5sing 古风测试歌单」,封面用歌手头像
 - 只用于队列/锁屏联调,不是正式媒体来源;接口可能限流或失效
-- iOS 通过原生 `URLSession` 请求,只允许 5sing 的三个 API 域名,
-  并带 Referer/UA,避开 `lynx.fetch` 对 HTTP 和请求头的限制
-- Web 预览仍走 `fetch`,可能被跨域拦截
+- 请求保持在 JS:`lynx.fetch` 或浏览器 `fetch`,不引入原生 5sing 模块
+- 播放页「运行诊断」会测试 HTTPS/HTTP 基线、5sing 最小头/完整头、
+  `text` 与 `response.json()` 两条解析路径,并把原始错误写入日志
+- Web 预览可能被跨域拦截;诊断结果同样会显示在页面上
 - 单首解析失败会跳过,全部失败时页面显示错误;未知错误会带错误码
 
 ## 验证

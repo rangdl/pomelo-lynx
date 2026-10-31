@@ -1,6 +1,10 @@
 import { useState } from '@lynx-js/react';
 
-import { fetchFiveSingTracks } from '../../core/media/five-sing.js';
+import {
+  type FiveSingDiagnostic,
+  fetchFiveSingTracks,
+  runFiveSingDiagnostics,
+} from '../../core/media/five-sing.js';
 import {
   appendMediaTracks,
   clearMediaQueue,
@@ -63,6 +67,7 @@ function fiveSingErrorText(error: unknown): string {
     five_sing_timeout: '5sing 请求超时',
     five_sing_playlist_failed: '5sing 歌单读取失败',
     five_sing_media_failed: '5sing 播放地址获取失败',
+    five_sing_rate_limited: '5sing 请求过于频繁,请稍后再试',
     five_sing_empty: '5sing 没有返回可播放歌曲',
     five_sing_json: '5sing 返回数据格式错误',
     five_sing_body: '5sing 响应内容异常',
@@ -92,6 +97,8 @@ export function PlayerPage() {
   const [draft, setDraft] = useState('');
   const [fiveSingBusy, setFiveSingBusy] = useState(false);
   const [fiveSingError, setFiveSingError] = useState('');
+  const [diagnosing, setDiagnosing] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<FiveSingDiagnostic[]>([]);
 
   const load = () => {
     'background only';
@@ -126,6 +133,25 @@ export function PlayerPage() {
       setFiveSingError(fiveSingErrorText(error));
     } finally {
       setFiveSingBusy(false);
+    }
+  };
+  const diagnoseFiveSing = async () => {
+    'background only';
+    if (diagnosing || fiveSingBusy) return;
+    setDiagnosing(true);
+    setFiveSingError('');
+    try {
+      const results = await runFiveSingDiagnostics();
+      setDiagnostics(results);
+      for (const result of results) {
+        if (result.ok) console.log('5sing diag ok', result.name, result.detail);
+        else console.error('5sing diag fail', result.name, result.detail);
+      }
+    } catch (error) {
+      console.error('5sing diag crashed', error);
+      setFiveSingError(fiveSingErrorText(error));
+    } finally {
+      setDiagnosing(false);
     }
   };
   const clearQueue = () => {
@@ -235,18 +261,43 @@ export function PlayerPage() {
               grow
               variant="secondary"
               label={fiveSingBusy ? '加载中…' : '加载 5sing 歌单'}
-              disabled={fiveSingBusy || !player.available}
+              disabled={fiveSingBusy || diagnosing || !player.available}
               onTap={loadFiveSing}
               testid="player-load-5sing"
             />
+            <Button
+              grow
+              variant="secondary"
+              label={diagnosing ? '诊断中…' : '运行诊断'}
+              disabled={fiveSingBusy || diagnosing}
+              onTap={diagnoseFiveSing}
+              testid="player-5sing-diagnose"
+            />
           </view>
           <Hint tone="caption" testid="player-5sing-hint">
-            第三方测试接口,加载 8 首真实歌曲;原生端可用,Web 预览可能被跨域拦截。
+            第三方测试接口,加载 8 首真实歌曲;运行诊断会测试 HTTP/HTTPS
+            和请求头差异。
           </Hint>
           {fiveSingError ? (
             <Hint tone="error" testid="player-5sing-error">
               {fiveSingError}
             </Hint>
+          ) : null}
+          {diagnostics.length ? (
+            <>
+              <SettingsGroupDivider />
+              {diagnostics.map((item, index) => (
+                <ListRow
+                  key={item.name}
+                  iconGlyph={item.ok ? '✓' : '×'}
+                  iconTone={item.ok ? 'green' : 'danger'}
+                  label={item.name}
+                  value={item.ok ? '通过' : '失败'}
+                  detail={item.detail}
+                  testid={`player-5sing-diag-${index}`}
+                />
+              ))}
+            </>
           ) : null}
         </SettingsGroup>
 

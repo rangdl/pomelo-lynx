@@ -308,27 +308,21 @@ test('播放器声明后台音频并接入锁屏控制', () => {
   assert.doesNotMatch(bridge, /queue_index/);
 });
 
-test('5sing 测试请求走原生受限 URLSession', () => {
+test('5sing 测试保持纯 JS 并可运行诊断', () => {
   const platform = read('PomeloPlatformModule.swift');
-  assert.match(platform, /"fetchFiveSingText"/);
-  assert.match(platform, /func fetchFiveSingText\(/);
-  assert.match(platform, /fiveSingHosts/);
-  for (const host of [
-    'service.5sing.kugou.com',
-    'search.5sing.kugou.com',
-    '5sservice.kugou.com',
-  ]) {
-    assert.ok(platform.includes(host), `缺少 5sing 域名白名单 ${host}`);
-  }
-  assert.match(platform, /five_sing_http_/);
-  assert.match(platform, /five_sing_redirect_rejected/);
+  assert.doesNotMatch(platform, /fetchFiveSingText/);
 
   const facade = readFileSync(join(ROOT, 'src/native/platform.ts'), 'utf8');
-  assert.match(facade, /hasNativeFiveSingFetch/);
-  assert.match(facade, /fetchFiveSingText/);
+  assert.doesNotMatch(facade, /fetchFiveSingText/);
+
   const fiveSing = readFileSync(
     join(ROOT, 'src/core/media/five-sing.ts'),
     'utf8',
   );
-  assert.match(fiveSing, /hasNativeFiveSingFetch/);
+  assert.match(fiveSing, /runFiveSingDiagnostics/);
+  assert.match(fiveSing, /HTTPS 基线/);
+  assert.match(fiveSing, /HTTP 基线/);
+  assert.match(fiveSing, /5sing HTTP 完整头/);
+  assert.match(fiveSing, /Record<string, string>/);
+  assert.match(fiveSing, /runtimeFetch/);
 });

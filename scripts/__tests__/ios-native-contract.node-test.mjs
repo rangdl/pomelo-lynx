@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -339,4 +339,70 @@ test('LynxService 必须包含 Http subspec,否则 fetch 全部失败', () => {
     /Lynx Http Service not registered/,
     '保留失败症状注释,方便以后排查',
   );
+});
+
+test('Autolink 包与 Swift 手动注册并存', () => {
+  for (const path of ['host/ios/Podfile', 'host/ios/release/Podfile']) {
+    const podfile = readFileSync(join(ROOT, path), 'utf8');
+    assert.match(podfile, /plugin 'cocoapods-lynx-library'/);
+    assert.match(podfile, /use_lynx_library!/);
+  }
+
+  const viewController = read('ViewController.swift');
+  assert.match(viewController, /import PomeloLynxStorage/);
+  assert.match(viewController, /import PomeloLynxFilesystem/);
+  assert.match(viewController, /config\.register\(PomeloStorageModule\.self\)/);
+  assert.match(
+    viewController,
+    /config\.register\(PomeloFileSystemModule\.self\)/,
+  );
+  assert.doesNotMatch(
+    viewController,
+    /config\.register\(PomeloStorageModule\.self\)[\s\S]{0,200}config\.register\(PomeloStorageModule\.self\)/,
+  );
+
+  for (const packageName of ['lynx-storage', 'lynx-filesystem']) {
+    const root = join(ROOT, 'packages', packageName);
+    const manifest = JSON.parse(
+      readFileSync(join(root, 'lynx.lib.json'), 'utf8'),
+    );
+    assert.equal(manifest.platforms.ios.sourceDir, 'ios');
+    assert.ok(
+      readFileSync(
+        join(root, manifest.platforms.ios.podspecPath),
+        'utf8',
+      ).includes("s.dependency 'Lynx'"),
+      `${packageName}: podspec 必须依赖 Lynx`,
+    );
+    assert.ok(
+      existsSync(
+        join(ROOT, 'node_modules/@pomelo', packageName, 'lynx.lib.json'),
+      ),
+      `${packageName}: pnpm workspace 未链接到 node_modules`,
+    );
+  }
+
+  const storage = readFileSync(
+    join(ROOT, 'packages/lynx-storage/ios/src/PomeloStorageModule.swift'),
+    'utf8',
+  );
+  assert.match(storage, /@objc\(PomeloStorageModule\)/);
+  assert.match(storage, /public final class PomeloStorageModule/);
+
+  const filesystem = readFileSync(
+    join(ROOT, 'packages/lynx-filesystem/ios/src/PomeloFileSystemModule.swift'),
+    'utf8',
+  );
+  assert.match(filesystem, /@objc\(PomeloFileSystemModule\)/);
+  assert.match(filesystem, /func getPath\(_ area: String, _ relative: String/);
+  assert.match(filesystem, /path_escape/);
+  assert.match(filesystem, /directory_not_empty/);
+  for (const [, jsName, method] of filesystem.matchAll(
+    /"(\w+)":\s*NSStringFromSelector\(\s*#selector\(PomeloFileSystemModule\.(\w+)\(/g,
+  )) {
+    assert.ok(
+      filesystem.includes(`@objc public func ${method}(`),
+      `PomeloFileSystem methodLookup 的 ${jsName} 找不到方法`,
+    );
+  }
 });

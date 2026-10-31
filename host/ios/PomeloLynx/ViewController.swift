@@ -1,4 +1,6 @@
 import UIKit
+import PomeloLynxStorage
+import PomeloLynxFilesystem
 
 /**
  * Single host view controller: builds one `LynxView`, points it at the
@@ -475,11 +477,12 @@ final class ViewController: UIViewController {
   private static func buildConfig(provider: HostTemplateProvider) -> LynxConfig {
     let config = LynxConfig(provider: provider)
     config.register(PomeloUpdateModule.self)
-    config.register(PomeloStorageModule.self)
     config.register(PomeloLogModule.self)
     config.register(PomeloDebugTunnelModule.self)
     config.register(PomeloPlatformModule.self)
     config.register(PomeloPlayerModule.self)
+    config.register(PomeloStorageModule.self)
+    config.register(PomeloFileSystemModule.self)
     return config
   }
 }

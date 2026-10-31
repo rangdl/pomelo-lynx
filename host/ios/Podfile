@@ -7,6 +7,8 @@ source 'https://cdn.cocoapods.org/'
 
 platform :ios, '15.0'
 
+plugin 'cocoapods-lynx-library'
+
 # 本地开发版:带 Inspector(Devtool),bundle id org.pomelo.lynx。
 project 'PomeloLynx.xcodeproj'
 workspace 'PomeloLynx'
@@ -15,6 +17,7 @@ require_relative 'pods'
 extend PomeloPods
 
 target 'PomeloLynx' do
+  use_lynx_library!
   pomelo_pods(devtools: true)
 end
 

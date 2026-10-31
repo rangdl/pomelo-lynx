@@ -5,6 +5,8 @@ source 'https://cdn.cocoapods.org/'
 
 platform :ios, '15.0'
 
+plugin 'cocoapods-lynx-library'
+
 # CI 正式发版(tag 构建)专用:不带 LynxService/Devtool,编译更快、体积更小。
 # dev 通道(master push)改用顶层 Podfile + Debug configuration,自带
 # Inspector。与本地开发版可同时安装:tag 构建为 org.pomelo.lynx(Release
@@ -21,6 +23,7 @@ require_relative '../pods'
 extend PomeloPods
 
 target 'PomeloLynx' do
+  use_lynx_library!
   pomelo_pods(devtools: false)
 end
 

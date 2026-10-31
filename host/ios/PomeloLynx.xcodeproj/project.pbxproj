@@ -14,7 +14,6 @@
 		AA000000000000000000000A /* BundleUpdateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000009 /* BundleUpdateStore.swift */; };
 		AA0000000000000000000015 /* BundleUpdateTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000014 /* BundleUpdateTransfer.swift */; };
 		AA0000000000000000000017 /* PomeloUpdateModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000016 /* PomeloUpdateModule.swift */; };
-		AA0000000000000000000019 /* PomeloStorageModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000018 /* PomeloStorageModule.swift */; };
 		AA0000000000000000000091 /* PomeloDebugTunnelModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000090 /* PomeloDebugTunnelModule.swift */; };
 		AA0000000000000000000093 /* PomeloPlatformModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000092 /* PomeloPlatformModule.swift */; };
 		AA00000000000000000000A1 /* PomeloPlayerModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000A0 /* PomeloPlayerModule.swift */; };
@@ -36,7 +35,6 @@
 		AA0000000000000000000009 /* BundleUpdateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundleUpdateStore.swift; sourceTree = "<group>"; };
 		AA0000000000000000000014 /* BundleUpdateTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundleUpdateTransfer.swift; sourceTree = "<group>"; };
 		AA0000000000000000000016 /* PomeloUpdateModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomeloUpdateModule.swift; sourceTree = "<group>"; };
-		AA0000000000000000000018 /* PomeloStorageModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomeloStorageModule.swift; sourceTree = "<group>"; };
 		AA0000000000000000000090 /* PomeloDebugTunnelModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomeloDebugTunnelModule.swift; sourceTree = "<group>"; };
 		AA0000000000000000000092 /* PomeloPlatformModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomeloPlatformModule.swift; sourceTree = "<group>"; };
 		AA00000000000000000000A0 /* PomeloPlayerModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomeloPlayerModule.swift; sourceTree = "<group>"; };
@@ -77,7 +75,6 @@
 				AA0000000000000000000009 /* BundleUpdateStore.swift */,
 				AA0000000000000000000014 /* BundleUpdateTransfer.swift */,
 				AA0000000000000000000016 /* PomeloUpdateModule.swift */,
-				AA0000000000000000000018 /* PomeloStorageModule.swift */,
 				AA0000000000000000000090 /* PomeloDebugTunnelModule.swift */,
 				AA0000000000000000000092 /* PomeloPlatformModule.swift */,
 				AA00000000000000000000A0 /* PomeloPlayerModule.swift */,
@@ -199,7 +196,6 @@
 				AA000000000000000000000A /* BundleUpdateStore.swift in Sources */,
 				AA0000000000000000000015 /* BundleUpdateTransfer.swift in Sources */,
 				AA0000000000000000000017 /* PomeloUpdateModule.swift in Sources */,
-				AA0000000000000000000019 /* PomeloStorageModule.swift in Sources */,
 				AA0000000000000000000091 /* PomeloDebugTunnelModule.swift in Sources */,
 				AA0000000000000000000093 /* PomeloPlatformModule.swift in Sources */,
 				AA00000000000000000000A1 /* PomeloPlayerModule.swift in Sources */,

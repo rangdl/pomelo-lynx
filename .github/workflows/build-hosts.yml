@@ -157,8 +157,11 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
-      - name: Install CocoaPods
-        run: gem install cocoapods -v 1.16.2 --no-document
+      - name: Install CocoaPods and Lynx Autolink plugin
+        run: |
+          gem install cocoapods -v 1.16.2 --no-document
+          # Pin the Autolink CocoaPods plugin; 4.2.0 requires CocoaPods >= 1.11.
+          gem install cocoapods-lynx-library -v 4.2.0 --no-document
       - name: Select Xcode and compute cache id
         id: xcode
         run: |

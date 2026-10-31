@@ -1,4 +1,6 @@
 import Foundation
+import Lynx
+import Security
 
 /**
  * Lynx native module `NativeModules.PomeloStorage` — persistent key/value
@@ -23,11 +25,12 @@ import Foundation
  * synchronously — UserDefaults/Keychain reads are local and cheap, and Lynx
  * hops the result onto the JS thread itself.
  */
-final class PomeloStorageModule: NSObject, LynxModule {
+@objc(PomeloStorageModule)
+public final class PomeloStorageModule: NSObject, LynxModule {
   // MARK: - LynxModule
 
   /// Must match the key the TS binding probes (`NativeModules.PomeloStorage`).
-  @objc static var name: String { "PomeloStorage" }
+  @objc public static var name: String { "PomeloStorage" }
 
   /**
    * JS method name → ObjC selector. Unlike Android's `@LynxMethod` annotation,
@@ -36,7 +39,7 @@ final class PomeloStorageModule: NSObject, LynxModule {
    * the whole module (silently falling back to in-memory storage). Keep in sync
    * with `PomeloStorageNativeModule` in `native-storage.ts`.
    */
-  @objc static var methodLookup: [String: String] {
+  @objc public static var methodLookup: [String: String] {
     [
       "setItem": NSStringFromSelector(#selector(PomeloStorageModule.setItem(_:key:value:))),
       "getItem": NSStringFromSelector(#selector(PomeloStorageModule.getItem(_:key:callback:))),
@@ -78,13 +81,13 @@ final class PomeloStorageModule: NSObject, LynxModule {
    * — the one the runtime does call — comes from `NSObject`.)
    */
   @objc(initWithParam:)
-  convenience init(param: Any) {
+  public convenience init(param: Any) {
     self.init()
   }
 
   // MARK: - Methods (JS-facing)
 
-  @objc func setItem(_ area: String, key: String, value: String) {
+  @objc public func setItem(_ area: String, key: String, value: String) {
     if isSecure(area) {
       secureWrite(key: key, value: value)
     } else {
@@ -92,7 +95,7 @@ final class PomeloStorageModule: NSObject, LynxModule {
     }
   }
 
-  @objc func getItem(_ area: String, key: String, callback: @escaping (Any) -> Void) {
+  @objc public func getItem(_ area: String, key: String, callback: @escaping (Any) -> Void) {
     let value = isSecure(area) ? secureRead(key: key) : prefs.string(forKey: key)
     // `NSNull` decodes to JS `null` (a nil block argument would decode to
     // `undefined`); the TS binding maps both to `null`, but `null` is what the
@@ -100,7 +103,7 @@ final class PomeloStorageModule: NSObject, LynxModule {
     callback(value ?? NSNull())
   }
 
-  @objc func removeItem(_ area: String, key: String) {
+  @objc public func removeItem(_ area: String, key: String) {
     if isSecure(area) {
       SecItemDelete(keychainQuery(key: key) as CFDictionary)
       secureFallback.removeObject(forKey: key)
@@ -109,7 +112,7 @@ final class PomeloStorageModule: NSObject, LynxModule {
     }
   }
 
-  @objc func getKeys(_ area: String, callback: @escaping (Any) -> Void) {
+  @objc public func getKeys(_ area: String, callback: @escaping (Any) -> Void) {
     callback(isSecure(area) ? secureKeys() : Array(prefs.dictionaryRepresentation().keys))
   }
 
@@ -118,7 +121,7 @@ final class PomeloStorageModule: NSObject, LynxModule {
    * `native-storage.ts`; the mapping is the iOS analogue of Android's
    * `filesDir` / `cacheDir` / `getExternalFilesDir(null)`.
    */
-  @objc func getPath(_ name: String, callback: @escaping (Any) -> Void) {
+  @objc public func getPath(_ name: String, callback: @escaping (Any) -> Void) {
     let directory: FileManager.SearchPathDirectory
     switch name {
     case "cache": directory = .cachesDirectory
@@ -169,8 +172,7 @@ final class PomeloStorageModule: NSObject, LynxModule {
       secureFallback.removeObject(forKey: key)
       return
     }
-    Log.warn(
-      "storage", "keychain write failed (OSStatus \(status)) for '\(key)'; using UserDefaults")
+    NSLog("PomeloStorage: keychain write failed (OSStatus %d) for '%@'; using UserDefaults", status, key)
     secureFallback.set(value, forKey: key)
   }
 

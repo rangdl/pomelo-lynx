@@ -1,3 +1,6 @@
+packages:
+  - 'packages/*'
+
 patchedDependencies:
   '@tanstack/history@1.162.5': patches/@tanstack__history@1.162.5.patch
   '@tanstack/router-core@1.171.39': patches/@tanstack__router-core@1.171.39.patch

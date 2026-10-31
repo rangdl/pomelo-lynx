@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /**
@@ -83,6 +84,11 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
       if let staged = takeRemoteTemplate(for: url) {
         Log.info("devserver", "using prefetched \(staged.count)B → callback")
         callback(staged, nil)
+        return
+      }
+      if let cached = Self.cachedDevBundle(for: url) {
+        Log.info("devserver", "using cached \(cached.count)B → callback")
+        callback(cached, nil)
         return
       }
       Self.fetchRemote(url, callback: callback)
@@ -201,8 +207,63 @@ class HostTemplateProvider: NSObject, LynxTemplateProvider, LynxTemplateResource
         return
       }
       Log.info("devserver", "fetched \(data.count)B → callback")
+      Self.storeDevBundle(data, for: urlString)
       completion(data, nil)
     }.resume()
+  }
+
+  // MARK: - Dev bundle cache
+
+  private static let maxCachedBundleBytes = 32 * 1024 * 1024
+
+  private static var devCacheDirectory: URL? {
+    guard let base = FileManager.default.urls(
+      for: .applicationSupportDirectory, in: .userDomainMask).first
+    else { return nil }
+    let directory = base.appendingPathComponent("DevBundles", isDirectory: true)
+    try? FileManager.default.createDirectory(
+      at: directory, withIntermediateDirectories: true)
+    return directory
+  }
+
+  private static func cacheFile(for url: String) -> URL? {
+    guard let directory = devCacheDirectory else { return nil }
+    let digest = SHA256.hash(data: Data(url.utf8))
+      .map { String(format: "%02x", $0) }.joined()
+    return directory.appendingPathComponent("\(digest).lynx.bundle")
+  }
+
+  static func cachedDevBundle(for url: String) -> Data? {
+    guard let file = cacheFile(for: url) else { return nil }
+    guard let data = try? Data(contentsOf: file),
+      data.count <= maxCachedBundleBytes,
+      isLynxBundle(data)
+    else {
+      try? FileManager.default.removeItem(at: file)
+      return nil
+    }
+    return data
+  }
+
+  static func storeDevBundle(_ data: Data, for url: String) {
+    guard data.count <= maxCachedBundleBytes, isLynxBundle(data),
+      let file = cacheFile(for: url)
+    else { return }
+    do {
+      try data.write(to: file, options: [.atomic])
+      var values = URLResourceValues()
+      values.isExcludedFromBackup = true
+      var mutable = file
+      try? mutable.setResourceValues(values)
+      Log.info("devserver", "cached \(data.count)B")
+    } catch {
+      Log.warn("devserver", "cache write failed: \(error.localizedDescription)")
+    }
+  }
+
+  static func clearDevBundleCache(for url: String) {
+    guard let file = cacheFile(for: url) else { return }
+    try? FileManager.default.removeItem(at: file)
   }
 
   /// Lynx bundle 头部:前 4 字节小端声明文件总长度。

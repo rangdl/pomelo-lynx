@@ -91,6 +91,7 @@
 - [x] `lynx-storage` 原生包(iOS)
 - [x] `lynx-filesystem` 原生包(iOS 目录 + 文件 API)
 - [x] iOS Autolink pod 发现/链接,Swift 模块暂手动注册
+- [x] dev bundle 冷启动缓存、后台刷新与原生 loading
 - [ ] `lynx-platform` 迁移
 - [ ] `lynx-media` 迁移 + 原生歌词时序
 - [ ] 视频 Surface / MPV 后端

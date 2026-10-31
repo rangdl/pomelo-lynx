@@ -53,6 +53,11 @@ final class ViewController: UIViewController {
   private var swipeShield: UIView?
   /// 遮罩/手势异常中断时的安全回收。
   private var swipeSafety: DispatchWorkItem?
+  /// 冷启动时没有 dev cache,先用内置 bundle 渲染,等远端下载成功再切。
+  private var pendingDevURL: String?
+  private var loadingView: UIView?
+  private var loadingSpinner: UIActivityIndicatorView?
+  private var loadingLabel: UILabel?
 
   init() {
     // `PomeloLynx --bundle probe` selects the alignment probe page.
@@ -63,10 +68,14 @@ final class ViewController: UIViewController {
     {
       self.bundleURL = HostTemplateProvider.probeBundle
     } else if let devURL = Self.storedDevServerURL() {
-      // 设置页配置的开发服务器 URL 优先:实时开发走 rspeedy dev server。
-      // `HostTemplateProvider` 识别 http(s) 前缀走网络拉取,失败由
-      // Lynx 的加载错误链路上报(见 lynxView(_:didRecieveError:))。
-      self.bundleURL = devURL
+      // 冷启动不能等待远端 dev bundle:有缓存先读缓存,没有就用内置
+      // bundle 立即出首屏,远端在后台下载成功后再 reload。
+      if HostTemplateProvider.cachedDevBundle(for: devURL) != nil {
+        self.bundleURL = devURL
+      } else {
+        self.bundleURL = HostTemplateProvider.mainBundle
+        self.pendingDevURL = devURL
+      }
     } else {
       self.bundleURL = HostTemplateProvider.mainBundle
     }
@@ -186,6 +195,7 @@ final class ViewController: UIViewController {
     // status bar / home indicator itself (deviation 1).
     let frame = view.bounds
     guard frame.width > 0, frame.height > 0 else { return }
+    loadingView?.frame = frame
     applyStoredAppearanceModeIfNeeded()
 
     if let lynxView {
@@ -233,6 +243,7 @@ final class ViewController: UIViewController {
     view.addSubview(lynxView)
     self.lynxView = lynxView
     lynxView.addLifecycleClient(self)
+    showLoadingOverlay(frame: frame)
 
     // `LynxLoadMeta` carries the globalProps *into* the load, so the very
     // first frame already knows who is hosting it.
@@ -254,6 +265,7 @@ final class ViewController: UIViewController {
     firstScreenReached = false
     lynxView.loadTemplate(meta)
     Log.info("launch", "loadTemplate(\(bundleURL)) invoked")
+    refreshPendingDevBundle()
   }
 
   /**
@@ -296,6 +308,11 @@ final class ViewController: UIViewController {
         return
       }
       let prefs = UserDefaults(suiteName: "pomelo_prefs") ?? .standard
+      if let previous = prefs.string(forKey: "dev_server_url"),
+        previous != url
+      {
+        HostTemplateProvider.clearDevBundleCache(for: previous)
+      }
       prefs.set(url, forKey: "dev_server_url")
       completion(nil)
     }
@@ -322,6 +339,12 @@ final class ViewController: UIViewController {
   /// 断开 dev server:清配置并立即重建内嵌 bundle,无需冷启动。
   func clearDevServer(completion: @escaping () -> Void) {
     let prefs = UserDefaults(suiteName: "pomelo_prefs") ?? .standard
+    if let configured = prefs.string(forKey: "dev_server_url"),
+      Self.isDevServerURL(configured)
+    {
+      HostTemplateProvider.clearDevBundleCache(for: configured)
+    }
+    pendingDevURL = nil
     prefs.removeObject(forKey: "dev_server_url")
     bundleURL = HostTemplateProvider.mainBundle
     completion()
@@ -364,6 +387,67 @@ final class ViewController: UIViewController {
       url.host != nil
     else { return false }
     return url.path.hasSuffix(".lynx.bundle")
+  }
+
+  /// 冷启动无 dev cache 时:内置 bundle 先出首屏,远端成功后再 reload。
+  private func refreshPendingDevBundle() {
+    guard let devURL = pendingDevURL else { return }
+    pendingDevURL = nil
+    HostTemplateProvider.fetchRemoteData(devURL) { [weak self] data, error in
+      DispatchQueue.main.async {
+        guard let self else { return }
+        guard let data else {
+          Log.warn(
+            "devserver",
+            "cold-start refresh failed: \(error?.localizedDescription ?? "unknown")")
+          return
+        }
+        self.templateProvider.stageRemoteTemplate(data, for: devURL)
+        self.bundleURL = devURL
+        self.reloadLynxView()
+      }
+    }
+  }
+
+  private func showLoadingOverlay(frame: CGRect) {
+    if let overlay = loadingView {
+      overlay.frame = frame
+      overlay.isHidden = false
+      loadingLabel?.text = "正在加载…"
+      loadingLabel?.textColor = .secondaryLabel
+      loadingSpinner?.startAnimating()
+      return
+    }
+    let overlay = UIView(frame: frame)
+    overlay.backgroundColor = .systemBackground
+    let spinner = UIActivityIndicatorView(style: .large)
+    spinner.startAnimating()
+    let label = UILabel()
+    label.text = "正在加载…"
+    label.font = .systemFont(ofSize: 15)
+    label.textColor = .secondaryLabel
+    spinner.translatesAutoresizingMaskIntoConstraints = false
+    label.translatesAutoresizingMaskIntoConstraints = false
+    overlay.addSubview(spinner)
+    overlay.addSubview(label)
+    NSLayoutConstraint.activate([
+      spinner.centerXAnchor.constraint(equalTo: overlay.centerXAnchor),
+      spinner.centerYAnchor.constraint(equalTo: overlay.centerYAnchor, constant: -18),
+      label.centerXAnchor.constraint(equalTo: overlay.centerXAnchor),
+      label.topAnchor.constraint(equalTo: spinner.bottomAnchor, constant: 12),
+    ])
+    view.addSubview(overlay)
+    loadingView = overlay
+    loadingSpinner = spinner
+    loadingLabel = label
+  }
+
+  private func hideLoadingOverlay() {
+    loadingSpinner?.stopAnimating()
+    loadingView?.removeFromSuperview()
+    loadingView = nil
+    loadingSpinner = nil
+    loadingLabel = nil
   }
 
   /// 拆掉当前 LynxView,让 `viewDidLayoutSubviews` 用新的 `bundleURL`
@@ -494,6 +578,7 @@ extension ViewController: LynxViewLifecycle {
   func lynxViewDidFirstScreen(_ view: LynxView) {
     Log.info("launch", "FIRST SCREEN reached")
     firstScreenReached = true
+    hideLoadingOverlay()
     pushAppearance(reason: "firstScreen", includeColorScheme: true)
   }
 
@@ -533,6 +618,9 @@ extension ViewController: LynxViewLifecycle {
   /// 丢掉当前 dev 来源、切回内嵌 bundle,但**不清除** `dev_server_url`。
   /// 服务器重启期间冷启动会走这里;开发者页仍能看到配置并自动重试。
   private func fallbackToEmbeddedBundle() {
+    if Self.isDevServerURL(bundleURL) {
+      HostTemplateProvider.clearDevBundleCache(for: bundleURL)
+    }
     bundleURL = HostTemplateProvider.mainBundle
     DispatchQueue.main.async { [weak self] in
       self?.reloadLynxView()

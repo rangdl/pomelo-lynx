@@ -404,10 +404,15 @@ test('Autolink 包与 Swift 手动注册并存', () => {
       readFileSync(join(root, 'lynx.lib.json'), 'utf8'),
     );
     assert.equal(manifest.platforms.ios.sourceDir, 'ios');
+    const podspec = readFileSync(
+      join(root, manifest.platforms.ios.podspecPath),
+      'utf8',
+    );
+    assert.match(podspec, /\.dependency 'Lynx'/);
     assert.match(
-      readFileSync(join(root, manifest.platforms.ios.podspecPath), 'utf8'),
-      /\.dependency 'Lynx'/,
-      `${packageName}: podspec 必须依赖 Lynx`,
+      podspec,
+      /:modular_headers => true/,
+      `${packageName}: Swift 静态库必须为 Lynx 生成 modular headers`,
     );
     assert.ok(
       existsSync(
@@ -463,4 +468,25 @@ test('Autolink 包与 Swift 手动注册并存', () => {
       `PomeloFileSystem methodLookup 的 ${jsName} 找不到方法`,
     );
   }
+});
+
+test('dev bundle 冷启动先本地后刷新,并显示原生 loading', () => {
+  const provider = read('HostTemplateProvider.swift');
+  assert.match(provider, /import CryptoKit/);
+  assert.match(provider, /cachedDevBundle\(for /);
+  assert.match(provider, /storeDevBundle\(_ data: Data, for /);
+  assert.match(provider, /clearDevBundleCache\(for /);
+  assert.match(provider, /isExcludedFromBackup/);
+
+  const viewController = read('ViewController.swift');
+  assert.match(viewController, /pendingDevURL/);
+  assert.match(viewController, /HostTemplateProvider\.cachedDevBundle\(for:? /);
+  assert.match(viewController, /refreshPendingDevBundle\(\)/);
+  assert.match(viewController, /showLoadingOverlay\(frame:/);
+  assert.match(viewController, /hideLoadingOverlay\(\)/);
+  assert.match(viewController, /UIActivityIndicatorView/);
+  assert.match(
+    viewController,
+    /fallbackToEmbeddedBundle[\s\S]{0,400}clearDevBundleCache/,
+  );
 });

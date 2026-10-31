@@ -122,7 +122,21 @@ setEngine('system' | 'avplayer')
 - `headers` 支持 Navidrome 等需要认证的音频源
 - `getCapabilities()` 当前返回 `video:false`;视频和 MPV 后续扩展
 
-## 7. 当前进度
+## 7. 冷启动与 dev bundle
+
+冷启动不再同步等待 dev server:
+
+1. 有 dev bundle 缓存:直接加载缓存,立即出首屏
+2. 没有缓存:先加载内置 bundle,后台下载 dev bundle
+3. 下载成功:暂存并重建 LynxView;失败保留内置版本
+4. LynxView 上方有原生 loading overlay,首屏后移除
+5. dev bundle 缓存在 Application Support/DevBundles,按 URL hash 命名,
+   32 MiB 上限,校验 Lynx bundle 头,排除 iCloud 备份
+6. 清除/切换 dev server 时删除对应缓存
+7. 更新 bundle 与 dev bundle 仍保持两套策略;只共享“下载/校验”概念,
+   不共享签名、试用和回滚状态
+
+## 8. 当前进度
 
 - [x] pnpm workspace
 - [x] `lynx-storage` 原生包
@@ -130,6 +144,7 @@ setEngine('system' | 'avplayer')
 - [x] `lynx-platform` 原生包 + 宿主 `PomeloHost`
 - [x] `lynx-media` 原生包 + 音频/队列/headers/歌词
 - [x] Autolink pod 发现、CI gem、iOS job pnpm 安装
+- [x] dev bundle 冷启动缓存 + 原生 loading overlay
 - [ ] 视频 Surface
 - [ ] MPV 后端
 - [ ] Android 原生包（等待 Android CI 恢复）

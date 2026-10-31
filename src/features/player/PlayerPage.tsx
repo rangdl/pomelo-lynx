@@ -1,6 +1,8 @@
 import { useState } from '@lynx-js/react';
 
+import { fetchFiveSingTracks } from '../../core/media/five-sing.js';
 import {
+  appendMediaTracks,
   clearMediaQueue,
   enqueueMedia,
   loadMedia,
@@ -55,6 +57,18 @@ function statusText(state: string): string {
   }
 }
 
+function fiveSingErrorText(error: unknown): string {
+  const known: Record<string, string> = {
+    five_sing_network: '5sing 网络请求失败',
+    five_sing_timeout: '5sing 请求超时',
+    five_sing_playlist_failed: '5sing 歌单读取失败',
+    five_sing_media_failed: '5sing 播放地址获取失败',
+    five_sing_empty: '5sing 没有返回可播放歌曲',
+  };
+  const code = error instanceof Error ? error.message : '';
+  return known[code] ?? '5sing 测试数据加载失败';
+}
+
 function errorText(error: string): string {
   const known: Record<string, string> = {
     player_empty_url: '请输入音频地址',
@@ -70,6 +84,8 @@ function errorText(error: string): string {
 export function PlayerPage() {
   const player = useMediaPlayer();
   const [draft, setDraft] = useState('');
+  const [fiveSingBusy, setFiveSingBusy] = useState(false);
+  const [fiveSingError, setFiveSingError] = useState('');
 
   const load = () => {
     'background only';
@@ -91,6 +107,19 @@ export function PlayerPage() {
   const removeAt = (index: number) => {
     'background only';
     removeMediaAt(index);
+  };
+  const loadFiveSing = async () => {
+    'background only';
+    if (fiveSingBusy) return;
+    setFiveSingBusy(true);
+    setFiveSingError('');
+    try {
+      appendMediaTracks(await fetchFiveSingTracks());
+    } catch (error) {
+      setFiveSingError(fiveSingErrorText(error));
+    } finally {
+      setFiveSingBusy(false);
+    }
   };
   const clearQueue = () => {
     'background only';
@@ -191,6 +220,27 @@ export function PlayerPage() {
               testid="player-load-sample"
             />
           </view>
+        </SettingsGroup>
+
+        <SettingsGroup title="5sing 测试">
+          <view className="player__actions">
+            <Button
+              grow
+              variant="secondary"
+              label={fiveSingBusy ? '加载中…' : '加载 5sing 歌单'}
+              disabled={fiveSingBusy || !player.available}
+              onTap={loadFiveSing}
+              testid="player-load-5sing"
+            />
+          </view>
+          <Hint tone="caption" testid="player-5sing-hint">
+            第三方测试接口,加载 8 首真实歌曲;原生端可用,Web 预览可能被跨域拦截。
+          </Hint>
+          {fiveSingError ? (
+            <Hint tone="error" testid="player-5sing-error">
+              {fiveSingError}
+            </Hint>
+          ) : null}
         </SettingsGroup>
 
         <SettingsGroup

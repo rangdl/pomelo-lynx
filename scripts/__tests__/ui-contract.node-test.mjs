@@ -332,6 +332,10 @@ test('播放页使用共享 UI 原语并接入第三个 tab', () => {
   assert.match(page, /player-enqueue-next/);
   assert.match(page, /player-remove-/);
   assert.match(page, /stopPropagation/);
+  assert.match(page, /fetchFiveSingTracks/);
+  assert.match(page, /appendMediaTracks/);
+  assert.match(page, /player-load-5sing/);
+  assert.match(page, /player-5sing-hint/);
   const shell = read('src/shared/layouts/ShellLayout.tsx');
   assert.match(shell, /path: '\/player'/);
   assert.match(shell, /nav-item-player/);

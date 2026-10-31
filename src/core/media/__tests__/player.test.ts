@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test } from '@rstest/core';
 
 import {
+  appendMediaTracks,
   enqueueMedia,
   type MediaTrack,
   mediaPlayerStore,
@@ -51,6 +52,22 @@ describe('媒体队列操作', () => {
     expect(mediaPlayerStore.getState().queue).toEqual([
       track('https://cdn.example.com/a.mp3'),
       track('https://cdn.example.com/b.mp3', 'B'),
+    ]);
+    expect(mediaPlayerStore.getState().currentIndex).toBe(0);
+  });
+
+  test('批量追加保留顺序并去重', () => {
+    reset([track('https://cdn.example.com/a.mp3')], 0, 'playing');
+    appendMediaTracks([
+      track('https://cdn.example.com/a.mp3'),
+      track('https://cdn.example.com/b.mp3', 'B'),
+      track('https://cdn.example.com/c.mp3', 'C'),
+    ]);
+
+    expect(mediaPlayerStore.getState().queue.map((item) => item.url)).toEqual([
+      'https://cdn.example.com/a.mp3',
+      'https://cdn.example.com/b.mp3',
+      'https://cdn.example.com/c.mp3',
     ]);
     expect(mediaPlayerStore.getState().currentIndex).toBe(0);
   });

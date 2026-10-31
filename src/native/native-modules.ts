@@ -55,6 +55,8 @@ export interface GlobalEventEmitterLike {
 export interface LynxGlobalLike {
   getJSModule?(name: string): GlobalEventEmitterLike | undefined;
   __globalProps?: Record<string, unknown>;
+  /** Lynx 的背景线程 fetch 子集;Web 预览没有这个字段。 */
+  fetch?(input: string, init?: RequestInit): Promise<Response>;
 }
 
 /**

@@ -212,6 +212,25 @@ export function enqueueMedia(
     void playQueueAt(queue.length - 1);
 }
 
+/** 批量追加曲目,只同步一次原生队列;空闲时只播放第一首新曲目。 */
+export function appendMediaTracks(tracks: readonly MediaTrack[]): void {
+  if (!tracks.length) return;
+  const current = mediaPlayerStore.getState();
+  const queue = [...current.queue];
+  const added: MediaTrack[] = [];
+  for (const track of tracks) {
+    if (queue.some((item) => item.url === track.url)) continue;
+    queue.push(track);
+    added.push(track);
+  }
+  if (!added.length) return;
+  const firstIndex = queue.length - added.length;
+  mediaPlayerStore.setState({ queue });
+  setPlayerQueue(queue, current.currentIndex);
+  if (current.currentIndex < 0 || current.state === 'idle')
+    void playQueueAt(firstIndex);
+}
+
 /**
  * 从队列移除一项。移除当前曲目时,有下一首就按原播放状态切过去,
  * 否则停止播放并把当前索引置空。

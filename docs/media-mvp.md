@@ -21,6 +21,7 @@
 - 后台播放与锁屏控制
 - 原生同步队列、上一首/下一首、结束自动下一首(含锁屏/后台)
 - 队列项元数据(标题/歌手/专辑/封面),锁屏显示
+- 5sing 测试歌单入口(第三方接口,仅用于联调)
 - 最小播放 UI
 
 不包含:
@@ -121,6 +122,18 @@ https://cdn.truefilesize.com/mp3/sample-1mb.mp3
 
 短冒烟可用 `https://cdn.truefilesize.com/mp3/sample-100kb.mp3`。
 
+## 5sing 测试歌单
+
+播放页「5sing 测试」分组可以从第三方 5sing 接口拉取 8 首真实歌曲:
+
+- 歌单歌曲:`http://service.5sing.kugou.com/song/getPlayListSong`
+- 播放地址:`https://5sservice.kugou.com/song/getsongurl`
+- 播放地址需要插件脚本里的 MD5 时间签名,每次加载重新获取
+- 标题、歌手来自歌单,专辑固定为「5sing 古风测试歌单」,封面用歌手头像
+- 只用于队列/锁屏联调,不是正式媒体来源;接口可能限流或失效
+- 接口是 HTTP,Web 预览还可能被跨域拦截;主要用 iOS 真机验证
+- 单首解析失败会跳过,全部失败时页面显示错误
+
 ## 验证
 
 - `pnpm typecheck`
@@ -130,3 +143,4 @@ https://cdn.truefilesize.com/mp3/sample-1mb.mp3
 - `pnpm run e2e:web`
 - iOS 真机:播放/暂停/seek/停止、切 tab 后继续播放、后台播放、锁屏控制、
   锁屏标题/歌手/专辑/封面、队列切歌元数据同步
+- iOS 真机:「加载 5sing 歌单」能拉取 8 首、加入队列并正常播放

@@ -122,6 +122,20 @@ setEngine('system' | 'avplayer')
 - `headers` 支持 Navidrome 等需要认证的音频源
 - `getCapabilities()` 当前返回 `video:false`;视频和 MPV 后续扩展
 
+### 视频与 MPV
+
+```text
+PomeloLynxMedia/Audio  当前实现,默认引入
+PomeloLynxMedia/Video  未来: pomelo-video-view + AVPlayerLayer
+PomeloLynxMedia/MPV    未来: MPVKit/libmpv 后端
+```
+
+- 音频包不包含视频 Surface;视频 View 只能显式引入 Video subspec
+- `PomeloMediaBackend` 是后端协议,AVPlayer 先实现,MPV 后续替换
+- `setEngine('system' | 'mpv')` 已预留;当前只接受 `system/avplayer`
+- 视频 Surface 需要独立的原生自定义元件,不复用 Now Playing/歌词
+- Android 端对应 Media3/ExoPlayer + 独立 Surface;等待 Android CI 恢复
+
 ## 7. 冷启动与 dev bundle
 
 冷启动不再同步等待 dev server:

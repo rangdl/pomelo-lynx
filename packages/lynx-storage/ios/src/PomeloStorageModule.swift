@@ -32,6 +32,10 @@ public final class PomeloStorageModule: NSObject, LynxModule {
   /// Must match the key the TS binding probes (`NativeModules.PomeloStorage`).
   @objc public static var name: String { "PomeloStorage" }
 
+  public override init() {
+    super.init()
+  }
+
   /**
    * JS method name → ObjC selector. Unlike Android's `@LynxMethod` annotation,
    * iOS has no way to discover these: a missing entry here means the method is

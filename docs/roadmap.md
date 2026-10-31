@@ -94,7 +94,8 @@
 - [x] dev bundle 冷启动缓存、后台刷新与原生 loading
 - [ ] `lynx-platform` 迁移
 - [ ] `lynx-media` 迁移 + 原生歌词时序
-- [ ] 视频 Surface / MPV 后端
+- [ ] 视频 Surface(`pomelo-video-view`,AVPlayerLayer)
+- [ ] MPV 后端(`PomeloLynxMedia/MPV`,接 `PomeloMediaBackend`)
 - [ ] Android 原生包(计划,等待 Android CI 恢复)
 
 ## 媒体 MVP(0.1.0)

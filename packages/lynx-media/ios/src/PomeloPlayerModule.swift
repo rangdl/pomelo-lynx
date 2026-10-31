@@ -102,7 +102,7 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
     self.init(context: context)
   }
 
-  override init() {
+  public override init() {
     super.init()
     installObservers()
   }

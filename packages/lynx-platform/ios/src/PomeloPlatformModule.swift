@@ -19,6 +19,10 @@ import UniformTypeIdentifiers
 public final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate {
   @objc public static var name: String { "PomeloPlatform" }
 
+  public override init() {
+    super.init()
+  }
+
   @objc public static var methodLookup: [String: String] {
     [
       "openURL": NSStringFromSelector(#selector(PomeloPlatformModule.openURL(_:))),

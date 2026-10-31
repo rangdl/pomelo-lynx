@@ -11,6 +11,10 @@ import Lynx
 public final class PomeloFileSystemModule: NSObject, LynxModule {
   @objc public static var name: String { "PomeloFileSystem" }
 
+  public override init() {
+    super.init()
+  }
+
   @objc public static var methodLookup: [String: String] {
     [
       "getPath": NSStringFromSelector(#selector(PomeloFileSystemModule.getPath(_:_:callback:))),
@@ -181,14 +185,14 @@ public final class PomeloFileSystemModule: NSObject, LynxModule {
   @objc public func stat(_ area: String, _ relative: String, callback: @escaping (String) -> Void) {
     respond(callback) {
       let (url, _) = try self.resolve(area, relative)
-      let values = try url.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey, .isWritableKey])
+      let values = try url.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey])
       return self.ok([
         "name": url.lastPathComponent,
         "path": url.path,
         "isDirectory": values.isDirectory ?? false,
         "size": values.fileSize ?? 0,
         "modified": values.contentModificationDate?.timeIntervalSince1970 ?? 0,
-        "readonly": !(values.isWritable ?? false),
+        "readonly": !FileManager.default.isWritableFile(atPath: url.path),
       ])
     }
   }

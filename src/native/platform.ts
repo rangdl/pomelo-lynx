@@ -39,6 +39,11 @@ export interface PomeloPlatformNativeModule {
   setEdgeBackEnabled?(enabled: boolean): void;
   /** 用 TrollStore 的 apple-magnifier scheme 安装 IPA。 */
   openTrollStore?(url: string): void;
+  /** 5sing 测试接口的受限 HTTP GET(只允许 5sing API 域名)。 */
+  fetchFiveSingText?(
+    request: string,
+    callback: (result: unknown) => void,
+  ): void;
 }
 
 /** 模块存在所必需的方法;缺一个就视为旧壳,整体降级。 */
@@ -115,6 +120,51 @@ export function openTrollStoreInstall(ipaURL: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** 当前宿主是否提供受限的 5sing 测试请求。 */
+export function hasNativeFiveSingFetch(): boolean {
+  return typeof readPlatformModule()?.fetchFiveSingText === 'function';
+}
+
+const FIVE_SING_TIMEOUT_MS = 15_000;
+
+/**
+ * 通过原生 URLSession 请求 5sing 测试接口。
+ * 原生只允许 5sing 的三个 API 域名,并返回 `[error, status, body]`。
+ */
+export function fetchFiveSingText(address: string): Promise<string> {
+  const fetchText = readPlatformModule()?.fetchFiveSingText;
+  if (!fetchText) return Promise.reject(new Error('five_sing_unavailable'));
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (error: unknown, body: unknown) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (typeof error === 'string' && error.length > 0) {
+        reject(new Error(error));
+        return;
+      }
+      if (typeof body === 'string') {
+        resolve(body);
+        return;
+      }
+      reject(new Error('five_sing_body'));
+    };
+    const timer = setTimeout(
+      () => finish('five_sing_timeout', ''),
+      FIVE_SING_TIMEOUT_MS,
+    );
+    try {
+      fetchText(JSON.stringify({ url: address }), (result) => {
+        const tuple = Array.isArray(result) ? result : [];
+        finish(tuple[0], tuple[2]);
+      });
+    } catch (error) {
+      finish(error instanceof Error ? error.message : 'five_sing_network', '');
+    }
+  });
 }
 
 /** 把回调形状的原生方法包成带超时的 Promise;回调参数非空字符串即失败。 */

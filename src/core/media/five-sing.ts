@@ -1,4 +1,8 @@
 import { readLynxGlobal } from '../../native/native-modules.js';
+import {
+  fetchFiveSingText,
+  hasNativeFiveSingFetch,
+} from '../../native/platform.js';
 import { md5Hex } from './md5.js';
 import type { MediaTrack } from './player.js';
 
@@ -67,12 +71,39 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 async function requestJSON(address: string): Promise<unknown> {
-  const response = await withTimeout(
-    runtimeFetch()(address, { headers: { Accept: 'application/json' } }),
-    REQUEST_TIMEOUT_MS,
-  );
-  if (!response.ok) throw new Error('five_sing_network');
-  return response.json();
+  // iOS 走原生 URLSession,避开 Lynx fetch 对 HTTP/请求头的限制。
+  if (hasNativeFiveSingFetch()) {
+    const body = await fetchFiveSingText(address);
+    try {
+      return JSON.parse(body);
+    } catch {
+      throw new Error('five_sing_json');
+    }
+  }
+
+  let response: Response;
+  try {
+    response = await withTimeout(
+      runtimeFetch()(address, { headers: { Accept: 'application/json' } }),
+      REQUEST_TIMEOUT_MS,
+    );
+  } catch (error) {
+    if (error instanceof Error && error.message === 'five_sing_timeout')
+      throw error;
+    throw new Error('five_sing_network');
+  }
+  if (!response.ok) throw new Error(`five_sing_http_${response.status}`);
+  let body: string;
+  try {
+    body = await response.text();
+  } catch {
+    throw new Error('five_sing_network');
+  }
+  try {
+    return JSON.parse(body);
+  } catch {
+    throw new Error('five_sing_json');
+  }
 }
 
 function parsePlaylist(value: unknown): PlaylistSong[] {

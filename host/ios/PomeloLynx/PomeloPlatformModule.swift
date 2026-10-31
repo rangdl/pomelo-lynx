@@ -46,6 +46,8 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
         #selector(PomeloPlatformModule.setEdgeBackEnabled(_:))),
       "openTrollStore": NSStringFromSelector(
         #selector(PomeloPlatformModule.openTrollStore(_:))),
+      "fetchFiveSingText": NSStringFromSelector(
+        #selector(PomeloPlatformModule.fetchFiveSingText(_:callback:))),
     ]
   }
 
@@ -88,6 +90,68 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
         if !opened { Log.warn("platform", "openTrollStore could not open") }
       }
     }
+  }
+
+  // MARK: - 5sing 测试接口
+
+  /// 供播放页 5sing 测试使用的受限 HTTP GET。
+  /// 只允许 5sing 的三个 API 域名,由系统 URLSession 发起,避免 Lynx fetch
+  /// 对 HTTP/请求头的限制。回调固定为 `[error, status, body]`。
+  @objc func fetchFiveSingText(_ requestJSON: String, callback: @escaping (Any) -> Void) {
+    guard
+      let data = requestJSON.data(using: .utf8),
+      let request = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+      let rawURL = request["url"] as? String,
+      let url = Self.fiveSingURL(rawURL)
+    else {
+      callback(["five_sing_invalid_url", -1, ""] as NSArray)
+      return
+    }
+    var http = URLRequest(url: url)
+    http.httpMethod = "GET"
+    http.timeoutInterval = 12
+    http.cachePolicy = .reloadIgnoringLocalCacheData
+    http.setValue("application/json, text/plain, */*", forHTTPHeaderField: "Accept")
+    http.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+    http.setValue("http://5sing.kugou.com/", forHTTPHeaderField: "Referer")
+    http.setValue(
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) " +
+        "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 " +
+        "Mobile/15E148 Safari/604.1",
+      forHTTPHeaderField: "User-Agent")
+    URLSession.shared.dataTask(with: http) { responseData, response, error in
+      DispatchQueue.main.async {
+        if error != nil {
+          callback(["five_sing_network", -1, ""] as NSArray)
+          return
+        }
+        guard let httpResponse = response as? HTTPURLResponse else {
+          callback(["five_sing_no_response", -1, ""] as NSArray)
+          return
+        }
+        guard
+          let finalURL = httpResponse.url,
+          Self.fiveSingURL(finalURL.absoluteString) != nil
+        else {
+          callback(["five_sing_redirect_rejected", httpResponse.statusCode, ""] as NSArray)
+          return
+        }
+        guard (200...299).contains(httpResponse.statusCode) else {
+          callback(
+            ["five_sing_http_\(httpResponse.statusCode)", httpResponse.statusCode, ""] as NSArray)
+          return
+        }
+        guard
+          let responseData,
+          responseData.count <= Self.maxFiveSingBytes,
+          let body = String(data: responseData, encoding: .utf8)
+        else {
+          callback(["five_sing_body", httpResponse.statusCode, ""] as NSArray)
+          return
+        }
+        callback([NSNull(), httpResponse.statusCode, body] as NSArray)
+      }
+    }.resume()
   }
 
   // MARK: - 屏幕常亮
@@ -431,6 +495,26 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
     }.resume()
   }
 
+  /// 5sing 测试请求只允许这三个 API 域名,避免变成通用 HTTP 代理。
+  private static let fiveSingHosts: Set<String> = [
+    "service.5sing.kugou.com",
+    "search.5sing.kugou.com",
+    "5sservice.kugou.com",
+  ]
+
+  private static func fiveSingURL(_ value: String) -> URL? {
+    guard
+      let parsed = URL(string: value),
+      let scheme = parsed.scheme?.lowercased(),
+      scheme == "http" || scheme == "https",
+      let host = parsed.host?.lowercased(),
+      fiveSingHosts.contains(host),
+      parsed.user == nil,
+      parsed.password == nil
+    else { return nil }
+    return parsed
+  }
+
   private static func isHTTPURL(_ value: String) -> Bool {
     guard let parsed = URL(string: value),
       let scheme = parsed.scheme?.lowercased(),
@@ -486,4 +570,5 @@ final class PomeloPlatformModule: NSObject, LynxModule, UIDocumentPickerDelegate
   private static let maxBase64Chars = 16 * 1024 * 1024 * 4 / 3 + 4
   private static let maxUploadBytes = 32 * 1024 * 1024
   private static let maxResponseBytes = 1024 * 1024
+  private static let maxFiveSingBytes = 512 * 1024
 }

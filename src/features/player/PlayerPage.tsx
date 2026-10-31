@@ -64,9 +64,15 @@ function fiveSingErrorText(error: unknown): string {
     five_sing_playlist_failed: '5sing 歌单读取失败',
     five_sing_media_failed: '5sing 播放地址获取失败',
     five_sing_empty: '5sing 没有返回可播放歌曲',
+    five_sing_json: '5sing 返回数据格式错误',
+    five_sing_body: '5sing 响应内容异常',
+    five_sing_no_response: '5sing 没有返回响应',
+    five_sing_invalid_url: '5sing 请求地址无效',
+    five_sing_redirect_rejected: '5sing 返回了非法重定向',
   };
   const code = error instanceof Error ? error.message : '';
-  return known[code] ?? '5sing 测试数据加载失败';
+  if (known[code]) return known[code];
+  return code ? `5sing 测试数据加载失败（${code}）` : '5sing 测试数据加载失败';
 }
 
 function errorText(error: string): string {
@@ -116,6 +122,7 @@ export function PlayerPage() {
     try {
       appendMediaTracks(await fetchFiveSingTracks());
     } catch (error) {
+      console.error('5sing test failed', error);
       setFiveSingError(fiveSingErrorText(error));
     } finally {
       setFiveSingBusy(false);

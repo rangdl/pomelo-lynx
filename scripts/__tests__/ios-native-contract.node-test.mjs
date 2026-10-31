@@ -326,3 +326,17 @@ test('5sing 测试保持纯 JS 并可运行诊断', () => {
   assert.match(fiveSing, /Record<string, string>/);
   assert.match(fiveSing, /runtimeFetch/);
 });
+
+test('LynxService 必须包含 Http subspec,否则 fetch 全部失败', () => {
+  const pods = readFileSync(join(ROOT, 'host/ios/pods.rb'), 'utf8');
+  assert.match(
+    pods,
+    /subspecs\s*=\s*\[[^\]]*'Http'/,
+    '缺少 LynxService/Http;lynx.fetch 会报 Lynx Http Service not registered',
+  );
+  assert.match(
+    pods,
+    /Lynx Http Service not registered/,
+    '保留失败症状注释,方便以后排查',
+  );
+});

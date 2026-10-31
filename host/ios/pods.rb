@@ -45,10 +45,11 @@ module PomeloPods
     # LynxExplorer. CocoaPods cannot switch subspecs per build configuration,
     # hence the second Podfile instead of an if inside one target.
     #
-    # `Http` uses the SDK's LynxService/Http — pomelo-lynx has no
-    # self-signed-TLS requirement (songloft did, which is why they replaced it
-    # there).
-    subspecs = ['Image', 'Log']
+    # `Http` registers Lynx's network service; WITHOUT it every JS `fetch`
+    # rejects with "Lynx Http Service not registered". `Image` backs <image>,
+    # `Log` bridges engine logging. pomelo-lynx has no self-signed-TLS
+    # requirement, so the SDK implementation is enough.
+    subspecs = ['Http', 'Image', 'Log']
     subspecs += ['Devtool'] if devtools
     pod 'LynxService', '4.1.0', :subspecs => subspecs
 

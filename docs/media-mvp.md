@@ -132,6 +132,8 @@ https://cdn.truefilesize.com/mp3/sample-1mb.mp3
 - 标题、歌手来自歌单,专辑固定为「5sing 古风测试歌单」,封面用歌手头像
 - 只用于队列/锁屏联调,不是正式媒体来源;接口可能限流或失效
 - 请求保持在 JS:`lynx.fetch` 或浏览器 `fetch`,不引入原生 5sing 模块
+- iOS 宿主必须在 `host/ios/pods.rb` 安装 `LynxService/Http`;缺少时所有
+  `fetch` 都会报 `Lynx Http Service not registered`
 - 播放页「运行诊断」会测试 HTTPS/HTTP 基线、5sing 最小头/完整头、
   `text` 与 `response.json()` 两条解析路径,并把原始错误写入日志
 - Web 预览可能被跨域拦截;诊断结果同样会显示在页面上

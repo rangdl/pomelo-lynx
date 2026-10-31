@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
 
   s.subspec 'Audio' do |a|
     a.source_files = 'src/**/*.swift'
-    a.dependency 'Lynx', :modular_headers => true
+    a.dependency 'Lynx'
   end
 
   # Video/MPV subspecs will be added when their sources land. Keeping the

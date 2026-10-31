@@ -368,6 +368,13 @@ test('Autolink 包与 Swift 手动注册并存', () => {
     assert.match(podfile, /use_lynx_library!/);
   }
 
+  const pods = readFileSync(join(ROOT, 'host/ios/pods.rb'), 'utf8');
+  assert.match(
+    pods,
+    /pod 'Lynx',[^\n]*:modular_headers => true/,
+    'Lynx 必须启用 modular headers,否则 Swift 包无法 import Lynx',
+  );
+
   const viewController = read('ViewController.swift');
   assert.match(viewController, /import PomeloLynxStorage/);
   assert.match(viewController, /import PomeloLynxFilesystem/);
@@ -409,11 +416,6 @@ test('Autolink 包与 Swift 手动注册并存', () => {
       'utf8',
     );
     assert.match(podspec, /\.dependency 'Lynx'/);
-    assert.match(
-      podspec,
-      /:modular_headers => true/,
-      `${packageName}: Swift 静态库必须为 Lynx 生成 modular headers`,
-    );
     assert.ok(
       existsSync(
         join(ROOT, 'node_modules/@pomelo', packageName, 'lynx.lib.json'),

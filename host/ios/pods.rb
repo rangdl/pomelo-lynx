@@ -21,7 +21,7 @@ module PomeloPods
     #      the reference app pairs XElement 4.1.0 with Lynx 4.1.0.
     # 4.1.0 is the same major/minor as Android's `org.lynxsdk.lynx:*:4.0.0`,
     # i.e. the same engine line and bundle-format compatibility.
-    pod 'Lynx', '4.1.0', :subspecs => ['Framework']
+    pod 'Lynx', '4.1.0', :subspecs => ['Framework'], :modular_headers => true
 
     # `Lynx/Framework` depends on `LynxBase/Framework` and `LynxServiceAPI`
     # **without any version constraint**, so an unpinned resolve cheerfully
@@ -29,13 +29,13 @@ module PomeloPods
     # Lynx's own release — nightlies of the base layer under a stable engine is
     # exactly the kind of mismatch that produces unreproducible device-only
     # breakage.
-    pod 'LynxBase', '4.1.0', :subspecs => ['Framework']
-    pod 'LynxServiceAPI', '4.1.0'
+    pod 'LynxBase', '4.1.0', :subspecs => ['Framework'], :modular_headers => true
+    pod 'LynxServiceAPI', '4.1.0', :modular_headers => true
 
     # JS engine. The reference app pairs Lynx 4.1.0 with PrimJS 4.1.1
     # (Lynx's `Framework` subspec pins `PrimJS/quickjs` to that exact
     # version, so PrimJS must move with the engine).
-    pod 'PrimJS', '4.1.1', :subspecs => ['quickjs', 'napi']
+    pod 'PrimJS', '4.1.1', :subspecs => ['quickjs', 'napi'], :modular_headers => true
 
     # ---- Host services -----------------------------------------------------
     #   Image → `<image>` (backed by SDWebImage on iOS / Fresco on Android)

@@ -9,5 +9,5 @@ Pod::Spec.new do |s|
   s.source = { :path => '.' }
   s.source_files = 'src/**/*.swift'
   s.swift_version = '5.0'
-  s.dependency 'Lynx', :modular_headers => true
+  s.dependency 'Lynx'
 end

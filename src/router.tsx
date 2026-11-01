@@ -14,6 +14,7 @@ import { PlayerPage } from './features/player/PlayerPage.js';
 import { AboutPage } from './features/settings/AboutPage.js';
 import { DeveloperPage } from './features/settings/DeveloperPage.js';
 import { LogsPage } from './features/settings/LogsPage.js';
+import { PlaybackSettingsPage } from './features/settings/PlaybackSettingsPage.js';
 import { SettingsPage } from './features/settings/SettingsPage.js';
 import { SourcePage } from './features/settings/SourcePage.js';
 import { ThemePalettePage } from './features/settings/ThemePalettePage.js';
@@ -111,6 +112,12 @@ const sourcesRoute = createRoute({
   component: SourcePage,
 });
 
+const playbackSettingsRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/settings/playback',
+  component: PlaybackSettingsPage,
+});
+
 const logsRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: '/settings/logs',
@@ -126,6 +133,7 @@ const routeTree = rootRoute.addChildren([
     developerRoute,
     themePaletteRoute,
     sourcesRoute,
+    playbackSettingsRoute,
     logsRoute,
   ]),
 ]);

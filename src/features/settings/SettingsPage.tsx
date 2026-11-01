@@ -85,6 +85,16 @@ export function SettingsPage() {
             onTap={() => navigate({ to: '/settings/sources' })}
             testid="settings-row-sources"
           />
+          <SettingsGroupDivider />
+          <ListRow
+            iconGlyph="≡"
+            iconTone="sky"
+            label={t('settings.playback')}
+            detail={t('settings.playbackDetail')}
+            chevron
+            onTap={() => navigate({ to: '/settings/playback' })}
+            testid="settings-row-playback"
+          />
         </SettingsGroup>
         <view
           className={

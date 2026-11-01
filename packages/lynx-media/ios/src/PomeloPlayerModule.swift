@@ -32,6 +32,7 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
   private var duration: Double = 0
   private var errorCode = ""
   private var queue: [QueueItem] = []
+  private static let maxQueueItems = 500
   private var queueIndex = -1
   private var currentTitle = ""
   private var currentArtist = ""
@@ -685,6 +686,7 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
         return
       }
       let headers = Self.parseHeaders(request["headers"])
+      let artwork = (request["artwork"] as? String).flatMap { self.httpURL($0) }
       guard
         pending.queueIndex >= 0,
         pending.queueIndex < self.queue.count,
@@ -695,10 +697,21 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
       }
       self.queue[pending.queueIndex].url = url
       self.queue[pending.queueIndex].headers = headers
+      if let artwork {
+        self.queue[pending.queueIndex].artwork = artwork
+      }
       if
         self.queueIndex == pending.queueIndex,
         self.currentURL == pending.url
       {
+        if let artwork {
+          self.currentArtworkURL = artwork
+          let key = artwork.absoluteString
+          self.currentArtwork = self.artworkCache[key]
+          if self.currentArtwork == nil {
+            self.loadArtwork(url: artwork, key: key)
+          }
+        }
         self.reloadCurrentItem(
           url: url,
           headers: headers,
@@ -887,7 +900,7 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
       let data = requestJSON.data(using: .utf8),
       let request = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
       let rawItems = request["items"] as? [[String: Any]],
-      rawItems.count <= 50
+      rawItems.count <= Self.maxQueueItems
     else { return }
     var items: [QueueItem] = []
     for raw in rawItems {

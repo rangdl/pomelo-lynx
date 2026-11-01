@@ -5,8 +5,7 @@ import { expect, test } from '@rstest/core';
 import { HomePage } from '../features/home/HomePage';
 
 test('HomePage', async () => {
-  const { findByText } = render(<HomePage />);
-  const element = await findByText('Tap the logo and have fun!');
-
-  expect(element).toBeInTheDocument();
+  const { findByTestId, findByText } = render(<HomePage />);
+  expect(await findByTestId('home-page')).toBeInTheDocument();
+  expect(await findByText('Songloft')).toBeInTheDocument();
 });

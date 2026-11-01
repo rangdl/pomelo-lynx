@@ -109,8 +109,12 @@
 - [x] 原生 401/403 检测 -> `refresh_required` -> JS Provider 刷新 ->
       `resolveRefresh` 原位续播
 - [x] 原生语义事件 `track/loaded/started/paused/waiting/ended/error/refresh_*`
-- [ ] 歌单/搜索无限滚动与分页加载
-- [ ] 批量播放按曲目懒加载歌词(当前只为首曲拉取)
+- [x] 首页音乐库:最近添加、歌单、搜索、加载更多
+- [x] 分页加载(加载更多,不做滚动触底)
+- [x] 原生 `track` 事件驱动按曲目懒加载歌词
+- [x] 队列元信息持久化 + Provider 曲目闭包恢复
+- [x] 底栏上方播放胶囊(首页/播放页显示,设置页隐藏)
+- [x] 播放设置:队列上限(20–500)与每页歌曲数(10–200)
 - [ ] Navidrome/Subsonic Provider
 - [ ] External Bundle 动态 Provider
 - [ ] iOS 真机验证 Songloft 播放、封面、歌词与 token 过期刷新
@@ -127,7 +131,8 @@
 - [x] 队列项元数据(标题/歌手/专辑/封面),锁屏显示
 - [x] 队列末尾/下一首插入与移出,删除当前曲目自动切换或停止
 - [x] 播放页 5sing 测试歌单入口(第三方接口,用于真机联调)
-- [ ] 队列持久化/视频/缓存(后续)
+- [x] 队列持久化(元信息 + Provider 闭包恢复,不自动续播)
+- [ ] 视频/缓存(后续)
 
 ## 开发者页与 dev server 热切换
 

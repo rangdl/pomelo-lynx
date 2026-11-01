@@ -14,6 +14,7 @@ src/shared/theme/
 src/shared/layouts/
   PageTopBar.tsx       子页顶栏
   SettingsSubPage.tsx  标准滚动子页骨架 + PageLargeTitle + PageTail
+  MiniPlayer.tsx       底栏上方播放胶囊(仅在非设置页显示)
 
 src/shared/ui/
   SettingsGroup.tsx    分组卡片/分隔线
@@ -34,15 +35,19 @@ src/shared/ui/
 ### 页面骨架
 
 - 标准滚动子页必须使用 `SettingsSubPage`:
-  - 关于、开发者、主题色、音乐源等。
+  - 关于、开发者、主题色、音乐源、播放设置等。
   - 它负责根 `.settings`、`PageTopBar`、`scroll-view` 和 `PageTail`。
 - 不要在页面里重复:
   - `<PageTopBar>`
   - `.settings__scroll`
   - `.settings__tail`
   - 顶部安全区 `safe-area-inset-top`
-- 根 tab 页(设置 / 播放)使用 `PageLargeTitle` + `scroll-view` + `PageTail`;
-  `SettingsLargeTitle` 保留为旧别名。
+- 根 tab 页(首页 / 播放 / 设置)使用 `PageLargeTitle` + `scroll-view` +
+  `PageTail`;`SettingsLargeTitle` 保留为旧别名。
+- 首页是音乐库:未连接时给去设置页的入口,已连接时用 `SettingsGroup` /
+  `ListRow` / `Button` / `Hint` 展示最近添加、歌单、搜索和加载更多。
+- 播放胶囊统一使用 `MiniPlayer`;不要在页面里重复写悬浮播放条。Shell 负责
+  非设置页显示、尾部留白和 presence 订阅。
 - 日志页是列表型页面例外:使用 `PageTopBar` + 自定义 `.logs` 布局,但设置区
   仍必须使用 `SettingsGroup` / `ListRow` / `SwitchRow` / `Button` / `Hint`。
 

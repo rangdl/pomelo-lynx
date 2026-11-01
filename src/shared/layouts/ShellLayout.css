@@ -21,6 +21,11 @@
      模糊/玻璃才看得见。每个可滚动页面自己加尾部 spacer。 */
 }
 
+/* 播放胶囊出现时给滚动页多留一段尾部空间,最后一行仍能滚到胶囊上方。 */
+.shell--mini-player .settings__tail {
+  height: calc(144px + env(safe-area-inset-bottom));
+}
+
 /* 每个 tab 一条页面栈;祖先页面保持挂载,侧滑时父页就在当前页下面。
    页面层绝对定位叠放,只有栈顶层参与进入动画。 */
 .page-stack {

@@ -12,6 +12,7 @@ import {
   type ProviderPageOptions,
   type ProviderPlaylist,
   type ProviderRuntime,
+  type ProviderSearchOptions,
   type ProviderSession,
   type ProviderStream,
   type ProviderTrack,
@@ -21,10 +22,12 @@ import {
 import {
   parseLyricPayload,
   parsePlaylistPage,
+  parseSong,
   parseSongPage,
   parseStoredSession,
   parseTokens,
   type SongloftLyricPayload,
+  toProviderTrack,
 } from './models.js';
 
 const PROVIDER_ID = 'songloft';
@@ -338,19 +341,36 @@ export class SongloftProvider implements MusicProvider {
 
   async search(
     query: string,
-    options: ProviderPageOptions = {},
+    options: ProviderSearchOptions = {},
   ): Promise<ProviderPage<ProviderTrack>> {
     const limit = clamp(options.limit, DEFAULT_SEARCH_LIMIT);
     const offset = offsetOf(options.offset);
-    const keyword = query.trim();
+    const keyword = query.trim() || options.keyword?.trim() || '';
+    const order =
+      options.order === 'asc' || options.order === 'desc'
+        ? options.order
+        : undefined;
     const payload = await this.requireHttp().request<unknown>('/songs', {
       query: {
         keyword: keyword || undefined,
         limit,
         offset,
+        sort: options.sort?.trim() || undefined,
+        order,
+        type: options.type?.trim() || undefined,
       },
     });
     return parseSongPage(payload, limit, offset);
+  }
+
+  async getTrack(id: string): Promise<ProviderTrack | null> {
+    const numeric = Number(id);
+    if (!Number.isSafeInteger(numeric) || numeric <= 0) return null;
+    const payload = await this.requireHttp().request<unknown>(
+      `/songs/${numeric}`,
+    );
+    const song = parseSong(payload);
+    return song ? toProviderTrack(song) : null;
   }
 
   async playlists(

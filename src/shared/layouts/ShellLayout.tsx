@@ -10,11 +10,13 @@ import {
 import type { MainThread } from '@lynx-js/types';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 
+import { useMediaPlayerPresence } from '../../core/media/player.js';
 import { HomePage } from '../../features/home/HomePage.js';
 import { PlayerPage } from '../../features/player/PlayerPage.js';
 import { AboutPage } from '../../features/settings/AboutPage.js';
 import { DeveloperPage } from '../../features/settings/DeveloperPage.js';
 import { LogsPage } from '../../features/settings/LogsPage.js';
+import { PlaybackSettingsPage } from '../../features/settings/PlaybackSettingsPage.js';
 import { SettingsPage } from '../../features/settings/SettingsPage.js';
 import { SourcePage } from '../../features/settings/SourcePage.js';
 import { ThemePalettePage } from '../../features/settings/ThemePalettePage.js';
@@ -34,6 +36,7 @@ import {
   resolveThemeVariant,
   useThemePalette,
 } from '../theme/theme-palette-preference.js';
+import { MiniPlayer } from './MiniPlayer.js';
 import { TabIcon, type TabIconName } from './TabIcon.js';
 import './ShellLayout.css';
 
@@ -74,6 +77,7 @@ type AppPath =
   | '/settings/developer'
   | '/settings/theme'
   | '/settings/sources'
+  | '/settings/playback'
   | '/settings/logs';
 type SettingsPath = Exclude<AppPath, '/' | '/player'>;
 
@@ -85,6 +89,7 @@ const ROUTE_DEPTH: Record<AppPath, number> = {
   '/settings/developer': 2,
   '/settings/theme': 2,
   '/settings/sources': 2,
+  '/settings/playback': 2,
   '/settings/logs': 2,
 };
 
@@ -96,6 +101,7 @@ const PAGE_COMPONENTS: Record<AppPath, () => ReactNode> = {
   '/settings/developer': DeveloperPage,
   '/settings/theme': ThemePalettePage,
   '/settings/sources': SourcePage,
+  '/settings/playback': PlaybackSettingsPage,
   '/settings/logs': LogsPage,
 };
 
@@ -108,6 +114,7 @@ const PAGE_STACKS: Record<AppPath, readonly AppPath[]> = {
   '/settings/developer': ['/settings', '/settings/developer'],
   '/settings/theme': ['/settings', '/settings/theme'],
   '/settings/sources': ['/settings', '/settings/sources'],
+  '/settings/playback': ['/settings', '/settings/playback'],
   '/settings/logs': ['/settings', '/settings/logs'],
 };
 
@@ -117,6 +124,7 @@ const SETTINGS_PATHS = new Set<AppPath>([
   '/settings/developer',
   '/settings/theme',
   '/settings/sources',
+  '/settings/playback',
   '/settings/logs',
 ]);
 
@@ -367,13 +375,16 @@ export function ShellLayout() {
     active ? (dark ? '#4da3ff' : '#007aff') : dark ? '#b0b7c3' : '#666666';
   const stack = stackFor(pathname);
   const themeVariant = resolveThemeVariant(themePalette, theme);
+  const hasMedia = useMediaPlayerPresence();
+  // 设置页不显示播放胶囊;其它页面(首页/播放)显示。
+  const showMiniPlayer = hasMedia && !pathname.startsWith('/settings');
 
   return (
     // 每个变体都是完整 token 集,直接切 class,不重建页面树。
     <view
       className={`shell theme-${themeVariant} scheme-${theme}${
         pathname === '/' ? ' shell--home' : ''
-      }`}
+      }${showMiniPlayer ? ' shell--mini-player' : ''}`}
       data-testid="shell-root"
     >
       <view className="shell__body">
@@ -471,6 +482,8 @@ export function ShellLayout() {
           </view>
         ) : null}
       </view>
+
+      {showMiniPlayer ? <MiniPlayer /> : null}
 
       {showMore ? (
         <view className="more-sheet" bindtap={() => setShowMore(false)}>

@@ -14,6 +14,7 @@ ShellLayout(全局唯一)
         shell__page-layer × N  ← 祖先页保持挂载,绝对定位叠放
         shell__page-layer(top) ← 当前页,唯一参与进入动画
     shell__bottombar   ← 浮动胶囊,position: fixed
+    mini-player        ← 播放胶囊,底栏上方,设置页隐藏
     more-sheet         ← 仅 >4 个 tab 时出现
 ```
 
@@ -29,7 +30,10 @@ ShellLayout(全局唯一)
   - 标准子页:`SettingsSubPage` 自动渲染 `PageTail`
     (`settings__tail = calc(84px + env(safe-area-inset-bottom))`)
   - 日志列表:同样使用 `PageTail`,不要新增 `logs__tail`
-  - 首页(不滚动):`.Home { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }`
+  - 首页(音乐库,可滚动):使用 `PageLargeTitle` + `settings__scroll` +
+    `PageTail`,不要再用旧的 `.Home { padding-bottom: ... }` 写法
+  - 播放胶囊出现时 Shell 加 `.shell--mini-player`,把 `PageTail` 高度提升到
+    `calc(144px + env(safe-area-inset-bottom))`;不要在页面里分别写两份 spacer
 - 页面根节点必须是 `display: flex; flex-direction: column; height: 100%`
   (或 `flex: 1; min-height: 0`),滚动区用 `flex: 1; min-height: 0` 吃掉剩余高度。
 - **页面栈按底部 tab 划分**:`PAGE_STACKS` 为每个 tab 维护一条祖先链;
@@ -39,7 +43,7 @@ ShellLayout(全局唯一)
 
 ## 2. 顶部标题栏
 
-### 根 tab 页(设置 / 播放)
+### 根 tab 页(首页 / 播放 / 设置)
 
 - 大标题是**滚动区外的固定 topbar**,不能放进 `scroll-view`。
 - 使用 `PageLargeTitle`(旧名 `SettingsLargeTitle`)。
@@ -62,6 +66,8 @@ ShellLayout(全局唯一)
   「主题色」入口,子页用 `theme-<palette>-<scheme>` 卡片预览四套调色板。
 - 音乐源子页(`/settings/sources`)同样使用 `SettingsSubPage`;连接表单、
   歌单/歌曲列表只组合 `TextField`/`ListRow`/`Button`/`Hint`。
+- 播放设置子页(`/settings/playback`)使用 `SettingsSubPage`;队列上限和
+  每页歌曲数用数字 `TextField`,保存/恢复默认用 `Button`。
 - iOS 左边缘右滑返回:宿主 `UIScreenEdgePanGestureRecognizer` 持续发
   `PomeloNavigation.swipe`(`begin/change/end` + 位移),JS 主线程平移
   `.shell__page` 跟手;超过 28% 屏宽或速度 > 500 时滑出并 pop 历史,
@@ -105,6 +111,20 @@ ShellLayout(全局唯一)
   - Android:当前只走 tint 兜底,`xelement-blur-view` 依赖与渲染仍在计划中;
   - **不要用 CSS `backdrop-filter`**:Lynx 不支持;`filter: blur()` 只会模糊元素自身。
 - 页面内容必须能从胶囊下方滚过;不要在 shell 层预留底栏高度。
+
+## 3.1 播放胶囊
+
+- 位置:`position: fixed`;水平居中;`bottom = 底栏 60 + 底栏底部 8 + 8px`,
+  即 `calc(76px + env(safe-area-inset-bottom))`;高 56px、圆角 28px。
+- 层级:播放胶囊 `z-index: 89`,底栏 `90`;两者不重叠。
+- 显示范围:首页 `/` 和播放页 `/player` 显示;`/settings*` 全部隐藏。
+- Shell 通过 `useMediaPlayerPresence()` 只订阅“是否有当前曲目”,避免 0.5s
+  进度更新导致整页重渲染。
+- 胶囊主体点击进入 `/player`;播放/暂停、下一首是行内按钮,必须
+  `stopPropagation`。
+- 胶囊出现时由 `.shell--mini-player .settings__tail` 统一增加滚动页尾部留白。
+- 胶囊使用 `surface-container-high` / `outline-variant` / 阴影 token,
+  不再新增一套玻璃实现;不要用 CSS `backdrop-filter`。
 
 ## 4. 设置条目
 
@@ -184,8 +204,8 @@ ShellLayout(全局唯一)
 - 固定浅色/深色时,JS 通过 `PomeloPlatform.setAppearanceMode` 同步
   `overrideUserInterfaceStyle`;状态栏、键盘、系统弹窗都跟随应用选择。
   冷启动由 `ViewController` 读取同一 prefs key 并先行应用。
-- 首页也使用主题 token:`.Home` 背景为 `var(--color-surface)`,装饰渐变在
-  亮色下降低透明度;不要再写死 `#000` 或白色文字。
+- 首页音乐库也使用主题 token:`.home` 背景为 `var(--color-surface)`;
+  不要再写死 `#000` 或白色文字。
 - `system` 模式由宿主 `globalProps.colorScheme` 初始化,并只接受
   `reason = trait / foreground / firstScreen` 的外观事件更新;
   `safeArea` 事件和旧宿主(无 `reason`)只同步安全区,不改主题。
@@ -196,7 +216,7 @@ ShellLayout(全局唯一)
   **不要**把 `env()` 放进 CSS 自定义属性的默认值(iOS Lynx 解析失效,
   会导致 `bottom/left/right` 整条属性无效)。
 - 不允许在页面里使用 `:root` 设背景/文字色(会污染其它页面);
-  首页样式必须限定在 `.Home` 作用域。
+  首页样式必须限定在 `.home` 作用域。
 
 ## 6. 新增/修改页面检查清单
 
@@ -205,7 +225,8 @@ ShellLayout(全局唯一)
 3. 标准滚动子页是否使用 `SettingsSubPage`?不要再手写
    `PageTopBar + settings__scroll + settings__tail`。
 4. 是否**没有**重复写 `safe-area-inset-top`?
-5. 滚动区是否 `flex: 1` 且由 `PageTail` 提供尾部留白?
+5. 滚动区是否 `flex: 1` 且由 `PageTail` 提供尾部留白?播放胶囊出现时
+   Shell 的 `.shell--mini-player` 是否自动增加留白?
 6. 设置条目是否用 `SettingsGroup` / `ListRow`?开关是否用 `SwitchRow`?
 7. 输入框是否用 `TextField`?按钮是否用 `Button`?提示是否用 `Hint`?
 8. 图标是否用 `iconGlyph/iconTone`?是否没有 `iconColor="#..."`?

@@ -3,6 +3,10 @@ import type { ProviderPlaylist, ProviderTrack } from '@pomelo/provider-sdk';
 import { useNavigate } from '@tanstack/react-router';
 
 import {
+  currentMediaSettings,
+  loadMediaSettings,
+} from '../../core/media/settings.js';
+import {
   connectSongloft,
   disconnectSongloft,
   enqueueProviderTracks,
@@ -25,8 +29,6 @@ import { TextField } from '../../shared/ui/TextField.js';
 import './SourcePage.css';
 
 const PLAYLIST_LIMIT = 50;
-const TRACK_LIMIT = 200;
-const SEARCH_LIMIT = 50;
 
 /**
  * 音乐源设置页：Songloft 登录、歌单浏览、搜索和入队。
@@ -47,12 +49,15 @@ export function SourcePage() {
   const [selected, setSelected] = useState<ProviderPlaylist | null>(null);
   const [listTitle, setListTitle] = useState('歌曲');
   const [tracks, setTracks] = useState<ProviderTrack[]>([]);
+  const [listTotal, setListTotal] = useState(0);
+  const [searchKeyword, setSearchKeyword] = useState('');
   const [query, setQuery] = useState('');
 
   useEffect(() => {
     let alive = true;
     void (async () => {
       try {
+        await loadMediaSettings();
         const session = await restoreSongloft();
         if (!alive) return;
         if (!session) {
@@ -101,6 +106,8 @@ export function SourcePage() {
       setPlaylists(page.items);
       setSelected(null);
       setTracks([]);
+      setListTotal(0);
+      setSearchKeyword('');
       setNotice(`已连接 ${session.serverUrl}`);
     } catch (cause) {
       setError(providerErrorMessage(cause));
@@ -124,6 +131,8 @@ export function SourcePage() {
       setPlaylists([]);
       setSelected(null);
       setTracks([]);
+      setListTotal(0);
+      setSearchKeyword('');
       setPassword('');
       setFormKey((value) => value + 1);
       setBusy('');
@@ -157,11 +166,13 @@ export function SourcePage() {
     setNotice('');
     try {
       const page = await getSongloftProvider().playlistTracks(playlist.id, {
-        limit: TRACK_LIMIT,
+        limit: currentMediaSettings().pageSize,
       });
       setSelected(playlist);
+      setSearchKeyword('');
       setListTitle(playlist.name);
       setTracks(page.items);
+      setListTotal(page.total);
       if (!page.items.length) setNotice('这个歌单还没有歌曲');
     } catch (cause) {
       setError(providerErrorMessage(cause));
@@ -183,14 +194,44 @@ export function SourcePage() {
     setNotice('');
     try {
       const page = await getSongloftProvider().search(keyword, {
-        limit: SEARCH_LIMIT,
+        limit: currentMediaSettings().pageSize,
       });
       setSelected(null);
+      setSearchKeyword(keyword);
       setListTitle(`搜索「${keyword}」`);
       setTracks(page.items);
+      setListTotal(page.total);
       setNotice(
         page.items.length ? `找到 ${page.total} 首歌曲` : '没有找到歌曲',
       );
+    } catch (cause) {
+      setError(providerErrorMessage(cause));
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const loadMoreTracks = async () => {
+    'background only';
+    if (busy || !connected || tracks.length >= listTotal) return;
+    setBusy('more-tracks');
+    setError('');
+    try {
+      const provider = getSongloftProvider();
+      const page = selected
+        ? await provider.playlistTracks(selected.id, {
+            limit: currentMediaSettings().pageSize,
+            offset: tracks.length,
+          })
+        : searchKeyword
+          ? await provider.search(searchKeyword, {
+              limit: currentMediaSettings().pageSize,
+              offset: tracks.length,
+            })
+          : null;
+      if (!page) return;
+      setTracks((items) => [...items, ...page.items]);
+      setListTotal(page.total);
     } catch (cause) {
       setError(providerErrorMessage(cause));
     } finally {
@@ -429,7 +470,7 @@ export function SourcePage() {
           <view className="sources__actions">
             <Button
               grow
-              label={busy === 'play-all' ? '加载中…' : '播放全部'}
+              label={busy === 'play-all' ? '加载中…' : '播放已加载'}
               disabled={busy !== ''}
               onTap={playAll}
               testid="sources-play-all"
@@ -437,7 +478,7 @@ export function SourcePage() {
             <Button
               grow
               variant="secondary"
-              label={busy === 'add-all' ? '加入中…' : '全部加入队列'}
+              label={busy === 'add-all' ? '加入中…' : '已加载加入队列'}
               disabled={busy !== ''}
               onTap={addAll}
               testid="sources-add-all"
@@ -467,6 +508,18 @@ export function SourcePage() {
               testid={`sources-track-${index}`}
             />
           ))}
+          {tracks.length < listTotal ? (
+            <view className="sources__actions">
+              <Button
+                grow
+                variant="secondary"
+                label={busy === 'more-tracks' ? '加载中…' : '加载更多歌曲'}
+                disabled={busy !== ''}
+                onTap={loadMoreTracks}
+                testid="sources-more-tracks"
+              />
+            </view>
+          ) : null}
         </SettingsGroup>
       ) : null}
 

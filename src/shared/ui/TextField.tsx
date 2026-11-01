@@ -17,6 +17,8 @@ export interface TextFieldProps {
   disabled?: boolean;
   /** 密码输入：原生 input 以圆点回显。 */
   password?: boolean;
+  /** 数字输入：使用数字键盘。 */
+  numeric?: boolean;
   /** 外部值异步加载/重置后用它强制同步原生 input。 */
   inputKey?: string;
   testid?: string;
@@ -40,6 +42,7 @@ export function TextField({
   maxlength = 1000,
   disabled,
   password,
+  numeric,
   inputKey,
   testid,
   className,
@@ -57,7 +60,7 @@ export function TextField({
       >
         <input
           key={inputKey}
-          type={password ? 'password' : 'text'}
+          type={password ? 'password' : numeric ? 'number' : 'text'}
           default-value={value}
           placeholder={placeholder}
           placeholder-class="text-field__placeholder"

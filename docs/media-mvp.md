@@ -9,7 +9,7 @@
 
 ## 0.1.0 范围
 
-只做 **iOS 音频 MVP**,入口是第三个底部 tab「播放」。
+只做 **iOS 音频 MVP**,入口是首页音乐库 + 第三个底部 tab「播放」。
 
 包含:
 
@@ -23,12 +23,17 @@
 - 队列项元数据(标题/歌手/专辑/封面),锁屏显示
 - 5sing 测试歌单入口(第三方接口,仅用于联调)
 - Songloft Provider 入口(`/settings/sources`,见 [音乐源 Provider](providers.md))
+- 首页音乐库:最近添加、歌单、搜索、分页加载
+- 底栏上方播放胶囊(首页/播放页显示,设置页隐藏)
+- 原生 `track` 事件按曲目懒加载歌词
+- 队列元信息持久化与 Provider 闭包恢复
 - 最小播放 UI
 
 不包含:
 
 - 视频
-- 队列持久化/缓存/歌词
+- 音频缓存
+- 歌词全屏滚动页
 - Android 实现
 
 ## 架构
@@ -43,7 +48,10 @@ src/native/player.ts
   原生模块 facade + 状态/事件解析 + resolveRefresh
 
 src/core/media/player.ts
-  单例播放器 store / actions
+  单例播放器 store / actions / 队列持久化 / 事件驱动歌词
+
+src/shared/layouts/MiniPlayer.tsx
+  底栏上方播放胶囊(首页/播放页显示,设置页隐藏)
 
 src/features/player/PlayerPage.tsx
   第三个 tab 页面
@@ -81,7 +89,8 @@ resolveRefresh(requestJSON)   { requestId, url, headers, error }
 }
 ```
 
-- 队列最多 50 项;`url` / `artwork` 只接受 http(s)
+- 队列上限由「播放设置」控制(20–500,默认 200);原生传输硬上限 500;
+  `url` / `artwork` 只接受 http(s)
 - `url` 必填;`title` 可空,空标题由原生回退到 URL 文件名
 - 每项可以带 `headers`,用于 Navidrome 等需要认证的音频源
 - JS 入队时也会用 URL 文件名兜底标题
@@ -158,8 +167,8 @@ Lynx 的 `LynxContext.sendGlobalEvent` / `GlobalEventEmitter.emit` 是**单向�
 
 - `src/native/player.ts` 只做桥接与字段校验
 - `src/core/media/player.ts` 负责状态、hydrate、订阅和动作;队列项是
-  `MediaTrack`(`url/title/artist/album/artwork/resolve`);`resolve` 是
-  Provider 曲目的刷新闭包
+  `MediaTrack`(`url/title/artist/album/artwork/resolve/lyrics/providerId/
+  providerTrackId`);`resolve` 是刷新闭包,`lyrics` 按 `track` 事件懒加载
 - 队列操作:
   - `enqueueMedia(url, meta?, 'end' | 'next')`:默认追加到末尾,
     `next` 插到当前曲目之后;已在队列中的曲目用 `next` 会移动到下一首位置
@@ -167,7 +176,22 @@ Lynx 的 `LynxContext.sendGlobalEvent` / `GlobalEventEmitter.emit` 是**单向�
     没有下一首则停止并保留前面的队列
 - `PlayerPage` 只组合 `PageLargeTitle`、`SettingsGroup`、`ListRow`、
   `TextField`、`Button`、`Hint`、`PageTail`
+- 播放胶囊统一由 `MiniPlayer` 提供;首页/播放页显示,`/settings*` 隐藏;
+  Shell 用 `.shell--mini-player` 把尾部留白从 84px 提升到 144px
+- 首页是音乐库:最近添加、歌单、搜索、加载更多,点歌曲播放/入队
 - 不新增自定义按钮/开关/输入框 CSS
+
+## 队列持久化
+
+- 队列写入 `PomeloStorage.secure` 的 `pomelo.media.queue.v1`,
+  上限由「播放设置」控制(20–500,默认 200);URL、headers、artwork
+  原样保存。原生传输硬上限 500。
+- 每页歌曲数(10–200,默认 50)同时用于首页最近添加、歌单和搜索结果。
+- Provider 曲目保存 `providerId/providerTrackId`;恢复时重新挂 `resolve` 和
+  `lyrics` 闭包,播放/刷新时再取新流。
+- 冷启动恢复队列和当前索引,但不自动播放;用户点歌后才真正加载。
+- 位置每 5 秒落盘一次,队列/索引变化立即落盘。
+- 断开音乐源时删除持久化队列,避免下次启动把旧服务器曲目当成新服务器曲目。
 
 ## 测试音频
 

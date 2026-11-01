@@ -325,6 +325,7 @@ export async function loadPlayer(
 export interface PlayerRefreshItem {
   url: string;
   headers?: Record<string, string>;
+  artwork?: string;
 }
 
 /**
@@ -344,6 +345,7 @@ export function resolvePlayerRefresh(
       requestId,
       url: item?.url ?? '',
       headers: item?.headers ?? {},
+      artwork: item?.artwork ?? '',
       error: error.slice(0, 80),
     }),
   );
@@ -372,7 +374,8 @@ export function setPlayerQueue(
   const value = module();
   if (!value) return;
   const request = JSON.stringify({
-    items: items.slice(0, 50).map((item) => ({
+    // 上限由媒体设置控制（最大 500）；这里只做传输层兜底。
+    items: items.slice(0, 500).map((item) => ({
       url: item.url,
       title: item.title ?? '',
       artist: item.artist ?? '',

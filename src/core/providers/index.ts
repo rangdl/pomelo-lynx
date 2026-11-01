@@ -2,7 +2,6 @@ import {
   type MusicProvider,
   ProviderError,
   type ProviderFetch,
-  type ProviderLyrics,
   type ProviderSession,
   type ProviderTrack,
 } from '@pomelo/provider-sdk';
@@ -11,11 +10,12 @@ import { SongloftProvider } from '@pomelo/provider-songloft';
 import { readLynxGlobal } from '../../native/native-modules.js';
 import {
   appendMediaTracks,
-  clearMediaLyrics,
+  clearMediaQueue,
+  clearPersistedMediaQueue,
   type MediaTrack,
   mediaPlayerStore,
   playMediaTrack,
-  setMediaLyrics,
+  setMediaTrackHydrator,
 } from '../media/player.js';
 import { getPomeloStorage } from '../storage/index.js';
 
@@ -27,6 +27,7 @@ import { getPomeloStorage } from '../storage/index.js';
  */
 
 let songloft: SongloftProvider | null = null;
+let restorePromise: Promise<ProviderSession | null> | null = null;
 
 function runtimeFetch(): ProviderFetch {
   const lynx = readLynxGlobal();
@@ -64,11 +65,32 @@ export async function connectSongloft(input: {
 }
 
 export async function restoreSongloft(): Promise<ProviderSession | null> {
-  return getSongloftProvider().restore();
+  if (!restorePromise) {
+    restorePromise = getSongloftProvider()
+      .restore()
+      .finally(() => {
+        restorePromise = null;
+      });
+  }
+  return restorePromise;
+}
+
+/** 队列恢复后按需恢复会话；已有 refresh token 时不会重新登录。 */
+async function ensureSongloftReady(): Promise<SongloftProvider> {
+  const provider = getSongloftProvider();
+  if (provider.session) return provider;
+  const session = await restoreSongloft();
+  if (!session) {
+    throw new ProviderError('provider_auth_required', '请先连接音乐服务器');
+  }
+  return provider;
 }
 
 export async function disconnectSongloft(): Promise<void> {
   await getSongloftProvider().logout();
+  // 断开音乐源时停止播放并清空队列，避免持久化定时器把旧队列写回来。
+  clearMediaQueue();
+  await clearPersistedMediaQueue();
 }
 
 export function providerErrorMessage(error: unknown): string {
@@ -119,11 +141,23 @@ export async function providerTrackToMedia(
     artist: track.artist,
     album: track.album,
     artwork,
+    providerId: provider.id,
+    providerTrackId: track.id,
     resolve: async () => {
-      // 原生只会在 401/403 时调用这里，必须强制换 token 再取流。
+      // 原生只会在 401/403 时调用这里，必须强制换 token 再取流/封面。
       await provider.refresh?.();
       const next = await provider.stream(track);
-      return { url: next.url, headers: next.headers };
+      let artwork: string | undefined;
+      try {
+        artwork = (await provider.artwork(track, 512)) ?? undefined;
+      } catch {
+        artwork = undefined;
+      }
+      return { url: next.url, headers: next.headers, artwork };
+    },
+    lyrics: async () => {
+      const result = await provider.lyrics(track);
+      return result?.lrc ?? null;
     },
   };
 }
@@ -144,36 +178,13 @@ export async function providerTracksToMedia(
   return resolved.filter((track): track is MediaTrack => track !== null);
 }
 
-async function lyricsOf(
-  provider: MusicProvider,
-  track: ProviderTrack,
-): Promise<ProviderLyrics | null> {
-  try {
-    return await provider.lyrics(track);
-  } catch {
-    return null;
-  }
-}
-
-/** 歌词请求可能晚于切歌；只有当前曲目仍是它时才写入。 */
-function applyLyricsFor(url: string, lyrics: ProviderLyrics | null): void {
-  if (mediaPlayerStore.getState().url !== url) return;
-  if (lyrics?.lrc) setMediaLyrics(lyrics.lrc);
-  else clearMediaLyrics();
-}
-
-/**
- * 单曲点击：先解析流地址，再开始播放，最后异步补歌词。
- * 歌词失败不影响播放。
- */
+/** 单曲点击：解析流地址并开播；歌词由原生 track 事件按曲目加载。 */
 export async function playProviderTrack(
   provider: MusicProvider,
   track: ProviderTrack,
 ): Promise<void> {
   const media = await providerTrackToMedia(provider, track);
   await playMediaTrack(media);
-  const lyrics = await lyricsOf(provider, track);
-  applyLyricsFor(media.url, lyrics);
 }
 
 /**
@@ -191,8 +202,6 @@ export async function playProviderTracks(
   }
   await playMediaTrack(media[0]);
   if (media.length > 1) appendMediaTracks(media.slice(1));
-  const lyrics = await lyricsOf(provider, tracks[0]);
-  applyLyricsFor(media[0].url, lyrics);
   return media.length;
 }
 
@@ -208,6 +217,44 @@ export async function enqueueProviderTracks(
   appendMediaTracks(media);
   return media.length;
 }
+
+/**
+ * 队列从 prefs 恢复后，用 providerId/trackId 重新挂载闭包。
+ * 这里只建闭包，不立即发网络请求；真正播放/刷新时才取流。
+ */
+export function rehydrateProviderTrack(track: MediaTrack): MediaTrack {
+  if (!track.providerId || !track.providerTrackId) return track;
+  if (track.providerId !== 'songloft') return track;
+  const trackId = track.providerTrackId;
+  return {
+    ...track,
+    resolve: async () => {
+      const provider = await ensureSongloftReady();
+      const source = await provider.getTrack?.(trackId);
+      if (!source) {
+        throw new ProviderError('provider_not_found', '曲目不存在');
+      }
+      await provider.refresh?.();
+      const next = await provider.stream(source);
+      let artwork: string | undefined;
+      try {
+        artwork = (await provider.artwork(source, 512)) ?? undefined;
+      } catch {
+        artwork = undefined;
+      }
+      return { url: next.url, headers: next.headers, artwork };
+    },
+    lyrics: async () => {
+      const provider = await ensureSongloftReady();
+      const source = await provider.getTrack?.(trackId);
+      if (!source) return null;
+      const value = await provider.lyrics(source);
+      return value?.lrc ?? null;
+    },
+  };
+}
+
+setMediaTrackHydrator(rehydrateProviderTrack);
 
 export function providerQueueSize(): number {
   return mediaPlayerStore.getState().queue.length;

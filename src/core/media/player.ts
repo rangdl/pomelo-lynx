@@ -28,11 +28,15 @@ import {
   subscribePlayerEvents,
   subscribePlayerState,
 } from '../../native/player.js';
+import { getPomeloStorage } from '../storage/index.js';
 import { parseLrc } from './lyrics.js';
+import { currentMediaSettings, loadMediaSettings } from './settings.js';
 
 export interface MediaTrackStream {
   url: string;
   headers?: Record<string, string>;
+  /** 刷新流时一起更新封面，避免旧 token 的 artwork URL 失效。 */
+  artwork?: string;
 }
 
 export interface MediaTrack {
@@ -42,11 +46,16 @@ export interface MediaTrack {
   album?: string;
   artwork?: string;
   headers?: Record<string, string>;
+  /** Provider 曲目的稳定身份，用于队列持久化后重新挂载闭包。 */
+  providerId?: string;
+  providerTrackId?: string;
   /**
    * 播放链接过期时重新解析。Provider 曲目会带上该闭包；
    * 原生通过 `refresh_required` 事件触发它。
    */
   resolve?: () => Promise<MediaTrackStream>;
+  /** 按需取 LRC；原生 track 事件触发，切换曲目时替换歌词。 */
+  lyrics?: () => Promise<string | null>;
 }
 
 export interface MediaPlayerState extends PlayerState {
@@ -81,6 +90,233 @@ function initial(): MediaPlayerState {
 /** 单例播放器状态:切换 tab 后音频继续,页面只订阅这份 store。 */
 export const mediaPlayerStore = createStore<MediaPlayerState>(initial);
 
+const QUEUE_STORAGE_KEY = 'pomelo.media.queue.v1';
+const QUEUE_STORAGE_VERSION = 1;
+
+type MediaTrackHydrator = (
+  track: MediaTrack,
+) => MediaTrack | Promise<MediaTrack>;
+
+let trackHydrator: MediaTrackHydrator | null = null;
+let persistenceStarted = false;
+
+/** Provider 层启动时注册：恢复队列后重新挂 resolve/lyrics，不落盘函数。 */
+export function setMediaTrackHydrator(
+  hydrator: MediaTrackHydrator | null,
+): void {
+  trackHydrator = hydrator;
+}
+
+interface PersistedQueueTrack {
+  url: string;
+  title: string;
+  artist?: string;
+  album?: string;
+  artwork?: string;
+  headers?: Record<string, string>;
+  providerId?: string;
+  providerTrackId?: string;
+}
+
+interface PersistedQueue {
+  version: number;
+  queue: PersistedQueueTrack[];
+  currentIndex: number;
+  position: number;
+  updatedAt: number;
+}
+
+function persistedTrack(track: MediaTrack): PersistedQueueTrack {
+  return {
+    url: track.url,
+    title: track.title,
+    artist: track.artist,
+    album: track.album,
+    artwork: track.artwork,
+    headers: track.headers,
+    providerId: track.providerId,
+    providerTrackId: track.providerTrackId,
+  };
+}
+
+function persistedHeaders(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+  const headers: Record<string, string> = {};
+  for (const [key, raw] of Object.entries(value)) {
+    if (Object.keys(headers).length >= 16) break;
+    if (typeof raw !== 'string') continue;
+    if (!key || key.length > 128 || raw.length > 2048) continue;
+    if (key.includes('\n') || key.includes('\r')) continue;
+    if (raw.includes('\n') || raw.includes('\r')) continue;
+    headers[key] = raw;
+  }
+  return Object.keys(headers).length ? headers : undefined;
+}
+
+let persistChain: Promise<void> = Promise.resolve();
+
+function queuePersist(): void {
+  persistChain = persistChain.then(
+    () => persistMediaQueue(),
+    () => persistMediaQueue(),
+  );
+}
+
+async function persistMediaQueue(): Promise<void> {
+  const state = mediaPlayerStore.getState();
+  const value: PersistedQueue = {
+    version: QUEUE_STORAGE_VERSION,
+    queue: state.queue
+      .slice(0, currentMediaSettings().queueLimit)
+      .map(persistedTrack),
+    currentIndex: state.currentIndex,
+    position: state.position,
+    updatedAt: Date.now(),
+  };
+  try {
+    // headers/artwork 可能带凭据，队列存放在 secure 而不是 prefs。
+    await getPomeloStorage().secure.set(
+      QUEUE_STORAGE_KEY,
+      JSON.stringify(value),
+    );
+  } catch {
+    // 持久化失败不影响当前播放。
+  }
+}
+
+function parsePersistedQueue(raw: string): PersistedQueue | null {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  if (record.version !== QUEUE_STORAGE_VERSION) return null;
+  if (!Array.isArray(record.queue)) return null;
+  const queue: PersistedQueueTrack[] = [];
+  for (const item of record.queue.slice(0, currentMediaSettings().queueLimit)) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const track = item as Record<string, unknown>;
+    if (typeof track.url !== 'string') continue;
+    if (!/^https?:\/\//i.test(track.url)) continue;
+    const title =
+      typeof track.title === 'string' && track.title.trim()
+        ? track.title.trim()
+        : trackTitleFromURL(track.url);
+    queue.push({
+      url: track.url,
+      title,
+      artist:
+        typeof track.artist === 'string' && track.artist.trim()
+          ? track.artist.trim()
+          : undefined,
+      album:
+        typeof track.album === 'string' && track.album.trim()
+          ? track.album.trim()
+          : undefined,
+      artwork:
+        typeof track.artwork === 'string' && /^https?:\/\//i.test(track.artwork)
+          ? track.artwork
+          : undefined,
+      headers: persistedHeaders(track.headers),
+      providerId:
+        typeof track.providerId === 'string' && track.providerId
+          ? track.providerId
+          : undefined,
+      providerTrackId:
+        typeof track.providerTrackId === 'string' && track.providerTrackId
+          ? track.providerTrackId
+          : undefined,
+    });
+  }
+  if (!queue.length) return null;
+  const rawIndex =
+    typeof record.currentIndex === 'number' &&
+    Number.isSafeInteger(record.currentIndex)
+      ? record.currentIndex
+      : -1;
+  const currentIndex = rawIndex >= 0 && rawIndex < queue.length ? rawIndex : -1;
+  const position =
+    typeof record.position === 'number' &&
+    Number.isFinite(record.position) &&
+    record.position >= 0
+      ? record.position
+      : 0;
+  return {
+    version: QUEUE_STORAGE_VERSION,
+    queue,
+    currentIndex,
+    position,
+    updatedAt: 0,
+  };
+}
+
+async function restoreMediaQueue(nativeState: PlayerState): Promise<void> {
+  if (mediaPlayerStore.getState().queue.length) return;
+  let raw: string | null = null;
+  try {
+    raw = await getPomeloStorage().secure.get(QUEUE_STORAGE_KEY);
+  } catch {
+    return;
+  }
+  if (!raw) return;
+  const parsed = parsePersistedQueue(raw);
+  if (!parsed) return;
+  const hydrated: MediaTrack[] = [];
+  for (const item of parsed.queue) {
+    const track: MediaTrack = { ...item };
+    if (trackHydrator) {
+      try {
+        hydrated.push(await trackHydrator(track));
+      } catch {
+        hydrated.push(track);
+      }
+    } else {
+      hydrated.push(track);
+    }
+  }
+  const currentIndex =
+    nativeState.url && nativeState.queueIndex >= 0
+      ? Math.min(nativeState.queueIndex, hydrated.length - 1)
+      : parsed.currentIndex;
+  mediaPlayerStore.setState({ queue: hydrated, currentIndex });
+  setPlayerQueue(hydrated, currentIndex);
+}
+
+/** 断开音乐源时调用；避免下次启动恢复旧服务器的 Provider 曲目。 */
+export async function clearPersistedMediaQueue(): Promise<void> {
+  // 等已排队的空队列写入完成后再删除 key，避免删除后被旧写入重建。
+  await persistChain.catch(() => {});
+  try {
+    await getPomeloStorage().secure.remove(QUEUE_STORAGE_KEY);
+  } catch {
+    // 清除失败不影响当前会话。
+  }
+}
+
+function startQueuePersistence(): void {
+  if (persistenceStarted) return;
+  persistenceStarted = true;
+  let lastSignature = '';
+  mediaPlayerStore.subscribe((state) => {
+    const signature = `${state.currentIndex}|${state.queue
+      .map((track) => track.url)
+      .join('|')}`;
+    if (signature !== lastSignature) {
+      lastSignature = signature;
+      queuePersist();
+    }
+  });
+  // 播放位置每 5 秒落一次盘，避免 0.5s tick 每次都写存储。
+  setInterval(() => {
+    if (mediaPlayerStore.getState().url) queuePersist();
+  }, 5000);
+}
+
 let hydration: Promise<void> | null = null;
 
 function apply(state: PlayerState): void {
@@ -109,12 +345,15 @@ export function ensureMediaPlayer(): Promise<void> {
     hydration = Promise.resolve();
     return hydration;
   }
-  hydration = getPlayerState()
-    .then((state) => {
-      apply(state);
-      subscribePlayerState(apply);
-      subscribePlayerEvents(handlePlayerEvent);
-    })
+  hydration = (async () => {
+    await loadMediaSettings();
+    const state = await getPlayerState();
+    apply(state);
+    subscribePlayerState(apply);
+    subscribePlayerEvents(handlePlayerEvent);
+    await restoreMediaQueue(state);
+    startQueuePersistence();
+  })()
     .catch(() => {
       // 模块调用失败时标记不可用,页面显示提示。
       mediaPlayerStore.setState({ available: false });
@@ -182,6 +421,7 @@ async function refreshTrackForNative(event: PlayerEvent): Promise<void> {
       ...queue[target],
       url: next.url,
       headers: next.headers,
+      artwork: next.artwork ?? queue[target].artwork,
     };
     mediaPlayerStore.setState({ queue });
     // 原生 resolveRefresh 会更新它自己的队列项；这里不要再发 setQueue，
@@ -193,7 +433,40 @@ async function refreshTrackForNative(event: PlayerEvent): Promise<void> {
   }
 }
 
+let lyricSequence = 0;
+let lyricKey = '';
+
+/** 原生 track 事件是切歌的权威信号；只对最新一次请求写入歌词。 */
+function loadTrackLyrics(event: PlayerEvent): void {
+  if (event.type !== 'track' && event.type !== 'started') return;
+  const key = `${event.queueIndex}:${event.url}`;
+  if (event.type === 'started' && lyricKey === key) return;
+  lyricKey = key;
+  const sequence = ++lyricSequence;
+  const queue = mediaPlayerStore.getState().queue;
+  const index = refreshTrackIndex(queue, event);
+  const track = index >= 0 ? queue[index] : undefined;
+  if (!track?.lyrics) {
+    clearMediaLyrics();
+    return;
+  }
+  void track
+    .lyrics()
+    .then((lrc) => {
+      if (sequence !== lyricSequence) return;
+      if (lrc) setMediaLyrics(lrc);
+      else clearMediaLyrics();
+    })
+    .catch(() => {
+      if (sequence === lyricSequence) clearMediaLyrics();
+    });
+}
+
 function handlePlayerEvent(event: PlayerEvent): void {
+  if (event.type === 'track' || event.type === 'started') {
+    loadTrackLyrics(event);
+    return;
+  }
   if (event.type === 'refresh_required') {
     if (!event.requestId) return;
     mediaPlayerStore.setState({ refreshing: true, error: '' });
@@ -215,6 +488,41 @@ function handlePlayerEvent(event: PlayerEvent): void {
   if (event.type === 'error' && event.error) {
     mediaPlayerStore.setState({ error: event.error });
   }
+}
+
+/** 队列超限时优先保留当前曲目，其次丢弃最早的项目。 */
+function limitQueue(
+  queue: MediaTrack[],
+  currentIndex: number,
+): { queue: MediaTrack[]; currentIndex: number } {
+  const limit = currentMediaSettings().queueLimit;
+  if (queue.length <= limit) return { queue, currentIndex };
+  const keepCurrent = currentIndex >= 0 && currentIndex < queue.length;
+  let start = Math.max(0, queue.length - limit);
+  if (keepCurrent && currentIndex < start) {
+    start = Math.min(currentIndex, queue.length - limit);
+  }
+  return {
+    queue: queue.slice(start, start + limit),
+    currentIndex: keepCurrent ? currentIndex - start : -1,
+  };
+}
+
+/** 设置页降低队列上限后调用。 */
+export function trimCurrentMediaQueue(): void {
+  const current = mediaPlayerStore.getState();
+  const limited = limitQueue(current.queue, current.currentIndex);
+  if (
+    limited.queue.length === current.queue.length &&
+    limited.currentIndex === current.currentIndex
+  ) {
+    return;
+  }
+  mediaPlayerStore.setState({
+    queue: limited.queue,
+    currentIndex: limited.currentIndex,
+  });
+  setPlayerQueue(limited.queue, limited.currentIndex);
 }
 
 async function startMedia(
@@ -289,7 +597,7 @@ export async function playMediaTrack(track: MediaTrack): Promise<void> {
     await startMedia(value, existing);
     return;
   }
-  const queue = [
+  const appended = [
     ...mediaPlayerStore.getState().queue,
     buildTrack(value, {
       title: track.title,
@@ -297,11 +605,15 @@ export async function playMediaTrack(track: MediaTrack): Promise<void> {
       album: track.album,
       artwork: track.artwork,
       headers: track.headers,
+      providerId: track.providerId,
+      providerTrackId: track.providerTrackId,
       resolve: track.resolve,
+      lyrics: track.lyrics,
     }),
   ];
-  mediaPlayerStore.setState({ queue });
-  await startMedia(value, queue.length - 1);
+  const limited = limitQueue(appended, appended.length - 1);
+  mediaPlayerStore.setState({ queue: limited.queue });
+  await startMedia(value, limited.currentIndex);
 }
 
 export type QueueInsertPosition = 'end' | 'next';
@@ -317,7 +629,10 @@ function buildTrack(
     album: meta?.album?.trim() || undefined,
     artwork: meta?.artwork?.trim() || undefined,
     headers: meta?.headers,
+    providerId: meta?.providerId,
+    providerTrackId: meta?.providerTrackId,
     resolve: meta?.resolve,
+    lyrics: meta?.lyrics,
   };
 }
 
@@ -352,8 +667,12 @@ export function enqueueMedia(
         ? current.currentIndex - 1
         : current.currentIndex;
     queue.splice(Math.min(currentIndex + 1, queue.length), 0, track);
-    mediaPlayerStore.setState({ queue, currentIndex });
-    setPlayerQueue(queue, currentIndex);
+    const limited = limitQueue(queue, currentIndex);
+    mediaPlayerStore.setState({
+      queue: limited.queue,
+      currentIndex: limited.currentIndex,
+    });
+    setPlayerQueue(limited.queue, limited.currentIndex);
     return;
   }
 
@@ -362,16 +681,28 @@ export function enqueueMedia(
   if (position === 'next' && current.currentIndex >= 0) {
     const queue = [...current.queue];
     queue.splice(current.currentIndex + 1, 0, track);
-    mediaPlayerStore.setState({ queue });
-    setPlayerQueue(queue, current.currentIndex);
+    const limited = limitQueue(queue, current.currentIndex);
+    mediaPlayerStore.setState({
+      queue: limited.queue,
+      currentIndex: limited.currentIndex,
+    });
+    setPlayerQueue(limited.queue, limited.currentIndex);
     return;
   }
 
   const queue = [...current.queue, track];
-  mediaPlayerStore.setState({ queue });
-  setPlayerQueue(queue, current.currentIndex);
-  if (current.currentIndex < 0 || current.state === 'idle')
-    void playQueueAt(queue.length - 1);
+  const limited = limitQueue(queue, current.currentIndex);
+  mediaPlayerStore.setState({
+    queue: limited.queue,
+    currentIndex: limited.currentIndex,
+  });
+  setPlayerQueue(limited.queue, limited.currentIndex);
+  if (current.currentIndex < 0 || current.state === 'idle') {
+    const index = limited.queue.findIndex((item) => item.url === value);
+    void playQueueAt(
+      index >= 0 ? index : Math.max(0, limited.queue.length - 1),
+    );
+  }
 }
 
 /** 批量追加曲目,只同步一次原生队列;空闲时只播放第一首新曲目。 */
@@ -386,11 +717,18 @@ export function appendMediaTracks(tracks: readonly MediaTrack[]): void {
     added.push(track);
   }
   if (!added.length) return;
-  const firstIndex = queue.length - added.length;
-  mediaPlayerStore.setState({ queue });
-  setPlayerQueue(queue, current.currentIndex);
-  if (current.currentIndex < 0 || current.state === 'idle')
-    void playQueueAt(firstIndex);
+  const limited = limitQueue(queue, current.currentIndex);
+  const firstIndex = limited.queue.findIndex(
+    (item) => item.url === added[0].url,
+  );
+  mediaPlayerStore.setState({
+    queue: limited.queue,
+    currentIndex: limited.currentIndex,
+  });
+  setPlayerQueue(limited.queue, limited.currentIndex);
+  if (current.currentIndex < 0 || current.state === 'idle') {
+    void playQueueAt(firstIndex >= 0 ? firstIndex : 0);
+  }
 }
 
 /**
@@ -537,6 +875,36 @@ export function useMediaPlayer(): MediaPlayerState {
     };
   }, []);
   return state;
+}
+
+function hasMediaSource(state: MediaPlayerState): boolean {
+  return state.currentIndex >= 0 && !!state.url;
+}
+
+/**
+ * 只订阅“是否有可显示的当前曲目”，供 Shell 决定是否渲染播放胶囊。
+ * 避免 Shell 因 0.5s 进度更新而整页重渲染。
+ */
+export function useMediaPlayerPresence(): boolean {
+  const [present, setPresent] = useState(() =>
+    hasMediaSource(mediaPlayerStore.getState()),
+  );
+  useEffect(() => {
+    let alive = true;
+    void ensureMediaPlayer();
+    const update = (next: MediaPlayerState) => {
+      if (!alive) return;
+      const value = hasMediaSource(next);
+      setPresent((previous) => (previous === value ? previous : value));
+    };
+    const unsubscribe = mediaPlayerStore.subscribe(update);
+    update(mediaPlayerStore.getState());
+    return () => {
+      alive = false;
+      unsubscribe();
+    };
+  }, []);
+  return present;
 }
 
 export type { PlayerEvent, PlayerEventType } from '../../native/player.js';

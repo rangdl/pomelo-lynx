@@ -19,6 +19,8 @@ export type MessageKey =
   | 'settings.group.media'
   | 'settings.sources'
   | 'settings.sourcesDetail'
+  | 'settings.playback'
+  | 'settings.playbackDetail'
   | 'settings.group.developer'
   | 'settings.themePalette'
   | 'settings.themePaletteDetail'
@@ -67,7 +69,9 @@ export type MessageKey =
   | 'logs.title'
   | 'logs.back'
   | 'sources.title'
-  | 'sources.back';
+  | 'sources.back'
+  | 'playback.title'
+  | 'playback.back';
 
 type Messages = Record<MessageKey, string>;
 
@@ -85,6 +89,8 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.group.media': '媒体',
     'settings.sources': '音乐源',
     'settings.sourcesDetail': '连接 Songloft 服务器',
+    'settings.playback': '播放设置',
+    'settings.playbackDetail': '队列上限与每页歌曲数',
     'settings.group.developer': '开发者',
     'settings.developer': 'Dev Server 与调试通道',
     'settings.developerDetail': '连接、刷新与调试中继',
@@ -134,6 +140,8 @@ const MESSAGES: Record<Locale, Messages> = {
     'logs.back': '设置',
     'sources.title': '音乐源',
     'sources.back': '设置',
+    'playback.title': '播放设置',
+    'playback.back': '设置',
   },
   en: {
     'nav.home': 'Home',
@@ -148,6 +156,8 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.group.media': 'Media',
     'settings.sources': 'Music source',
     'settings.sourcesDetail': 'Connect a Songloft server',
+    'settings.playback': 'Playback settings',
+    'settings.playbackDetail': 'Queue limit and page size',
     'settings.group.developer': 'Developer',
     'settings.developer': 'Dev server & debug tunnel',
     'settings.developerDetail': 'Connect, reload and debug relay',
@@ -198,6 +208,8 @@ const MESSAGES: Record<Locale, Messages> = {
     'logs.back': 'Settings',
     'sources.title': 'Music source',
     'sources.back': 'Settings',
+    'playback.title': 'Playback settings',
+    'playback.back': 'Settings',
   },
 };
 

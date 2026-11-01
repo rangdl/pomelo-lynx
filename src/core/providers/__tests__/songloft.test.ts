@@ -143,6 +143,9 @@ describe('SongloftProvider', () => {
       if (call.url.endsWith('/api/v1/songs/7/lyric')) {
         return response({ lyric: '[00:01.00]故事的小黄花' });
       }
+      if (call.url.endsWith('/api/v1/songs/7')) {
+        return response(SONG);
+      }
       if (call.url === 'https://cdn.example.com/external.lrc') {
         return response({ lyric: '[00:02.00]外链歌词' });
       }
@@ -212,6 +215,18 @@ describe('SongloftProvider', () => {
 
     const lyrics = await provider.lyrics(tracks.items[0]);
     expect(lyrics?.lrc).toBe('[00:01.00]故事的小黄花');
+
+    const one = await provider.getTrack('7');
+    expect(one?.title).toBe('晴天');
+    expect(one?.resource?.stream).toBe('/api/v1/songs/7/play');
+
+    await provider.search('', {
+      sort: 'added_at',
+      order: 'desc',
+      limit: 10,
+    });
+    expect(calls[calls.length - 1].url).toContain('sort=added_at');
+    expect(calls[calls.length - 1].url).toContain('order=desc');
 
     const externalLyrics = await provider.lyrics({
       id: 'external',

@@ -34,7 +34,8 @@ login(input): Promise<ProviderSession>
 restore(): Promise<ProviderSession | null>
 logout(): Promise<void>
 ping(): Promise<void>
-search(query, { limit, offset })
+search(query, { limit, offset, sort, order, type })
+getTrack(id)                 // 队列恢复/刷新后重新取曲目
 playlists({ limit, offset })
 playlistTracks(playlistId, { limit, offset })
 stream(track): Promise<{ url, headers? }>
@@ -53,7 +54,8 @@ artwork(track, size?): Promise<string | null>
 | --- | --- | --- |
 | 登录 | `POST /auth/login` `{username,password}` | `{access_token,refresh_token,expires_in,token_type}` |
 | 刷新 | `POST /auth/refresh` `{refresh_token}` | 同上 |
-| 搜索/列表 | `GET /songs?keyword&limit&offset` | `{songs,total}` |
+| 搜索/列表 | `GET /songs?keyword&limit&offset&sort&order&type` | `{songs,total}` |
+| 单曲 | `GET /songs/{id}` | `Song` |
 | 歌单 | `GET /playlists?limit&offset` | `{playlists,total}` |
 | 歌单歌曲 | `GET /playlists/{id}/songs?limit&offset` | `{songs,total}` |
 | 播放 | `song.url`（通常是 `/songs/{id}/play`） | 音频流 |
@@ -95,30 +97,39 @@ ProviderTrack
 ```
 
 - 单曲点击：解析流/封面 -> 开播 -> 异步拉歌词；歌词失败不影响播放。
-- 歌单「播放全部」：首曲开播，其余追加；只为首曲拉歌词，避免一次发几百个
-  歌词请求。
-- 歌词响应晚于切歌时，仅当前 URL 仍匹配才写入，避免覆盖新曲目。
+- 歌单「播放全部」：首曲开播，其余追加。
+- 原生每次切歌发 `track` 事件，JS 只对当前曲目懒加载歌词；旧请求用序号丢弃，
+  不会覆盖新曲目。
 - 原生队列保留每项的 `headers`，因此 Songloft 的 Bearer 可以随队列项切换。
 - `ProviderTrack -> MediaTrack` 会附带 `resolve()` 闭包：原生播放中遇到
   401/403 时发 `refresh_required`，JS 先 `provider.refresh()` 强制换 token，
-  再 `provider.stream()` 取新 URL/headers；原生从原位置重载，不需要重新入队。
+  再 `provider.stream()` / `provider.artwork()` 取新 URL、headers 和封面；
+  原生从原位置重载，不需要重新入队。
 
 ## 6. 页面
 
-设置页「媒体 → 音乐源」进入 `/settings/sources`：
+首页是音乐库；「设置 → 媒体 → 播放设置」控制队列上限(20–500,默认 200)
+和每页歌曲数(10–200,默认 50)。首页/音乐源页的最近添加、歌单和搜索结果
+都按每页歌曲数分页。
 
-- 服务器地址、用户名、密码；连接后自动加载前 50 个歌单。
-- 点歌单加载前 200 首；点歌曲播放，行尾「加入」只入队。
-- 「播放全部」「全部加入队列」。
-- 搜索关键词返回前 50 首。
-- 使用 `SettingsSubPage` / `SettingsGroup` / `ListRow` / `TextField` /
-  `Button` / `Hint`，没有新增自定义控件样式。
+
+- 未连接时引导到 `/settings/sources`；
+- 已连接时显示最近添加(`sort=added_at&order=desc`)、歌单、搜索；
+- 歌曲/歌单都支持「加载更多」；
+- 点歌曲播放，行尾「加入」只入队。
+
+设置页「媒体 → 音乐源」仍保留连接/浏览/诊断入口：服务器地址、用户名、密码、
+歌单、搜索，以及「播放全部」「全部加入队列」。两处页面都使用
+`SettingsSubPage` / `SettingsGroup` / `ListRow` / `TextField` / `Button` /
+`Hint`，没有新增自定义控件样式。
 
 ## 7. 当前限制
 
 - 只实现 Songloft；Navidrome/Subsonic 尚未接入。
-- 歌单/搜索没有无限滚动，固定取第一页。
-- 批量播放只为第一首拉歌词；后续切歌不会自动加载对应歌词。
+- 首页/音乐源页使用「加载更多」分页，不做滚动触底自动加载。
+- 队列恢复依赖 Provider `getTrack`；非 Provider 裸 URL 恢复后没有刷新闭包。
+- 持久化队列存放在 secure，原样保存 URL、headers、artwork；冷启动恢复后
+  通常可以直接播放，token 失效时仍走 401 刷新重新取流。
 - 视频歌曲只按音频流处理（`video:false`），视频 Surface/MPV 仍在计划中。
 - Provider 曲目在播放中遇到 401/403 会自动回问 JS 刷新 token；非 Provider
   的裸 URL 没有 `resolve` 闭包，仍会直接报错。

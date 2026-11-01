@@ -98,6 +98,11 @@ export interface ProviderRuntime {
 
 export interface ProviderSearchOptions extends ProviderPageOptions {
   keyword?: string;
+  /** 服务端排序字段，例如 Songloft 的 `added_at` / `title`。 */
+  sort?: string;
+  order?: 'asc' | 'desc';
+  /** 服务端歌曲类型：local / remote / radio。 */
+  type?: string;
 }
 
 /**
@@ -119,8 +124,10 @@ export interface MusicProvider {
 
   search(
     query: string,
-    options?: ProviderPageOptions,
+    options?: ProviderSearchOptions,
   ): Promise<ProviderPage<ProviderTrack>>;
+  /** 按 Provider 内 ID 重新取曲目，供队列恢复/刷新重挂 resolve 使用。 */
+  getTrack?(id: string): Promise<ProviderTrack | null>;
   playlists(
     options?: ProviderPageOptions,
   ): Promise<ProviderPage<ProviderPlaylist>>;

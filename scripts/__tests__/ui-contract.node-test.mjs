@@ -346,3 +346,22 @@ test('播放页使用共享 UI 原语并接入第三个 tab', () => {
   const i18n = read('src/i18n/index.ts');
   assert.match(i18n, /'nav.player'/);
 });
+
+test('播放胶囊与首页音乐库保持共享原语', () => {
+  const shell = read('src/shared/layouts/ShellLayout.tsx');
+  assert.match(shell, /MiniPlayer/);
+  assert.match(shell, /useMediaPlayerPresence/);
+  assert.match(shell, /pathname\.startsWith\('\/settings'\)/);
+  const shellCss = read('src/shared/layouts/ShellLayout.css');
+  assert.match(shellCss, /shell--mini-player \.settings__tail/);
+  assert.match(shellCss, /144px/);
+  const mini = read('src/shared/layouts/MiniPlayer.tsx');
+  assert.match(mini, /Button/);
+  assert.match(mini, /IconBadge/);
+  assert.match(mini, /stopPropagation/);
+  const home = read('src/features/home/HomePage.tsx');
+  assert.match(home, /PageLargeTitle/);
+  assert.match(home, /PageTail/);
+  assert.match(home, /loadMoreSongs/);
+  assert.match(home, /loadMorePlaylists/);
+});

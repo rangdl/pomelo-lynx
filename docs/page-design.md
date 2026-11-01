@@ -60,6 +60,8 @@ ShellLayout(全局唯一)
   「开发者」入口行,Dev Server 与调试通道都放在子页内。
 - 主题色子页(`/settings/theme`)也遵守子页结构:设置页外观分组保留
   「主题色」入口,子页用 `theme-<palette>-<scheme>` 卡片预览四套调色板。
+- 音乐源子页(`/settings/sources`)同样使用 `SettingsSubPage`;连接表单、
+  歌单/歌曲列表只组合 `TextField`/`ListRow`/`Button`/`Hint`。
 - iOS 左边缘右滑返回:宿主 `UIScreenEdgePanGestureRecognizer` 持续发
   `PomeloNavigation.swipe`(`begin/change/end` + 位移),JS 主线程平移
   `.shell__page` 跟手;超过 28% 屏宽或速度 > 500 时滑出并 pop 历史,
@@ -222,5 +224,7 @@ ShellLayout(全局唯一)
 - 开发者能力已移到独立子页,Dev Server/调试通道已迁移到
   `SettingsGroup`/`ListRow`/`TextField`/`Button`/`Hint`。
 - 日志入口已从关于页移到设置页「支持」分组,路由为 `/settings/logs`。
+- 设置页「媒体」分组提供「音乐源」入口,路由为 `/settings/sources`;
+  Provider 契约与 Songloft 细节见 [音乐源 Provider](providers.md)。
 - 客户端更新与 Bundle 热更新已拆分;客户端更新检查、`client.json`、
   固定文件名和 changelog 见 [发布与更新](release.md)。

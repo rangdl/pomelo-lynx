@@ -22,6 +22,7 @@
 - 原生同步队列、上一首/下一首、结束自动下一首(含锁屏/后台)
 - 队列项元数据(标题/歌手/专辑/封面),锁屏显示
 - 5sing 测试歌单入口(第三方接口,仅用于联调)
+- Songloft Provider 入口(`/settings/sources`,见 [音乐源 Provider](providers.md))
 - 最小播放 UI
 
 不包含:
@@ -35,10 +36,11 @@
 ```text
 host/ios/PomeloLynx/PomeloPlayerModule.swift
   NativeModules.PomeloPlayer
-  PomeloPlayer.state 全局事件
+  PomeloPlayer.state  0.5s 状态快照
+  PomeloPlayer.event  语义事件(loaded/started/error/refresh_*)
 
 src/native/player.ts
-  原生模块 facade + 状态事件解析
+  原生模块 facade + 状态/事件解析 + resolveRefresh
 
 src/core/media/player.ts
   单例播放器 store / actions
@@ -59,6 +61,7 @@ getState(callback)
 setQueue(requestJSON)         { items, index }
 next()
 previous()
+resolveRefresh(requestJSON)   { requestId, url, headers, error }
 ```
 
 `setQueue` 只接受一份 `items`,每项自带 `url`,不再有顶层 `urls`:
@@ -95,15 +98,68 @@ previous()
   "position": 0,
   "duration": 0,
   "error": "",
-  "queueIndex": 0
+  "queueIndex": 0,
+  "refreshing": false
 }
 ```
+
+## 语义事件
+
+`PomeloPlayer.event` 是边沿触发事件,与 0.5s 状态快照互补:
+
+```json
+{
+  "type": "track|loaded|started|paused|waiting|ended|stopped|error|refresh_required|refresh_applied|refresh_failed",
+  "url": "https://...",
+  "queueIndex": 0,
+  "title": "标题",
+  "artist": "歌手",
+  "album": "专辑",
+  "position": 0,
+  "duration": 0,
+  "error": "",
+  "requestId": "",
+  "status": 0
+}
+```
+
+- `track`: 原生切到某个队列项(load/上一首/下一首/自动下一首)
+- `loaded`: AVPlayerItem readyToPlay,时长已可用
+- `started`: 实际开始出声(每次从暂停/等待恢复都会发)
+- `paused` / `waiting`: 用户暂停 / 缓冲等待
+- `ended`: 队列最后一首播完
+- `stopped`: 显式停止
+- `error`: 非鉴权失败,`status` 带 HTTP 状态(若可获取)
+- `refresh_required`: 检测到 401/403,等待 JS 回传新链接
+- `refresh_applied` / `refresh_failed`: JS 响应已应用 / 刷新失败
+
+## Token 过期刷新
+
+Lynx 的 `LynxContext.sendGlobalEvent` / `GlobalEventEmitter.emit` 是**单向广播**,
+返回 `void`,监听器返回值不会回到原生;公开 API 也没有原生同步调用 JS 函数
+并取返回值的通道。因此这里用 `requestId` 做异步 RPC:
+
+- `refresh_required` 是请求事件;
+- `resolveRefresh(requestId, ...)` 是回复方法,等价于“事件的返回值”;
+- 原生只接受当前 pending `requestId`,超时/过期响应丢弃。
+
+1. 原生从 `AVPlayerItem.errorLog` / `AVPlayerItemNewErrorLogEntry` 检测 401/403
+2. 暂停当前 item,状态切到 `loading`,`refreshing=true`
+3. 发 `refresh_required`(含 `requestId`、`queueIndex`、`status`)
+4. JS 从 `MediaTrack.resolve()` 先强制刷新 Provider token,再取新流地址
+5. JS 更新自己的队列,再调用 `resolveRefresh(requestId, ...)`
+6. 原生更新自己的队列项 URL/headers,从原位置重载;按 `desiredPlaying` 决定是否续播
+7. 12 秒无响应或 JS 返回错误 -> `refresh_failed`,状态 `error`
+
+同一 item 最多连续刷新 3 次;成功开始播放后重置计数。非 Provider 的裸 URL
+没有 `resolve` 闭包,会直接回传 `player_refresh_unavailable`。
 
 ## JS 约定
 
 - `src/native/player.ts` 只做桥接与字段校验
 - `src/core/media/player.ts` 负责状态、hydrate、订阅和动作;队列项是
-  `MediaTrack`(`url/title/artist/album/artwork`)
+  `MediaTrack`(`url/title/artist/album/artwork/resolve`);`resolve` 是
+  Provider 曲目的刷新闭包
 - 队列操作:
   - `enqueueMedia(url, meta?, 'end' | 'next')`:默认追加到末尾,
     `next` 插到当前曲目之后;已在队列中的曲目用 `next` 会移动到下一首位置

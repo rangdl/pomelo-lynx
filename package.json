@@ -36,7 +36,9 @@
     "@pomelo/lynx-storage": "workspace:*",
     "@pomelo/lynx-filesystem": "workspace:*",
     "@pomelo/lynx-platform": "workspace:*",
-    "@pomelo/lynx-media": "workspace:*"
+    "@pomelo/lynx-media": "workspace:*",
+    "@pomelo/provider-sdk": "workspace:*",
+    "@pomelo/provider-songloft": "workspace:*"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",

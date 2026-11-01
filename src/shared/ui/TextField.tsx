@@ -15,6 +15,8 @@ export interface TextFieldProps {
   onConfirm?: () => void;
   maxlength?: number;
   disabled?: boolean;
+  /** 密码输入：原生 input 以圆点回显。 */
+  password?: boolean;
   /** 外部值异步加载/重置后用它强制同步原生 input。 */
   inputKey?: string;
   testid?: string;
@@ -37,6 +39,7 @@ export function TextField({
   onConfirm,
   maxlength = 1000,
   disabled,
+  password,
   inputKey,
   testid,
   className,
@@ -54,6 +57,7 @@ export function TextField({
       >
         <input
           key={inputKey}
+          type={password ? 'password' : 'text'}
           default-value={value}
           placeholder={placeholder}
           placeholder-class="text-field__placeholder"

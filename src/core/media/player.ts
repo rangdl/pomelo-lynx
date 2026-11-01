@@ -8,6 +8,7 @@ import {
   loadPlayer,
   type NowPlayingOverride,
   nextPlayer,
+  type PlayerEvent,
   type PlayerLyricMode,
   type PlayerState,
   type PlayerStatus,
@@ -15,6 +16,7 @@ import {
   playerAvailable,
   playPlayer,
   previousPlayer,
+  resolvePlayerRefresh,
   seekPlayer,
   setPlayerEngine,
   setPlayerLyrics,
@@ -23,9 +25,15 @@ import {
   setPlayerRate,
   setPlayerVolume,
   stopPlayer,
+  subscribePlayerEvents,
   subscribePlayerState,
 } from '../../native/player.js';
 import { parseLrc } from './lyrics.js';
+
+export interface MediaTrackStream {
+  url: string;
+  headers?: Record<string, string>;
+}
 
 export interface MediaTrack {
   url: string;
@@ -34,6 +42,11 @@ export interface MediaTrack {
   album?: string;
   artwork?: string;
   headers?: Record<string, string>;
+  /**
+   * 播放链接过期时重新解析。Provider 曲目会带上该闭包；
+   * 原生通过 `refresh_required` 事件触发它。
+   */
+  resolve?: () => Promise<MediaTrackStream>;
 }
 
 export interface MediaPlayerState extends PlayerState {
@@ -61,6 +74,7 @@ function initial(): MediaPlayerState {
     rate: 1,
     volume: 1,
     engine: 'system',
+    refreshing: false,
   };
 }
 
@@ -81,6 +95,7 @@ function apply(state: PlayerState): void {
     rate: state.rate,
     volume: state.volume,
     engine: state.engine,
+    refreshing: state.refreshing,
   });
 }
 
@@ -98,6 +113,7 @@ export function ensureMediaPlayer(): Promise<void> {
     .then((state) => {
       apply(state);
       subscribePlayerState(apply);
+      subscribePlayerEvents(handlePlayerEvent);
     })
     .catch(() => {
       // 模块调用失败时标记不可用,页面显示提示。
@@ -107,6 +123,98 @@ export function ensureMediaPlayer(): Promise<void> {
       mediaPlayerStore.setState({ initialized: true });
     });
   return hydration;
+}
+
+/** 比较播放地址时忽略 access_token，但保留其它查询参数。 */
+function comparableMediaURL(raw: string): string {
+  const [withoutHash] = raw.split('#');
+  const [path, query = ''] = withoutHash.split('?');
+  const rest = query
+    .split('&')
+    .filter((part) => part && !part.startsWith('access_token='));
+  return rest.length ? `${path}?${rest.join('&')}` : path;
+}
+
+function refreshTrackIndex(
+  queue: readonly MediaTrack[],
+  event: PlayerEvent,
+): number {
+  if (event.queueIndex >= 0 && event.queueIndex < queue.length) {
+    const candidate = queue[event.queueIndex];
+    if (
+      !event.url ||
+      comparableMediaURL(candidate.url) === comparableMediaURL(event.url)
+    ) {
+      return event.queueIndex;
+    }
+  }
+  if (!event.url) return -1;
+  const target = comparableMediaURL(event.url);
+  return queue.findIndex((track) => comparableMediaURL(track.url) === target);
+}
+
+/**
+ * 原生发现 401/403 后会发 refresh_required；这里调用 Provider 重新取流，
+ * 同时更新 JS 队列和原生队列项，再把新 URL/headers 回传给原生重载。
+ */
+async function refreshTrackForNative(event: PlayerEvent): Promise<void> {
+  const current = mediaPlayerStore.getState();
+  const index = refreshTrackIndex(current.queue, event);
+  const track = index >= 0 ? current.queue[index] : undefined;
+  if (!track?.resolve) {
+    mediaPlayerStore.setState({ refreshing: false });
+    resolvePlayerRefresh(event.requestId, null, 'player_refresh_unavailable');
+    return;
+  }
+  try {
+    const next = await track.resolve();
+    if (!next?.url || !/^https?:\/\//i.test(next.url)) {
+      throw new Error('player_refresh_invalid');
+    }
+    const latest = mediaPlayerStore.getState();
+    let target = index;
+    if (latest.queue[target]?.url !== track.url) {
+      target = latest.queue.findIndex((item) => item.url === track.url);
+    }
+    if (target < 0) throw new Error('player_refresh_stale');
+    const queue = latest.queue.slice();
+    queue[target] = {
+      ...queue[target],
+      url: next.url,
+      headers: next.headers,
+    };
+    mediaPlayerStore.setState({ queue });
+    // 原生 resolveRefresh 会更新它自己的队列项；这里不要再发 setQueue，
+    // 否则可能用 JS 里稍旧的 currentIndex 覆盖原生刚切换到的曲目。
+    resolvePlayerRefresh(event.requestId, next);
+  } catch {
+    mediaPlayerStore.setState({ refreshing: false });
+    resolvePlayerRefresh(event.requestId, null, 'player_refresh_failed');
+  }
+}
+
+function handlePlayerEvent(event: PlayerEvent): void {
+  if (event.type === 'refresh_required') {
+    if (!event.requestId) return;
+    mediaPlayerStore.setState({ refreshing: true, error: '' });
+    void refreshTrackForNative(event);
+    return;
+  }
+  if (event.type === 'refresh_applied') {
+    mediaPlayerStore.setState({ refreshing: false });
+    return;
+  }
+  if (event.type === 'refresh_failed') {
+    mediaPlayerStore.setState({
+      refreshing: false,
+      state: 'error',
+      error: event.error || 'player_refresh_failed',
+    });
+    return;
+  }
+  if (event.type === 'error' && event.error) {
+    mediaPlayerStore.setState({ error: event.error });
+  }
 }
 
 async function startMedia(
@@ -129,6 +237,7 @@ async function startMedia(
     url: value,
     state: 'loading',
     currentIndex: index,
+    refreshing: false,
   });
   try {
     await loadPlayer(value, autoplay);
@@ -163,6 +272,38 @@ export async function loadMedia(url: string): Promise<void> {
   await startMedia(value, index);
 }
 
+/**
+ * 直接播放一条带元数据的曲目：不存在则追加到队尾，存在则切到已有项。
+ * Provider 单曲点击走这里，避免先 enqueue 再 play 导致重复加载。
+ */
+export async function playMediaTrack(track: MediaTrack): Promise<void> {
+  const value = track.url.trim();
+  if (!value) {
+    mediaPlayerStore.setState({ error: 'player_empty_url' });
+    return;
+  }
+  const existing = mediaPlayerStore
+    .getState()
+    .queue.findIndex((item) => item.url === value);
+  if (existing >= 0) {
+    await startMedia(value, existing);
+    return;
+  }
+  const queue = [
+    ...mediaPlayerStore.getState().queue,
+    buildTrack(value, {
+      title: track.title,
+      artist: track.artist,
+      album: track.album,
+      artwork: track.artwork,
+      headers: track.headers,
+      resolve: track.resolve,
+    }),
+  ];
+  mediaPlayerStore.setState({ queue });
+  await startMedia(value, queue.length - 1);
+}
+
 export type QueueInsertPosition = 'end' | 'next';
 
 function buildTrack(
@@ -176,6 +317,7 @@ function buildTrack(
     album: meta?.album?.trim() || undefined,
     artwork: meta?.artwork?.trim() || undefined,
     headers: meta?.headers,
+    resolve: meta?.resolve,
   };
 }
 
@@ -397,7 +539,15 @@ export function useMediaPlayer(): MediaPlayerState {
   return state;
 }
 
+export type { PlayerEvent, PlayerEventType } from '../../native/player.js';
 export type { PlayerStatus };
+
+/** 语义播放事件订阅入口;状态快照仍由 `useMediaPlayer` 提供。 */
+export function subscribeMediaPlayerEvents(
+  listener: (event: PlayerEvent) => void,
+): () => void {
+  return subscribePlayerEvents(listener);
+}
 
 /** 把 LRC 解析成原生时序行;原生在后台/锁屏继续更新 Now Playing。 */
 export function setMediaLyrics(

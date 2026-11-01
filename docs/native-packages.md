@@ -115,12 +115,18 @@ setRate(0.1..4.0)
 setVolume(0..1)
 getCapabilities()
 setEngine('system' | 'avplayer')
+resolveRefresh({ requestId, url, headers, error })
 ```
 
 - 歌词时序在原生 `tick` 中计算,后台/锁屏也能更新
 - JS `parseLrc()` 负责把 LRC 转为时间行
 - `headers` 支持 Navidrome 等需要认证的音频源
 - `getCapabilities()` 当前返回 `video:false`;视频和 MPV 后续扩展
+- 状态快照走 `PomeloPlayer.state`;语义事件走 `PomeloPlayer.event`
+  (`track/loaded/started/paused/waiting/ended/stopped/error/refresh_*`)
+- 原生检测到 401/403 发 `refresh_required`,JS 通过 `resolveRefresh` 回传
+  新 URL/headers;原生更新队列项并从原位置续播
+- `getCapabilities()` 额外返回 `refresh:true` / `events:true`
 
 ### 视频与 MPV
 
@@ -157,6 +163,7 @@ PomeloLynxMedia/MPV    未来: MPVKit/libmpv 后端
 - [x] `lynx-filesystem` 原生包
 - [x] `lynx-platform` 原生包 + 宿主 `PomeloHost`
 - [x] `lynx-media` 原生包 + 音频/队列/headers/歌词
+- [x] 播放语义事件 + 401/403 播放链接刷新事件
 - [x] Autolink pod 发现、CI gem、iOS job pnpm 安装
 - [x] dev bundle 冷启动缓存 + 原生 loading overlay
 - [ ] 视频 Surface

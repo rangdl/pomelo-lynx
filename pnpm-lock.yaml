@@ -34,6 +34,12 @@ importers:
       '@pomelo/lynx-storage':
         specifier: workspace:*
         version: link:packages/lynx-storage
+      '@pomelo/provider-sdk':
+        specifier: workspace:*
+        version: link:packages/provider-sdk
+      '@pomelo/provider-songloft':
+        specifier: workspace:*
+        version: link:packages/provider-songloft
       '@tanstack/react-router':
         specifier: ^1.170.46
         version: 1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -119,6 +125,14 @@ importers:
       '@lynx-js/react':
         specifier: '*'
         version: 0.128.0(@lynx-js/types@4.3.0)(@types/react@19.3.0)
+
+  packages/provider-sdk: {}
+
+  packages/provider-songloft:
+    dependencies:
+      '@pomelo/provider-sdk':
+        specifier: workspace:*
+        version: link:../provider-sdk
 
 packages:
 

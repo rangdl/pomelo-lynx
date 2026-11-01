@@ -44,7 +44,8 @@ function formatTime(seconds: number): string {
   return `${minutes}:${String(rest).padStart(2, '0')}`;
 }
 
-function statusText(state: string): string {
+function statusText(state: string, refreshing: boolean): string {
+  if (refreshing) return '刷新播放链接';
   switch (state) {
     case 'loading':
       return '加载中';
@@ -88,6 +89,11 @@ function errorText(error: string): string {
     player_audio_session_failed: '无法启用音频播放会话',
     player_item_failed: '音频加载失败',
     player_unavailable: '当前客户端不支持音视频播放',
+    player_refresh_timeout: '刷新播放链接超时',
+    player_refresh_failed: '刷新播放链接失败',
+    player_refresh_unavailable: '当前曲目无法刷新播放链接',
+    player_refresh_invalid: '刷新后的播放地址无效',
+    player_refresh_stale: '播放队列已变化，请重新播放',
   };
   return known[error] ?? (error || '播放失败');
 }
@@ -200,7 +206,7 @@ export function PlayerPage() {
             iconGlyph="◉"
             iconTone={player.state === 'error' ? 'danger' : 'blue'}
             label="状态"
-            value={statusText(player.state)}
+            value={statusText(player.state, player.refreshing)}
             detail={`${formatTime(player.position)} / ${formatTime(player.duration)}`}
             testid="player-status"
           />
@@ -413,6 +419,9 @@ export function PlayerPage() {
           <Hint tone="warning">
             当前客户端没有 PomeloPlayer 模块,请安装包含播放器的新版 IPA。
           </Hint>
+        ) : null}
+        {player.refreshing ? (
+          <Hint tone="caption">播放链接已过期,正在重新获取。</Hint>
         ) : null}
         {player.state === 'ended' ? (
           <Hint tone="caption">播放已结束,再次点击播放会从头开始。</Hint>

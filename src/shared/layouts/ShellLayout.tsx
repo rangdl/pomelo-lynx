@@ -16,6 +16,7 @@ import { AboutPage } from '../../features/settings/AboutPage.js';
 import { DeveloperPage } from '../../features/settings/DeveloperPage.js';
 import { LogsPage } from '../../features/settings/LogsPage.js';
 import { SettingsPage } from '../../features/settings/SettingsPage.js';
+import { SourcePage } from '../../features/settings/SourcePage.js';
 import { ThemePalettePage } from '../../features/settings/ThemePalettePage.js';
 import { type MessageKey, t } from '../../i18n/index.js';
 import { subscribeNavigationSwipe } from '../../native/navigation.js';
@@ -72,6 +73,7 @@ type AppPath =
   | '/settings/about'
   | '/settings/developer'
   | '/settings/theme'
+  | '/settings/sources'
   | '/settings/logs';
 type SettingsPath = Exclude<AppPath, '/' | '/player'>;
 
@@ -82,6 +84,7 @@ const ROUTE_DEPTH: Record<AppPath, number> = {
   '/settings/about': 2,
   '/settings/developer': 2,
   '/settings/theme': 2,
+  '/settings/sources': 2,
   '/settings/logs': 2,
 };
 
@@ -92,6 +95,7 @@ const PAGE_COMPONENTS: Record<AppPath, () => ReactNode> = {
   '/settings/about': AboutPage,
   '/settings/developer': DeveloperPage,
   '/settings/theme': ThemePalettePage,
+  '/settings/sources': SourcePage,
   '/settings/logs': LogsPage,
 };
 
@@ -103,6 +107,7 @@ const PAGE_STACKS: Record<AppPath, readonly AppPath[]> = {
   '/settings/about': ['/settings', '/settings/about'],
   '/settings/developer': ['/settings', '/settings/developer'],
   '/settings/theme': ['/settings', '/settings/theme'],
+  '/settings/sources': ['/settings', '/settings/sources'],
   '/settings/logs': ['/settings', '/settings/logs'],
 };
 
@@ -111,6 +116,7 @@ const SETTINGS_PATHS = new Set<AppPath>([
   '/settings/about',
   '/settings/developer',
   '/settings/theme',
+  '/settings/sources',
   '/settings/logs',
 ]);
 

@@ -92,11 +92,28 @@
 - [x] `lynx-filesystem` 原生包(iOS 目录 + 文件 API)
 - [x] iOS Autolink pod 发现/链接,Swift 模块暂手动注册
 - [x] dev bundle 冷启动缓存、后台刷新与原生 loading
-- [ ] `lynx-platform` 迁移
-- [ ] `lynx-media` 迁移 + 原生歌词时序
+- [x] `lynx-platform` 迁移
+- [x] `lynx-media` 迁移 + 原生歌词时序
 - [ ] 视频 Surface(`pomelo-video-view`,AVPlayerLayer)
 - [ ] MPV 后端(`PomeloLynxMedia/MPV`,接 `PomeloMediaBackend`)
 - [ ] Android 原生包(计划,等待 Android CI 恢复)
+
+## 音乐源 Provider(0.1.0)
+
+- [x] `@pomelo/provider-sdk`:Provider 契约、HTTP、超时、错误脱敏
+- [x] `@pomelo/provider-songloft`:登录/刷新/搜索/歌单/播放/封面/歌词
+- [x] secure 会话持久化、401 单飞刷新与重放
+- [x] `/settings/sources` 音乐源页:连接、歌单、搜索、播放/入队
+- [x] ProviderTrack -> MediaTrack:stream headers、封面查询串 token、LRC
+- [x] 单测覆盖 URL、分页、刷新、恢复/登出、脱敏
+- [x] 原生 401/403 检测 -> `refresh_required` -> JS Provider 刷新 ->
+      `resolveRefresh` 原位续播
+- [x] 原生语义事件 `track/loaded/started/paused/waiting/ended/error/refresh_*`
+- [ ] 歌单/搜索无限滚动与分页加载
+- [ ] 批量播放按曲目懒加载歌词(当前只为首曲拉取)
+- [ ] Navidrome/Subsonic Provider
+- [ ] External Bundle 动态 Provider
+- [ ] iOS 真机验证 Songloft 播放、封面、歌词与 token 过期刷新
 
 ## 媒体 MVP(0.1.0)
 

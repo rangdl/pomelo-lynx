@@ -49,14 +49,32 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
   private var overrideArtist = ""
   private var overrideAlbum = ""
   private var overrideLyrics = ""
+  private var refreshAttempts = 0
+  private var desiredPlaying = false
+  private var wasActuallyPlaying = false
+  private var hasReportedLoaded = false
+  private var pendingSeek: Double?
+  private var pendingAutoplay = false
+  private var pendingRefresh: PendingRefresh?
+  private var refreshTimeout: DispatchWorkItem?
+  private var errorLogObserver: NSObjectProtocol?
+  private var failedObserver: NSObjectProtocol?
 
   private struct QueueItem {
-    let url: URL
-    let title: String
-    let artist: String
-    let album: String
-    let artwork: URL?
-    let headers: [String: String]
+    var url: URL
+    var title: String
+    var artist: String
+    var album: String
+    var artwork: URL?
+    var headers: [String: String]
+  }
+
+  private struct PendingRefresh {
+    let requestId: String
+    let queueIndex: Int
+    let url: String
+    let position: Double
+    var shouldPlay: Bool
   }
 
   private struct LyricLine {
@@ -88,6 +106,7 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
       "getCapabilities": NSStringFromSelector(
         #selector(PomeloPlayerModule.getCapabilities(_:))),
       "setEngine": NSStringFromSelector(#selector(PomeloPlayerModule.setEngine(_:callback:))),
+      "resolveRefresh": NSStringFromSelector(#selector(PomeloPlayerModule.resolveRefresh(_:))),
     ]
   }
 
@@ -124,6 +143,13 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
     if let interruptionObserver {
       NotificationCenter.default.removeObserver(interruptionObserver)
     }
+    if let errorLogObserver {
+      NotificationCenter.default.removeObserver(errorLogObserver)
+    }
+    if let failedObserver {
+      NotificationCenter.default.removeObserver(failedObserver)
+    }
+    refreshTimeout?.cancel()
     for (command, token) in remoteTargets {
       command.removeTarget(token)
     }
@@ -205,13 +231,17 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
       switch type {
       case .began:
         self.player.pause()
+        self.desiredPlaying = false
+        self.wasActuallyPlaying = false
         self.stateName = "paused"
+        self.emitEvent("paused")
         self.emit()
       case .ended:
         let rawOptions = notification.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
         let options = AVAudioSession.InterruptionOptions(rawValue: rawOptions)
         if options.contains(.shouldResume), self.item != nil {
           self.player.play()
+          self.desiredPlaying = true
           self.stateName = "playing"
           self.emit()
         }
@@ -239,6 +269,56 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
       NotificationCenter.default.removeObserver(endObserver)
       self.endObserver = nil
     }
+    if let errorLogObserver {
+      NotificationCenter.default.removeObserver(errorLogObserver)
+      self.errorLogObserver = nil
+    }
+    if let failedObserver {
+      NotificationCenter.default.removeObserver(failedObserver)
+      self.failedObserver = nil
+    }
+  }
+
+  private func makeAsset(url: URL, headers: [String: String]) -> AVURLAsset {
+    if headers.isEmpty {
+      return AVURLAsset(url: url)
+    }
+    return AVURLAsset(
+      url: url,
+      options: ["AVURLAssetHTTPHeaderFieldsKey": headers])
+  }
+
+  /// 为当前 item 安装状态、结束、HTTP 错误日志与失败通知。
+  private func observeItem(_ nextItem: AVPlayerItem) {
+    statusObservation = nextItem.observe(\.status, options: [.initial, .new]) {
+      [weak self] observed, _ in
+      DispatchQueue.main.async {
+        self?.itemStatusChanged(observed)
+      }
+    }
+    endObserver = NotificationCenter.default.addObserver(
+      forName: .AVPlayerItemDidPlayToEndTime,
+      object: nextItem,
+      queue: .main
+    ) { [weak self] _ in
+      self?.advanceAfterEnd()
+    }
+    errorLogObserver = NotificationCenter.default.addObserver(
+      forName: .AVPlayerItemNewErrorLogEntry,
+      object: nextItem,
+      queue: .main
+    ) { [weak self] _ in
+      self?.handleErrorLog(for: nextItem)
+    }
+    failedObserver = NotificationCenter.default.addObserver(
+      forName: .AVPlayerItemFailedToPlayToEndTime,
+      object: nextItem,
+      queue: .main
+    ) { [weak self] notification in
+      guard let self else { return }
+      let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
+      self.handleItemFailure(nextItem, error: error)
+    }
   }
 
   private func load(
@@ -253,9 +333,16 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
       return
     }
     clearItemObservers()
+    cancelPendingRefresh()
     player.pause()
     player.replaceCurrentItem(with: nil)
 
+    pendingSeek = nil
+    pendingAutoplay = false
+    hasReportedLoaded = false
+    wasActuallyPlaying = false
+    desiredPlaying = autoplay
+    refreshAttempts = 0
     currentURL = url.absoluteString
     if let index {
       queueIndex = index >= 0 && index < queue.count ? index : -1
@@ -277,31 +364,12 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
     errorCode = ""
     stateName = "loading"
 
-    let asset: AVURLAsset
-    if effectiveHeaders.isEmpty {
-      asset = AVURLAsset(url: url)
-    } else {
-      asset = AVURLAsset(
-        url: url,
-        options: ["AVURLAssetHTTPHeaderFieldsKey": effectiveHeaders])
-    }
-    let nextItem = AVPlayerItem(asset: asset)
+    let nextItem = AVPlayerItem(asset: makeAsset(url: url, headers: effectiveHeaders))
     item = nextItem
-    statusObservation = nextItem.observe(\.status, options: [.initial, .new]) {
-      [weak self] observed, _ in
-      DispatchQueue.main.async {
-        self?.itemStatusChanged(observed)
-      }
-    }
-    endObserver = NotificationCenter.default.addObserver(
-      forName: .AVPlayerItemDidPlayToEndTime,
-      object: nextItem,
-      queue: .main
-    ) { [weak self] _ in
-      self?.advanceAfterEnd()
-    }
+    observeItem(nextItem)
 
     player.replaceCurrentItem(with: nextItem)
+    emitEvent("track", extra: ["autoplay": autoplay])
     emit()
     if autoplay {
       player.play()
@@ -315,7 +383,10 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
       return
     }
     stateName = "ended"
+    desiredPlaying = false
+    wasActuallyPlaying = false
     player.pause()
+    emitEvent("ended")
     emit()
   }
 
@@ -414,18 +485,233 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
       if seconds.isFinite && seconds > 0 {
         duration = seconds
       }
+      if !hasReportedLoaded {
+        hasReportedLoaded = true
+        emitEvent("loaded")
+      }
+      if let seek = pendingSeek {
+        pendingSeek = nil
+        let target = CMTime(seconds: seek, preferredTimescale: 600)
+        player.seek(
+          to: target,
+          toleranceBefore: .zero,
+          toleranceAfter: .zero
+        ) { [weak self] _ in
+          guard let self, self.item === changed else { return }
+          self.position = seek
+          if self.pendingAutoplay {
+            self.pendingAutoplay = false
+            self.player.play()
+          }
+          self.emit()
+        }
+      } else if pendingAutoplay {
+        pendingAutoplay = false
+        player.play()
+      }
       if player.rate > 0 {
         stateName = "playing"
       } else if stateName == "loading" {
         stateName = "paused"
       }
     case .failed:
-      stateName = "error"
-      errorCode = "player_item_failed"
+      handleItemFailure(changed, error: changed.error)
+      return
     default:
       break
     }
     emit()
+  }
+
+  /// 从 AVPlayerItem 的错误日志里优先取鉴权状态，否则取最近一次 HTTP 状态码。
+  private func httpStatus(of item: AVPlayerItem) -> Int {
+    guard let events = item.errorLog()?.events, !events.isEmpty else {
+      return 0
+    }
+    if let auth = events.last(where: {
+      $0.errorStatusCode == 401 || $0.errorStatusCode == 403
+    }) {
+      return auth.errorStatusCode
+    }
+    return events.last?.errorStatusCode ?? 0
+  }
+
+  /// 错误日志可能先于 status=.failed 到达；只对 401/403 触发刷新。
+  private func handleErrorLog(for item: AVPlayerItem) {
+    guard item === self.item else { return }
+    let status = httpStatus(of: item)
+    guard status == 401 || status == 403 else { return }
+    _ = requestRefresh(status: status)
+  }
+
+  @discardableResult
+  private func handleItemFailure(_ failed: AVPlayerItem, error: Error?) -> Bool {
+    guard failed === item else { return false }
+    let status = httpStatus(of: failed)
+    if status == 401 || status == 403 {
+      if requestRefresh(status: status) {
+        return true
+      }
+    }
+    if stateName == "error", errorCode == "player_item_failed" {
+      return true
+    }
+    stateName = "error"
+    errorCode = "player_item_failed"
+    // 保留 desiredPlaying：错误日志可能晚于 .failed 到达，随后仍可触发鉴权刷新。
+    wasActuallyPlaying = false
+    emitEvent("error", extra: ["error": errorCode, "status": status])
+    emit()
+    return true
+  }
+
+  private func cancelPendingRefresh() {
+    refreshTimeout?.cancel()
+    refreshTimeout = nil
+    pendingRefresh = nil
+  }
+
+  /// 原生只负责发现鉴权失败并发事件；真正的 token 刷新在 JS Provider 层完成。
+  @discardableResult
+  private func requestRefresh(status: Int) -> Bool {
+    guard pendingRefresh == nil else { return true }
+    guard refreshAttempts < 3 else { return false }
+    guard queueIndex >= 0, queueIndex < queue.count else { return false }
+    refreshAttempts += 1
+    let request = PendingRefresh(
+      requestId: UUID().uuidString,
+      queueIndex: queueIndex,
+      url: currentURL,
+      position: position,
+      shouldPlay: desiredPlaying
+    )
+    pendingRefresh = request
+    stateName = "loading"
+    errorCode = ""
+    wasActuallyPlaying = false
+    player.pause()
+
+    let timeout = DispatchWorkItem { [weak self] in
+      guard let self, self.pendingRefresh?.requestId == request.requestId else {
+        return
+      }
+      self.pendingRefresh = nil
+      self.refreshTimeout = nil
+      self.stateName = "error"
+      self.errorCode = "player_refresh_timeout"
+      self.desiredPlaying = false
+      self.emitEvent(
+        "refresh_failed",
+        extra: ["requestId": request.requestId, "error": self.errorCode])
+      self.emit()
+    }
+    refreshTimeout = timeout
+    DispatchQueue.main.asyncAfter(deadline: .now() + 12, execute: timeout)
+    emitEvent(
+      "refresh_required",
+      extra: ["requestId": request.requestId, "status": status])
+    emit()
+    return true
+  }
+
+  private func failRefresh(_ request: PendingRefresh, error: String) {
+    refreshTimeout?.cancel()
+    refreshTimeout = nil
+    pendingRefresh = nil
+    stateName = "error"
+    errorCode = String(error.prefix(80))
+    desiredPlaying = false
+    wasActuallyPlaying = false
+    emitEvent(
+      "refresh_failed",
+      extra: ["requestId": request.requestId, "error": errorCode])
+    emit()
+  }
+
+  /// 刷新链接只替换当前 item，不清空歌词/Now Playing 覆盖，并从原位置恢复。
+  private func reloadCurrentItem(
+    url: URL,
+    headers: [String: String],
+    seekTo: Double,
+    autoplay: Bool,
+    requestId: String
+  ) {
+    clearItemObservers()
+    player.pause()
+    player.replaceCurrentItem(with: nil)
+    currentURL = url.absoluteString
+    pendingSeek = seekTo.isFinite && seekTo > 0 ? seekTo : nil
+    pendingAutoplay = autoplay
+    desiredPlaying = autoplay
+    wasActuallyPlaying = false
+    hasReportedLoaded = false
+    position = pendingSeek ?? 0
+    stateName = "loading"
+    errorCode = ""
+    let nextItem = AVPlayerItem(asset: makeAsset(url: url, headers: headers))
+    item = nextItem
+    observeItem(nextItem)
+    player.replaceCurrentItem(with: nextItem)
+    emitEvent("refresh_applied", extra: ["requestId": requestId])
+    emit()
+  }
+
+  @objc public func resolveRefresh(_ requestJSON: String) {
+    guard
+      let data = requestJSON.data(using: .utf8),
+      let request = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+      let requestId = request["requestId"] as? String,
+      !requestId.isEmpty
+    else { return }
+    DispatchQueue.main.async {
+      guard
+        let pending = self.pendingRefresh,
+        pending.requestId == requestId
+      else { return }
+      self.refreshTimeout?.cancel()
+      self.refreshTimeout = nil
+      self.pendingRefresh = nil
+
+      let error = self.metadataText(request["error"], limit: 80)
+      if !error.isEmpty {
+        self.failRefresh(pending, error: error)
+        return
+      }
+      guard
+        let rawURL = request["url"] as? String,
+        let url = self.httpURL(rawURL)
+      else {
+        self.failRefresh(pending, error: "player_refresh_invalid")
+        return
+      }
+      let headers = Self.parseHeaders(request["headers"])
+      guard
+        pending.queueIndex >= 0,
+        pending.queueIndex < self.queue.count,
+        self.queue[pending.queueIndex].url.absoluteString == pending.url
+      else {
+        self.failRefresh(pending, error: "player_refresh_stale")
+        return
+      }
+      self.queue[pending.queueIndex].url = url
+      self.queue[pending.queueIndex].headers = headers
+      if
+        self.queueIndex == pending.queueIndex,
+        self.currentURL == pending.url
+      {
+        self.reloadCurrentItem(
+          url: url,
+          headers: headers,
+          seekTo: pending.position,
+          autoplay: pending.shouldPlay,
+          requestId: pending.requestId)
+      } else {
+        self.emitEvent(
+          "refresh_applied",
+          extra: ["requestId": pending.requestId])
+        self.emit()
+      }
+    }
   }
 
   private func tick(_ time: CMTime) {
@@ -438,6 +724,7 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
       emit()
       return
     }
+    let actualPlaying = player.timeControlStatus == .playing
     switch player.timeControlStatus {
     case .playing:
       stateName = "playing"
@@ -448,22 +735,66 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
     @unknown default:
       break
     }
+    if actualPlaying && !wasActuallyPlaying {
+      wasActuallyPlaying = true
+      refreshAttempts = 0
+      emitEvent("started")
+    } else if !actualPlaying && wasActuallyPlaying {
+      wasActuallyPlaying = false
+      if stateName == "paused" {
+        emitEvent("paused")
+      } else if stateName == "loading" {
+        emitEvent("waiting")
+      }
+    }
     emit()
   }
 
   private func payload() -> [String: Any] {
     [
       "state": stateName,
-      "url": currentURL,
-      "position": position,
-      "duration": duration,
+      "url": eventURL(currentURL),
+      "position": position.isFinite ? position : 0,
+      "duration": duration.isFinite ? duration : 0,
       "error": errorCode,
       "queueIndex": queueIndex,
       "lyric": currentLyric,
       "rate": Double(playbackRate),
       "volume": Double(player.volume),
       "engine": engineName,
+      "refreshing": pendingRefresh != nil,
     ]
+  }
+
+  /// 事件里不暴露查询串中的 access_token（目前播放走 header，仍做防御）。
+  private func eventURL(_ raw: String) -> String {
+    guard var components = URLComponents(string: raw) else { return raw }
+    let sensitive = ["access_token", "refresh_token", "token", "authorization"]
+    components.queryItems = components.queryItems?.filter {
+      !sensitive.contains($0.name.lowercased())
+    }
+    return components.url?.absoluteString ?? raw
+  }
+
+  private func emitEvent(
+    _ type: String,
+    extra: [String: Any] = [:]
+  ) {
+    guard let context else { return }
+    var value: [String: Any] = [
+      "type": type,
+      "url": eventURL(currentURL),
+      "queueIndex": queueIndex,
+      "title": currentTitle,
+      "artist": currentArtist,
+      "album": currentAlbum,
+      "position": position.isFinite ? position : 0,
+      "duration": duration.isFinite ? duration : 0,
+    ]
+    for (key, item) in extra {
+      value[key] = item
+    }
+    context.sendGlobalEvent("PomeloPlayer.event", withParams: [value])
   }
 
   private func stateJSON() -> String {
@@ -612,8 +943,12 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
   @objc public func play() {
     DispatchQueue.main.async {
       guard self.item != nil else { return }
+      self.desiredPlaying = true
       self.player.rate = self.playbackRate
       self.stateName = "playing"
+      if self.pendingRefresh != nil {
+        self.pendingRefresh?.shouldPlay = true
+      }
       self.emit()
     }
   }
@@ -621,7 +956,15 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
   @objc public func pause() {
     DispatchQueue.main.async {
       self.player.pause()
-      if self.item != nil { self.stateName = "paused" }
+      self.desiredPlaying = false
+      self.wasActuallyPlaying = false
+      if self.pendingRefresh != nil {
+        self.pendingRefresh?.shouldPlay = false
+      }
+      if self.item != nil {
+        self.stateName = "paused"
+        self.emitEvent("paused")
+      }
       self.emit()
     }
   }
@@ -646,6 +989,7 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
       self.player.pause()
       self.player.replaceCurrentItem(with: nil)
       self.clearItemObservers()
+      self.cancelPendingRefresh()
       self.item = nil
       self.currentURL = ""
       self.currentTitle = ""
@@ -665,6 +1009,13 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
       self.duration = 0
       self.errorCode = ""
       self.queueIndex = -1
+      self.desiredPlaying = false
+      self.wasActuallyPlaying = false
+      self.hasReportedLoaded = false
+      self.pendingSeek = nil
+      self.pendingAutoplay = false
+      self.refreshAttempts = 0
+      self.emitEvent("stopped")
       self.emit()
       try? AVAudioSession.sharedInstance().setActive(
         false, options: .notifyOthersOnDeactivation)
@@ -768,6 +1119,8 @@ public final class PomeloPlayerModule: NSObject, LynxContextModule {
       "lyrics": true,
       "queue": true,
       "headers": true,
+      "refresh": true,
+      "events": true,
     ]
     guard
       let data = try? JSONSerialization.data(withJSONObject: value),

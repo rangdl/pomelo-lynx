@@ -1,6 +1,7 @@
 import { readLynxGlobal, readNativeModules } from './native-modules.js';
 
 export const PLAYER_STATE_EVENT = 'PomeloPlayer.state';
+export const PLAYER_EVENT = 'PomeloPlayer.event';
 export type PlayerStatus =
   | 'idle'
   | 'loading'
@@ -20,6 +21,35 @@ export interface PlayerState {
   rate: number;
   volume: number;
   engine: string;
+  /** 正在等待 JS 刷新过期播放链接。 */
+  refreshing: boolean;
+}
+
+export type PlayerEventType =
+  | 'track'
+  | 'loaded'
+  | 'started'
+  | 'paused'
+  | 'waiting'
+  | 'ended'
+  | 'stopped'
+  | 'error'
+  | 'refresh_required'
+  | 'refresh_applied'
+  | 'refresh_failed';
+
+export interface PlayerEvent {
+  type: PlayerEventType;
+  url: string;
+  queueIndex: number;
+  title: string;
+  artist: string;
+  album: string;
+  position: number;
+  duration: number;
+  error: string;
+  requestId: string;
+  status: number;
 }
 
 export interface PlayerLyricLine {
@@ -39,6 +69,8 @@ export interface PlayerCapabilities {
   lyrics: boolean;
   queue: boolean;
   headers: boolean;
+  refresh: boolean;
+  events: boolean;
 }
 
 export interface PlayerQueueItem {
@@ -70,6 +102,8 @@ interface PlayerModule {
   setVolume(volume: number): void;
   getCapabilities(callback: (json: string) => void): void;
   setEngine(engine: string, callback: (json: string) => void): void;
+  /** 旧版原生没有该方法；能力位 `refresh` 为 false。 */
+  resolveRefresh?(request: string): void;
 }
 
 const REQUIRED = [
@@ -161,6 +195,75 @@ export function parsePlayerState(raw: unknown): PlayerState | null {
     rate: finite(value.rate) || 1,
     volume: typeof value.volume === 'number' ? value.volume : 1,
     engine: typeof value.engine === 'string' ? value.engine : 'system',
+    refreshing: value.refreshing === true,
+  };
+}
+
+const PLAYER_EVENT_TYPES: readonly PlayerEventType[] = [
+  'track',
+  'loaded',
+  'started',
+  'paused',
+  'waiting',
+  'ended',
+  'stopped',
+  'error',
+  'refresh_required',
+  'refresh_applied',
+  'refresh_failed',
+];
+
+function eventType(value: unknown): PlayerEventType | null {
+  return typeof value === 'string' &&
+    (PLAYER_EVENT_TYPES as readonly string[]).includes(value)
+    ? (value as PlayerEventType)
+    : null;
+}
+
+/** 解析原生语义事件;数组/字符串包装与 state 事件保持一致。 */
+export function parsePlayerEvent(raw: unknown): PlayerEvent | null {
+  let value: unknown = raw;
+  if (typeof raw === 'string') {
+    try {
+      value = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  if (Array.isArray(value)) value = value[0];
+  if (typeof value === 'string') {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  if (!isRecord(value)) return null;
+  const type = eventType(value.type);
+  if (!type) return null;
+  const queueIndex =
+    typeof value.queueIndex === 'number' &&
+    Number.isSafeInteger(value.queueIndex)
+      ? value.queueIndex
+      : -1;
+  const status =
+    typeof value.status === 'number' &&
+    Number.isFinite(value.status) &&
+    value.status >= 0
+      ? Math.floor(value.status)
+      : 0;
+  return {
+    type,
+    url: typeof value.url === 'string' ? value.url : '',
+    queueIndex,
+    title: typeof value.title === 'string' ? value.title : '',
+    artist: typeof value.artist === 'string' ? value.artist : '',
+    album: typeof value.album === 'string' ? value.album : '',
+    position: finite(value.position),
+    duration: finite(value.duration),
+    error: typeof value.error === 'string' ? value.error : '',
+    requestId: typeof value.requestId === 'string' ? value.requestId : '',
+    status,
   };
 }
 
@@ -217,6 +320,33 @@ export async function loadPlayer(
   if (!value) throw new Error('player_unavailable');
   const request = JSON.stringify({ url, autoplay, headers });
   await callbackPromise((callback) => value.load(request, callback));
+}
+
+export interface PlayerRefreshItem {
+  url: string;
+  headers?: Record<string, string>;
+}
+
+/**
+ * 把 JS 重新解析的播放地址/请求头回传给原生。
+ * 原生只接受当前 pending requestId;过期或重复的响应会被忽略。
+ */
+export function resolvePlayerRefresh(
+  requestId: string,
+  item: PlayerRefreshItem | null,
+  error = '',
+): void {
+  const value = module();
+  if (!value || !requestId) return;
+  if (typeof value.resolveRefresh !== 'function') return;
+  value.resolveRefresh(
+    JSON.stringify({
+      requestId,
+      url: item?.url ?? '',
+      headers: item?.headers ?? {},
+      error: error.slice(0, 80),
+    }),
+  );
 }
 
 export function playPlayer(): void {
@@ -335,6 +465,8 @@ export async function getPlayerCapabilities(): Promise<PlayerCapabilities> {
     lyrics: result.lyrics === true,
     queue: result.queue === true,
     headers: result.headers === true,
+    refresh: result.refresh === true,
+    events: result.events === true,
   };
 }
 
@@ -377,6 +509,39 @@ export function subscribePlayerState(
       active = false;
       try {
         emitter.removeListener?.(PLAYER_STATE_EVENT, handler);
+      } catch {
+        // Host already unloaded.
+      }
+    };
+  } catch {
+    return () => {};
+  }
+}
+
+/** 订阅原生播放语义事件;状态快照仍走 `PomeloPlayer.state`。 */
+export function subscribePlayerEvents(
+  listener: (value: PlayerEvent) => void,
+): () => void {
+  'background only';
+  try {
+    const emitter = readLynxGlobal()?.getJSModule?.('GlobalEventEmitter');
+    if (
+      typeof emitter?.addListener !== 'function' ||
+      typeof emitter?.removeListener !== 'function'
+    )
+      return () => {};
+    let active = true;
+    const handler = (raw: unknown) => {
+      if (!active) return;
+      const parsed = parsePlayerEvent(raw);
+      if (parsed) listener(parsed);
+    };
+    emitter.addListener(PLAYER_EVENT, handler);
+    return () => {
+      if (!active) return;
+      active = false;
+      try {
+        emitter.removeListener?.(PLAYER_EVENT, handler);
       } catch {
         // Host already unloaded.
       }

@@ -75,6 +75,17 @@ export function SettingsPage() {
           />
         </SettingsGroup>
 
+        <SettingsGroup title={t('settings.group.media')}>
+          <ListRow
+            iconGlyph="♫"
+            iconTone="green"
+            label={t('settings.sources')}
+            detail={t('settings.sourcesDetail')}
+            chevron
+            onTap={() => navigate({ to: '/settings/sources' })}
+            testid="settings-row-sources"
+          />
+        </SettingsGroup>
         <view
           className={
             appearanceOpen

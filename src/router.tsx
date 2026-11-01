@@ -15,6 +15,7 @@ import { AboutPage } from './features/settings/AboutPage.js';
 import { DeveloperPage } from './features/settings/DeveloperPage.js';
 import { LogsPage } from './features/settings/LogsPage.js';
 import { SettingsPage } from './features/settings/SettingsPage.js';
+import { SourcePage } from './features/settings/SourcePage.js';
 import { ThemePalettePage } from './features/settings/ThemePalettePage.js';
 import { ShellLayout } from './shared/layouts/ShellLayout.js';
 import { ensureRouterEnv } from './shims/router-env.js';
@@ -104,6 +105,12 @@ const themePaletteRoute = createRoute({
   component: ThemePalettePage,
 });
 
+const sourcesRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/settings/sources',
+  component: SourcePage,
+});
+
 const logsRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: '/settings/logs',
@@ -118,6 +125,7 @@ const routeTree = rootRoute.addChildren([
     aboutRoute,
     developerRoute,
     themePaletteRoute,
+    sourcesRoute,
     logsRoute,
   ]),
 ]);

@@ -34,7 +34,7 @@ src/shared/ui/
 ### 页面骨架
 
 - 标准滚动子页必须使用 `SettingsSubPage`:
-  - 关于、开发者、主题色等。
+  - 关于、开发者、主题色、音乐源等。
   - 它负责根 `.settings`、`PageTopBar`、`scroll-view` 和 `PageTail`。
 - 不要在页面里重复:
   - `<PageTopBar>`

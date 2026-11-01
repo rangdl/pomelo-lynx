@@ -304,11 +304,21 @@ test('播放器声明后台音频并接入锁屏控制', () => {
   assert.match(player, /applyMetadata\(for:/);
   assert.doesNotMatch(player, /!title\.isEmpty/);
   assert.match(player, /title\.isEmpty \? url\.lastPathComponent : title/);
+  assert.match(player, /PomeloPlayer\.event/);
+  assert.match(player, /AVPlayerItemNewErrorLogEntry/);
+  assert.match(player, /refresh_required/);
+  assert.match(player, /refresh_applied/);
+  assert.match(player, /refresh_failed/);
+  assert.match(player, /func resolveRefresh\(/);
+  assert.match(player, /private struct PendingRefresh/);
 
   const bridge = readFileSync(join(ROOT, 'src/native/player.ts'), 'utf8');
   assert.match(bridge, /items: items\.slice/);
   assert.doesNotMatch(bridge, /urls: urls\.slice/);
   assert.doesNotMatch(bridge, /queue_index/);
+  assert.match(bridge, /PomeloPlayer\.event/);
+  assert.match(bridge, /resolvePlayerRefresh/);
+  assert.match(bridge, /refreshing/);
 });
 
 test('5sing 测试保持纯 JS 并可运行诊断', () => {

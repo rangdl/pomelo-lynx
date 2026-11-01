@@ -16,6 +16,9 @@ export type MessageKey =
   | 'settings.group.app'
   | 'settings.aboutDetail'
   | 'settings.group.appearance'
+  | 'settings.group.media'
+  | 'settings.sources'
+  | 'settings.sourcesDetail'
   | 'settings.group.developer'
   | 'settings.themePalette'
   | 'settings.themePaletteDetail'
@@ -62,7 +65,9 @@ export type MessageKey =
   | 'about.directGithub'
   | 'about.webUpdate'
   | 'logs.title'
-  | 'logs.back';
+  | 'logs.back'
+  | 'sources.title'
+  | 'sources.back';
 
 type Messages = Record<MessageKey, string>;
 
@@ -77,6 +82,9 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.group.app': '应用',
     'settings.aboutDetail': '版本与更新',
     'settings.group.appearance': '外观',
+    'settings.group.media': '媒体',
+    'settings.sources': '音乐源',
+    'settings.sourcesDetail': '连接 Songloft 服务器',
     'settings.group.developer': '开发者',
     'settings.developer': 'Dev Server 与调试通道',
     'settings.developerDetail': '连接、刷新与调试中继',
@@ -124,6 +132,8 @@ const MESSAGES: Record<Locale, Messages> = {
     'about.webUpdate': 'Web 端随部署更新,无独立热更新',
     'logs.title': '日志',
     'logs.back': '设置',
+    'sources.title': '音乐源',
+    'sources.back': '设置',
   },
   en: {
     'nav.home': 'Home',
@@ -135,6 +145,9 @@ const MESSAGES: Record<Locale, Messages> = {
     'settings.group.app': 'App',
     'settings.aboutDetail': 'Version and updates',
     'settings.group.appearance': 'Appearance',
+    'settings.group.media': 'Media',
+    'settings.sources': 'Music source',
+    'settings.sourcesDetail': 'Connect a Songloft server',
     'settings.group.developer': 'Developer',
     'settings.developer': 'Dev server & debug tunnel',
     'settings.developerDetail': 'Connect, reload and debug relay',
@@ -183,6 +196,8 @@ const MESSAGES: Record<Locale, Messages> = {
     'about.webUpdate': 'Web updates with the deployment',
     'logs.title': 'Logs',
     'logs.back': 'Settings',
+    'sources.title': 'Music source',
+    'sources.back': 'Settings',
   },
 };
 

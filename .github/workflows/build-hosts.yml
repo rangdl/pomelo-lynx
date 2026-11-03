@@ -196,9 +196,9 @@ jobs:
             .build/ios-compilation-cache
             ~/Library/Caches/CocoaPods
             ~/.cocoapods/repos
-          key: ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/pods.rb', 'host/ios/Podfile', 'host/ios/release/Podfile', 'host/ios/release/Podfile.lock') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/pods.rb', 'host/ios/Podfile', 'host/ios/Podfile.lock', 'host/ios/release/Podfile', 'host/ios/release/Podfile.lock') }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/pods.rb', 'host/ios/Podfile', 'host/ios/release/Podfile', 'host/ios/release/Podfile.lock') }}-
+            ios-compile-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.xcode.outputs.cache_id }}-${{ hashFiles('host/ios/pods.rb', 'host/ios/Podfile', 'host/ios/Podfile.lock', 'host/ios/release/Podfile', 'host/ios/release/Podfile.lock') }}-
       # dev 通道(dev tag / workflow_dispatch)用本地 Podfile graph
       # (devtools: true)+ Debug configuration:侧载包自带 Lynx Inspector,
       # 可通过 agent-lynx 连接调试,与本地 Xcode Debug 构建同构

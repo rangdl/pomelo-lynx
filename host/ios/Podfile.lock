@@ -1,0 +1,281 @@
+PODS:
+  - BaseDevtool (4.1.0):
+    - BaseDevtool/framework (= 4.1.0)
+  - BaseDevtool/framework (4.1.0):
+    - DebugRouter (>= 5.0.15)
+    - Lynx (= 4.1.0)
+    - LynxBase (= 4.1.0)
+  - DebugRouter (5.0.15):
+    - DebugRouter/Framework (= 5.0.15)
+    - DebugRouter/Native (= 5.0.15)
+    - DebugRouter/third_party (= 5.0.15)
+  - DebugRouter/Framework (5.0.15):
+    - DebugRouter/Native
+  - DebugRouter/MessageTransceiverEnable (5.0.15)
+  - DebugRouter/Native (5.0.15):
+    - DebugRouter/third_party
+  - DebugRouter/third_party (5.0.15):
+    - DebugRouter/third_party/jsoncpp (= 5.0.15)
+  - DebugRouter/third_party/jsoncpp (5.0.15)
+  - libwebp (1.6.0):
+    - libwebp/demux (= 1.6.0)
+    - libwebp/mux (= 1.6.0)
+    - libwebp/sharpyuv (= 1.6.0)
+    - libwebp/webp (= 1.6.0)
+  - libwebp/demux (1.6.0):
+    - libwebp/webp
+  - libwebp/mux (1.6.0):
+    - libwebp/demux
+  - libwebp/sharpyuv (1.6.0)
+  - libwebp/webp (1.6.0):
+    - libwebp/sharpyuv
+  - Lynx (4.1.0):
+    - Lynx/Framework (= 4.1.0)
+  - Lynx/Framework (4.1.0):
+    - Lynx/Gfx
+    - Lynx/ReleaseResource
+    - LynxBase/Framework
+    - LynxServiceAPI
+    - PrimJS/napi/env
+    - PrimJS/napi/jsc
+    - PrimJS/napi/quickjs
+    - PrimJS/quickjs (= 4.1.1)
+  - Lynx/Gfx (4.1.0):
+    - LynxBase/Framework
+  - Lynx/ReleaseResource (4.1.0)
+  - LynxBase (4.1.0):
+    - LynxBase/Framework (= 4.1.0)
+  - LynxBase/Framework (4.1.0):
+    - LynxServiceAPI/Core
+  - LynxDevtool (4.1.0):
+    - LynxDevtool/Framework (= 4.1.0)
+    - LynxDevtool/LynxCore (= 4.1.0)
+    - LynxDevtool/LynxRecorder (= 4.1.0)
+  - LynxDevtool/Framework (4.1.0):
+    - BaseDevtool (= 4.1.0)
+    - DebugRouter (>= 5.0.15)
+    - Lynx (= 4.1.0)
+    - LynxBase (= 4.1.0)
+    - LynxDevtool/Framework/zlib (= 4.1.0)
+    - LynxDevtool/LynxCore
+    - PrimJS/quickjs_debugger
+    - PrimJS/quickjs_heapprofiler
+    - PrimJS/quickjs_profiler
+    - SocketRocket
+  - LynxDevtool/Framework/zlib (4.1.0):
+    - BaseDevtool (= 4.1.0)
+    - DebugRouter (>= 5.0.15)
+    - Lynx (= 4.1.0)
+    - LynxBase (= 4.1.0)
+    - LynxDevtool/LynxCore
+    - PrimJS/quickjs_debugger
+    - PrimJS/quickjs_heapprofiler
+    - PrimJS/quickjs_profiler
+    - SocketRocket
+  - LynxDevtool/LynxCore (4.1.0)
+  - LynxDevtool/LynxRecorder (4.1.0):
+    - LynxDevtool/Framework
+  - LynxLibraryRegistry (0.1.0):
+    - Lynx
+  - LynxService/Devtool (4.1.0):
+    - Lynx (= 4.1.0)
+    - LynxDevtool (= 4.1.0)
+    - LynxServiceAPI (= 4.1.0)
+  - LynxService/Http (4.1.0):
+    - Lynx (= 4.1.0)
+    - LynxServiceAPI (= 4.1.0)
+  - LynxService/Image (4.1.0):
+    - Lynx (= 4.1.0)
+    - LynxServiceAPI (= 4.1.0)
+    - SDWebImage (= 5.15.5)
+    - SDWebImageWebPCoder (= 0.11.0)
+  - LynxService/Log (4.1.0):
+    - Lynx (= 4.1.0)
+    - LynxBase (= 4.1.0)
+    - LynxServiceAPI (= 4.1.0)
+  - LynxServiceAPI (4.1.0):
+    - LynxServiceAPI/Core (= 4.1.0)
+    - LynxServiceAPI/Native (= 4.1.0)
+  - LynxServiceAPI/Core (4.1.0):
+    - LynxServiceAPI/Native
+  - LynxServiceAPI/Native (4.1.0)
+  - LynxTextra (0.2.4)
+  - MJRefresh (3.7.9)
+  - PomeloLynxFilesystem (0.1.0):
+    - Lynx
+  - PomeloLynxMedia (0.1.0):
+    - PomeloLynxMedia/Audio (= 0.1.0)
+  - PomeloLynxMedia/Audio (0.1.0):
+    - Lynx
+  - PomeloLynxPlatform (0.1.0):
+    - Lynx
+  - PomeloLynxStorage (0.1.0):
+    - Lynx
+  - PrimJS/log (4.1.1)
+  - PrimJS/napi (4.1.1):
+    - PrimJS/napi/adapter (= 4.1.1)
+    - PrimJS/napi/core (= 4.1.1)
+    - PrimJS/napi/env (= 4.1.1)
+    - PrimJS/napi/jsc (= 4.1.1)
+    - PrimJS/napi/quickjs (= 4.1.1)
+  - PrimJS/napi/adapter (4.1.1):
+    - PrimJS/napi/core
+    - PrimJS/napi/env
+  - PrimJS/napi/core (4.1.1)
+  - PrimJS/napi/env (4.1.1):
+    - PrimJS/napi/core
+  - PrimJS/napi/jsc (4.1.1):
+    - PrimJS/log
+    - PrimJS/napi/core
+    - PrimJS/quickjs
+  - PrimJS/napi/quickjs (4.1.1):
+    - PrimJS/napi/core
+    - PrimJS/quickjs
+  - PrimJS/quickjs (4.1.1):
+    - PrimJS/log
+  - PrimJS/quickjs_debugger (4.1.1):
+    - PrimJS/quickjs
+  - PrimJS/quickjs_heapprofiler (4.1.1):
+    - PrimJS/quickjs_debugger
+  - PrimJS/quickjs_profiler (4.1.1):
+    - PrimJS/quickjs_debugger
+  - SDWebImage (5.15.5):
+    - SDWebImage/Core (= 5.15.5)
+  - SDWebImage/Core (5.15.5)
+  - SDWebImageWebPCoder (0.11.0):
+    - libwebp (~> 1.0)
+    - SDWebImage/Core (~> 5.15)
+  - ServalMarkdown (0.1.1):
+    - LynxTextra
+  - ServalSVG (0.3.4)
+  - SocketRocket (0.7.1)
+  - XElement (4.1.0):
+    - XElement/Behavior (= 4.1.0)
+    - XElement/BlurView (= 4.1.0)
+    - XElement/Input (= 4.1.0)
+    - XElement/Markdown (= 4.1.0)
+    - XElement/Overlay (= 4.1.0)
+    - XElement/Refresh (= 4.1.0)
+    - XElement/ScrollCoordinator (= 4.1.0)
+    - XElement/SVG (= 4.1.0)
+    - XElement/Video (= 4.1.0)
+    - XElement/ViewPager (= 4.1.0)
+    - XElement/WebView (= 4.1.0)
+  - XElement/Behavior (4.1.0):
+    - Lynx (= 4.1.0)
+    - XElement/BlurView
+    - XElement/Input
+    - XElement/Markdown
+    - XElement/Overlay
+    - XElement/Refresh
+    - XElement/ScrollCoordinator
+    - XElement/SVG
+    - XElement/Video
+    - XElement/ViewPager
+    - XElement/WebView
+  - XElement/BlurView (4.1.0):
+    - Lynx (= 4.1.0)
+  - XElement/Input (4.1.0):
+    - Lynx (= 4.1.0)
+  - XElement/Markdown (4.1.0):
+    - Lynx (= 4.1.0)
+    - ServalMarkdown (= 0.1.1)
+  - XElement/Overlay (4.1.0):
+    - Lynx (= 4.1.0)
+  - XElement/Refresh (4.1.0):
+    - Lynx (= 4.1.0)
+    - MJRefresh (>= 3.6.1)
+  - XElement/ScrollCoordinator (4.1.0):
+    - Lynx (= 4.1.0)
+    - XElement/ViewPager
+  - XElement/SVG (4.1.0):
+    - Lynx (= 4.1.0)
+    - ServalSVG (>= 0.0.17)
+  - XElement/Video (4.1.0):
+    - Lynx (= 4.1.0)
+  - XElement/ViewPager (4.1.0):
+    - Lynx (= 4.1.0)
+  - XElement/WebView (4.1.0):
+    - Lynx (= 4.1.0)
+
+DEPENDENCIES:
+  - DebugRouter (= 5.0.15)
+  - DebugRouter/MessageTransceiverEnable (= 5.0.15)
+  - Lynx/Framework (= 4.1.0)
+  - LynxBase/Framework (= 4.1.0)
+  - LynxLibraryRegistry (from `/Users/runner/work/pomelo-lynx/pomelo-lynx/host/ios/generated/lynx-library`)
+  - LynxService/Devtool (= 4.1.0)
+  - LynxService/Http (= 4.1.0)
+  - LynxService/Image (= 4.1.0)
+  - LynxService/Log (= 4.1.0)
+  - LynxServiceAPI (= 4.1.0)
+  - PomeloLynxFilesystem (from `/Users/runner/work/pomelo-lynx/pomelo-lynx/packages/lynx-filesystem/ios`)
+  - PomeloLynxMedia (from `/Users/runner/work/pomelo-lynx/pomelo-lynx/packages/lynx-media/ios`)
+  - PomeloLynxPlatform (from `/Users/runner/work/pomelo-lynx/pomelo-lynx/packages/lynx-platform/ios`)
+  - PomeloLynxStorage (from `/Users/runner/work/pomelo-lynx/pomelo-lynx/packages/lynx-storage/ios`)
+  - PrimJS/napi (= 4.1.1)
+  - PrimJS/quickjs (= 4.1.1)
+  - SDWebImage (= 5.15.5)
+  - SDWebImageWebPCoder (= 0.11.0)
+  - XElement (= 4.1.0)
+
+SPEC REPOS:
+  https://github.com/lynx-family/Specs.git:
+    - BaseDevtool
+    - Lynx
+    - LynxBase
+    - LynxDevtool
+    - LynxService
+    - LynxServiceAPI
+    - XElement
+  trunk:
+    - DebugRouter
+    - libwebp
+    - LynxTextra
+    - MJRefresh
+    - PrimJS
+    - SDWebImage
+    - SDWebImageWebPCoder
+    - ServalMarkdown
+    - ServalSVG
+    - SocketRocket
+
+EXTERNAL SOURCES:
+  LynxLibraryRegistry:
+    :path: "/Users/runner/work/pomelo-lynx/pomelo-lynx/host/ios/generated/lynx-library"
+  PomeloLynxFilesystem:
+    :path: "/Users/runner/work/pomelo-lynx/pomelo-lynx/packages/lynx-filesystem/ios"
+  PomeloLynxMedia:
+    :path: "/Users/runner/work/pomelo-lynx/pomelo-lynx/packages/lynx-media/ios"
+  PomeloLynxPlatform:
+    :path: "/Users/runner/work/pomelo-lynx/pomelo-lynx/packages/lynx-platform/ios"
+  PomeloLynxStorage:
+    :path: "/Users/runner/work/pomelo-lynx/pomelo-lynx/packages/lynx-storage/ios"
+
+SPEC CHECKSUMS:
+  BaseDevtool: 6f1625a8d8f99dcc0b5d3b798b75c03e00fd5e46
+  DebugRouter: f0323a03519feabd12f553f0da7ac7931873a0ea
+  libwebp: af5937a13536ef73f3784d69cc342b98961acf33
+  Lynx: b9a0812cb5b0f1ff6efba8cc1d1d5c094a23f632
+  LynxBase: 4d2fdb403f161e8fce8af3db8bddee50c8f1fe3e
+  LynxDevtool: 45d2c62996dc5435010a020341d70fade6b219f5
+  LynxLibraryRegistry: 68fe4b4a322c7e7d5de28b8467442d86563f91a6
+  LynxService: 4e390c8080eff4bc3d3f4e2133379c2942191c1b
+  LynxServiceAPI: 79446ba6dcea4353b8e2e5b77ec9f34603c0a054
+  LynxTextra: e90062b777612a5df061b07ba181605ba4b21e71
+  MJRefresh: ff9e531227924c84ce459338414550a05d2aea78
+  PomeloLynxFilesystem: 199ac44bee2715d531e4485952d736586611dec9
+  PomeloLynxMedia: 46b2748af3fe3b60d62d92875e521e05a7016284
+  PomeloLynxPlatform: 794bf857d9969d0d46a2d67f7bfeeff56f6b6189
+  PomeloLynxStorage: 2494f0f1a6ea43ad7115400525971fa6e0221e78
+  PrimJS: 2bb7f0e0c314cc81f6dc53aa814082b66f149e7c
+  SDWebImage: fd7e1a22f00303e058058278639bf6196ee431fe
+  SDWebImageWebPCoder: 295a6573c512f54ad2dd58098e64e17dcf008499
+  ServalMarkdown: 4e0401818bc34bbb7659270e2df775119ccc029f
+  ServalSVG: 2d3434c148b5dcaf187d9da9013d011236b163cf
+  SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
+  XElement: 81b11cf09c9b2c773bfc3b9b631811502328016b
+
+PODFILE CHECKSUM: 8bee415517005c000e0a7233e59cf055b6e70930
+
+COCOAPODS: 1.16.2

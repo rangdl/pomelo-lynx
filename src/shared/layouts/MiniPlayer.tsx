@@ -5,6 +5,7 @@ import {
   toggleMedia,
   useMediaPlayer,
 } from '../../core/media/player.js';
+import { ROUTE_PATHS } from '../../routes.js';
 import { Button } from '../ui/Button.js';
 import { IconBadge } from '../ui/IconBadge.js';
 import './MiniPlayer.css';
@@ -39,7 +40,7 @@ export function MiniPlayer() {
   return (
     <view
       className="mini-player"
-      bindtap={() => navigate({ to: '/player' })}
+      bindtap={() => navigate({ to: ROUTE_PATHS.player })}
       accessibility-element={true}
       accessibility-label={`${track.title}, ${detail}`}
       accessibility-traits="button"

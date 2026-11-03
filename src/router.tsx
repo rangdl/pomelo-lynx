@@ -9,15 +9,7 @@ import {
 } from '@tanstack/react-router';
 import { reportUpdateStartupFailure } from './core/updater/native-updater.js';
 import { UpdateStartup } from './core/updater/UpdateStartup.js';
-import { HomePage } from './features/home/HomePage.js';
-import { PlayerPage } from './features/player/PlayerPage.js';
-import { AboutPage } from './features/settings/AboutPage.js';
-import { DeveloperPage } from './features/settings/DeveloperPage.js';
-import { LogsPage } from './features/settings/LogsPage.js';
-import { PlaybackSettingsPage } from './features/settings/PlaybackSettingsPage.js';
-import { SettingsPage } from './features/settings/SettingsPage.js';
-import { SourcePage } from './features/settings/SourcePage.js';
-import { ThemePalettePage } from './features/settings/ThemePalettePage.js';
+import { ROUTE_PATHS } from './routes.js';
 import { ShellLayout } from './shared/layouts/ShellLayout.js';
 import { ensureRouterEnv } from './shims/router-env.js';
 
@@ -70,73 +62,24 @@ const shellRoute = createRoute({
   component: ShellLayout,
 });
 
-const homeRoute = createRoute({
-  getParentRoute: () => shellRoute,
-  path: '/',
-  component: HomePage,
-});
+/**
+ * 子路由只声明路径,不声明 `component`。
+ *
+ * ShellLayout 是单 LynxView 内的页面栈:它按 `PAGE_COMPONENTS` 同时挂载
+ * 当前 tab 的祖先页(侧滑返回时父页真实垫在下面),没有 `<Outlet>`。
+ * 因此这里的 `component` 永远不会被渲染,写上去只会让人以为改了它就能改页面。
+ * 组件注册见 src/shared/layouts/ShellLayout.tsx 的 PAGE_COMPONENTS。
+ *
+ * 路径值来自 ROUTE_PATHS,而不是字面量:本仓库没有 `declare module
+ * '@tanstack/react-router'` 的 Register Router 声明,`navigate({ to })`
+ * 本来就是宽 string 类型(已用 `/settings/nope` 探针验证),所以这里
+ * 折成 `Object.values()` 不会让类型从「收窄」退化成「宽松」——它一直没收窄过。
+ */
+const childRoutes = Object.values(ROUTE_PATHS).map((path) =>
+  createRoute({ getParentRoute: () => shellRoute, path }),
+);
 
-const playerRoute = createRoute({
-  getParentRoute: () => shellRoute,
-  path: '/player',
-  component: PlayerPage,
-});
-
-const settingsRoute = createRoute({
-  getParentRoute: () => shellRoute,
-  path: '/settings',
-  component: SettingsPage,
-});
-
-const aboutRoute = createRoute({
-  getParentRoute: () => shellRoute,
-  path: '/settings/about',
-  component: AboutPage,
-});
-
-const developerRoute = createRoute({
-  getParentRoute: () => shellRoute,
-  path: '/settings/developer',
-  component: DeveloperPage,
-});
-
-const themePaletteRoute = createRoute({
-  getParentRoute: () => shellRoute,
-  path: '/settings/theme',
-  component: ThemePalettePage,
-});
-
-const sourcesRoute = createRoute({
-  getParentRoute: () => shellRoute,
-  path: '/settings/sources',
-  component: SourcePage,
-});
-
-const playbackSettingsRoute = createRoute({
-  getParentRoute: () => shellRoute,
-  path: '/settings/playback',
-  component: PlaybackSettingsPage,
-});
-
-const logsRoute = createRoute({
-  getParentRoute: () => shellRoute,
-  path: '/settings/logs',
-  component: LogsPage,
-});
-
-const routeTree = rootRoute.addChildren([
-  shellRoute.addChildren([
-    homeRoute,
-    playerRoute,
-    settingsRoute,
-    aboutRoute,
-    developerRoute,
-    themePaletteRoute,
-    sourcesRoute,
-    playbackSettingsRoute,
-    logsRoute,
-  ]),
-]);
+const routeTree = rootRoute.addChildren([shellRoute.addChildren(childRoutes)]);
 
 /**
  * 构造应用路由。`ensureRouterEnv()` 必须与 router 构造同线程同 realm 调用

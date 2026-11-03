@@ -14,37 +14,15 @@ import {
   updateSession,
 } from '../../core/updater/update-session.js';
 import { isWebPlatform } from '../../native/web-platform.js';
+import {
+  bundleReasonText,
+  updateErrorText,
+} from '../../shared/errors/error-text.js';
 import { Hint } from '../../shared/ui/Hint.js';
 import { ListRow } from '../../shared/ui/ListRow.js';
 import { SettingsGroupDivider } from '../../shared/ui/SettingsGroup.js';
 import { SwitchRow } from '../../shared/ui/SwitchRow.js';
 import './BundleUpdateSection.css';
-
-function errorText(error: string): string {
-  const known: Record<string, string> = {
-    release_rate_limited: '请求过于频繁,请稍后再试',
-    release_unpublished: '发布尚未公开',
-    release_missing_asset: '发布缺少必要资产',
-    release_changed: '发布在读取过程中发生了变化',
-    metadata_unavailable: '此版本不支持安全元数据读取,请安装新版安装包',
-    update_channel_unsupported: '更新通道不受支持',
-    insufficient_space: '剩余空间不足',
-    cancelled: '已取消',
-    checksum_mismatch: '下载内容校验失败',
-    invalid_release: '发布信息无效',
-  };
-  return known[error] ?? '操作失败,请稍后再试';
-}
-
-function reasonText(reason: string): string {
-  const known: Record<string, string> = {
-    unavailable: '热更新不可用,请安装完整安装包',
-    signing_key: '此安装包未配置受信签名密钥,无法热更新',
-    signature_missing: '发布未包含签名,无法热更新',
-    signature_invalid: '签名校验失败',
-  };
-  return known[reason] ?? '此更新与当前宿主不兼容,请安装完整安装包';
-}
 
 /**
  * Bundle 热更新区:通道、自动更新开关、手动检查、下载进度、恢复内置。
@@ -60,7 +38,7 @@ export function BundleUpdateSection() {
   const native = !web && nativeUpdaterAvailable();
   const available = web || nativeUpdateMetadataAvailable();
   const { checking, check } = session;
-  const error = session.checkError ? errorText(session.checkError) : null;
+  const error = session.checkError ? updateErrorText(session.checkError) : null;
   const identity = updateIdentity(session.native);
 
   const busy =
@@ -111,7 +89,7 @@ export function BundleUpdateSection() {
     (session.native.running.kind !== 'builtin' ||
       !!pending ||
       !!session.native.active);
-  const taskError = session.error ? errorText(session.error) : null;
+  const taskError = session.error ? updateErrorText(session.error) : null;
 
   return (
     <view className="client-update" data-testid="client-update-section">
@@ -129,7 +107,7 @@ export function BundleUpdateSection() {
       />
 
       {!available && !web ? (
-        <Hint tone="muted">{errorText('metadata_unavailable')}</Hint>
+        <Hint tone="muted">{updateErrorText('metadata_unavailable')}</Hint>
       ) : null}
 
       {native ? (
@@ -201,7 +179,9 @@ export function BundleUpdateSection() {
             </>
           ) : null}
           {check.comparison === 'newer' && !check.bundleURL && !web ? (
-            <Hint tone="muted">{reasonText(check.bundleReason ?? '')}</Hint>
+            <Hint tone="muted">
+              {bundleReasonText(check.bundleReason ?? '')}
+            </Hint>
           ) : null}
         </>
       ) : null}

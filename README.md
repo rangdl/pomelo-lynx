@@ -38,14 +38,13 @@
 ```
 src/
   index.tsx          入口(main 环境)
-  router.tsx         路由、错误边界与更新启动确认
+  routes.ts          路由路径唯一来源(ROUTE_PATHS / AppPath)
+  router.tsx         路由装配、错误边界与更新启动确认
   features/home      示例首页
   features/settings  设置、关于、日志页
   core/              日志、存储、热更新等与 UI 无关的能力
   native/            原生能力 facade(存储、更新、平台能力)
   shared/layouts/    ShellLayout(浮动底部导航)与 PageTopBar(标准子页导航栏)
-  lib/flappy.ts      与框架无关的小游戏物理引擎
-  useFlappy.ts       对应的 React Hook
   probe/             跨端对齐探针页(节点带 data-testid)
   web-shell/         Web 端壳页面(import map + bundle 切换)
 host/               自有宿主 app(SDK 集成,参考 songloft-player-lynx)

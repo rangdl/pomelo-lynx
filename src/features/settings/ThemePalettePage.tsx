@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 
 import { t } from '../../i18n/index.js';
+import { ROUTE_PATHS } from '../../routes.js';
 import { SettingsSubPage } from '../../shared/layouts/SettingsSubPage.js';
 import {
   themePalettePreference,
@@ -25,7 +26,7 @@ export function ThemePalettePage() {
     <SettingsSubPage
       title={t('themePalette.title')}
       backLabel={t('settings.title')}
-      onBack={() => navigate({ to: '/settings' })}
+      onBack={() => navigate({ to: ROUTE_PATHS.settings })}
       testid="theme-palette-page"
       topbarTestid="theme-palette-topbar"
       backTestid="theme-palette-back"

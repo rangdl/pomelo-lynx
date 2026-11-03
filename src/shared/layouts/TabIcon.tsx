@@ -1,6 +1,10 @@
 /**
- * 底栏图标:24×24 内联 SVG。颜色由 current-color 注入(与 Lynx 官方示例一致),
- * 因为 Lynx 的 SVG 不跟随外层 text 的 color 级联。
+ * 底栏图标:24×24 内联 SVG。
+ *
+ * 颜色直接写进 SVG 字符串,不用 `current-color` 属性:该属性在
+ * @lynx-js/types 里只标注 Android/iOS/Harmony,`@lynx-js/web-elements` 的
+ * XSvg 把 content 塞进 `<img>` 的 blob URL,完全不解析它——Web 预览下
+ * 底栏图标会失去主题色。字符串替换是三端一致的做法。
  */
 const HOME_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.2 2.8 11.1a1 1 0 0 0-.3.7V21h6.5v-5.5h6V21h6.5v-9.2a1 1 0 0 0-.3-.7L12 3.2z"/></svg>`;
 
@@ -18,7 +22,7 @@ interface TabIconProps {
 }
 
 export function TabIcon({ name, color }: TabIconProps) {
-  const content =
+  const template =
     name === 'home'
       ? HOME_ICON
       : name === 'player'
@@ -26,11 +30,12 @@ export function TabIcon({ name, color }: TabIconProps) {
         : name === 'settings'
           ? SETTINGS_ICON
           : MORE_ICON;
+  // 不用 String.replaceAll:Lynx 引擎的 ES 版本不保证有它,split/join 等价。
+  const content = template.split('currentColor').join(color);
   return (
     <svg
       className="nav-item__icon"
       content={content}
-      current-color={color}
       accessibility-element={false}
     />
   );

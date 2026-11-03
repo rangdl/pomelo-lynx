@@ -20,6 +20,7 @@ import type { LogLevelName } from '../../core/log/levels.js';
 import { levelLetter, levelName } from '../../core/log/levels.js';
 import type { LogEntry } from '../../core/log/types.js';
 import { t } from '../../i18n/index.js';
+import { ROUTE_PATHS } from '../../routes.js';
 import { PageTopBar } from '../../shared/layouts/PageTopBar.js';
 import { PageTail } from '../../shared/layouts/SettingsSubPage.js';
 import { Button } from '../../shared/ui/Button.js';
@@ -170,7 +171,7 @@ export function LogsPage() {
       <PageTopBar
         title={t('logs.title')}
         backLabel={t('logs.back')}
-        onBack={() => navigate({ to: '/settings' })}
+        onBack={() => navigate({ to: ROUTE_PATHS.settings })}
         testid="logs-topbar"
         backTestid="logs-back"
       />

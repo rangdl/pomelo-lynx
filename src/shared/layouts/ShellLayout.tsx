@@ -28,10 +28,12 @@ import {
   subscribeSystemAppearance,
 } from '../../native/system-appearance.js';
 import { isIosPlatform, isWebPlatform } from '../../native/web-platform.js';
+import { type AppPath, ROUTE_PATHS } from '../../routes.js';
 import {
   resolveTheme,
   useAppearanceMode,
 } from '../theme/appearance-preference.js';
+import { navIconColor } from '../theme/nav-colors.js';
 import {
   resolveThemeVariant,
   useThemePalette,
@@ -41,22 +43,30 @@ import { TabIcon, type TabIconName } from './TabIcon.js';
 import './ShellLayout.css';
 
 interface TabItem {
-  path: '/' | '/player' | '/settings';
+  path:
+    | typeof ROUTE_PATHS.home
+    | typeof ROUTE_PATHS.player
+    | typeof ROUTE_PATHS.settings;
   labelKey: MessageKey;
   icon: TabIconName;
   testid: string;
 }
 
 const TABS: TabItem[] = [
-  { path: '/', labelKey: 'nav.home', icon: 'home', testid: 'nav-item-home' },
   {
-    path: '/player',
+    path: ROUTE_PATHS.home,
+    labelKey: 'nav.home',
+    icon: 'home',
+    testid: 'nav-item-home',
+  },
+  {
+    path: ROUTE_PATHS.player,
     labelKey: 'nav.player',
     icon: 'player',
     testid: 'nav-item-player',
   },
   {
-    path: '/settings',
+    path: ROUTE_PATHS.settings,
     labelKey: 'nav.settings',
     icon: 'settings',
     testid: 'nav-item-settings',
@@ -69,63 +79,56 @@ const SLOT_WIDTH = 84;
 const BAR_EXTRA_WIDTH = 8;
 
 type PageDirection = 'push' | 'pop' | 'fade' | 'none';
-type AppPath =
-  | '/'
-  | '/player'
-  | '/settings'
-  | '/settings/about'
-  | '/settings/developer'
-  | '/settings/theme'
-  | '/settings/sources'
-  | '/settings/playback'
-  | '/settings/logs';
-type SettingsPath = Exclude<AppPath, '/' | '/player'>;
+type SettingsPath = Exclude<
+  AppPath,
+  typeof ROUTE_PATHS.home | typeof ROUTE_PATHS.player
+>;
 
 const ROUTE_DEPTH: Record<AppPath, number> = {
-  '/': 0,
-  '/player': 0,
-  '/settings': 1,
-  '/settings/about': 2,
-  '/settings/developer': 2,
-  '/settings/theme': 2,
-  '/settings/sources': 2,
-  '/settings/playback': 2,
-  '/settings/logs': 2,
+  [ROUTE_PATHS.home]: 0,
+  [ROUTE_PATHS.player]: 0,
+  [ROUTE_PATHS.settings]: 1,
+  [ROUTE_PATHS.about]: 2,
+  [ROUTE_PATHS.developer]: 2,
+  [ROUTE_PATHS.theme]: 2,
+  [ROUTE_PATHS.sources]: 2,
+  [ROUTE_PATHS.playback]: 2,
+  [ROUTE_PATHS.logs]: 2,
 };
 
 const PAGE_COMPONENTS: Record<AppPath, () => ReactNode> = {
-  '/': HomePage,
-  '/player': PlayerPage,
-  '/settings': SettingsPage,
-  '/settings/about': AboutPage,
-  '/settings/developer': DeveloperPage,
-  '/settings/theme': ThemePalettePage,
-  '/settings/sources': SourcePage,
-  '/settings/playback': PlaybackSettingsPage,
-  '/settings/logs': LogsPage,
+  [ROUTE_PATHS.home]: HomePage,
+  [ROUTE_PATHS.player]: PlayerPage,
+  [ROUTE_PATHS.settings]: SettingsPage,
+  [ROUTE_PATHS.about]: AboutPage,
+  [ROUTE_PATHS.developer]: DeveloperPage,
+  [ROUTE_PATHS.theme]: ThemePalettePage,
+  [ROUTE_PATHS.sources]: SourcePage,
+  [ROUTE_PATHS.playback]: PlaybackSettingsPage,
+  [ROUTE_PATHS.logs]: LogsPage,
 };
 
 /** 每个 tab 一条栈;栈里保持祖先页面挂载,侧滑时父页就在下面。 */
 const PAGE_STACKS: Record<AppPath, readonly AppPath[]> = {
-  '/': ['/'],
-  '/player': ['/player'],
-  '/settings': ['/settings'],
-  '/settings/about': ['/settings', '/settings/about'],
-  '/settings/developer': ['/settings', '/settings/developer'],
-  '/settings/theme': ['/settings', '/settings/theme'],
-  '/settings/sources': ['/settings', '/settings/sources'],
-  '/settings/playback': ['/settings', '/settings/playback'],
-  '/settings/logs': ['/settings', '/settings/logs'],
+  [ROUTE_PATHS.home]: [ROUTE_PATHS.home],
+  [ROUTE_PATHS.player]: [ROUTE_PATHS.player],
+  [ROUTE_PATHS.settings]: [ROUTE_PATHS.settings],
+  [ROUTE_PATHS.about]: [ROUTE_PATHS.settings, ROUTE_PATHS.about],
+  [ROUTE_PATHS.developer]: [ROUTE_PATHS.settings, ROUTE_PATHS.developer],
+  [ROUTE_PATHS.theme]: [ROUTE_PATHS.settings, ROUTE_PATHS.theme],
+  [ROUTE_PATHS.sources]: [ROUTE_PATHS.settings, ROUTE_PATHS.sources],
+  [ROUTE_PATHS.playback]: [ROUTE_PATHS.settings, ROUTE_PATHS.playback],
+  [ROUTE_PATHS.logs]: [ROUTE_PATHS.settings, ROUTE_PATHS.logs],
 };
 
 const SETTINGS_PATHS = new Set<AppPath>([
-  '/settings',
-  '/settings/about',
-  '/settings/developer',
-  '/settings/theme',
-  '/settings/sources',
-  '/settings/playback',
-  '/settings/logs',
+  ROUTE_PATHS.settings,
+  ROUTE_PATHS.about,
+  ROUTE_PATHS.developer,
+  ROUTE_PATHS.theme,
+  ROUTE_PATHS.sources,
+  ROUTE_PATHS.playback,
+  ROUTE_PATHS.logs,
 ]);
 
 function routeDepth(pathname: string): number {
@@ -133,7 +136,7 @@ function routeDepth(pathname: string): number {
 }
 
 function stackFor(pathname: string): readonly AppPath[] {
-  return PAGE_STACKS[pathname as AppPath] ?? PAGE_STACKS['/settings'];
+  return PAGE_STACKS[pathname as AppPath] ?? PAGE_STACKS[ROUTE_PATHS.settings];
 }
 
 /** 当前 tab 栈里的上一页;侧滑返回只在这一条栈内移动。 */
@@ -147,8 +150,8 @@ function isSettingsPath(pathname: string): pathname is SettingsPath {
 }
 
 function tabOf(pathname: string): 'home' | 'player' | 'settings' {
-  if (pathname.startsWith('/settings')) return 'settings';
-  return pathname === '/player' ? 'player' : 'home';
+  if (pathname.startsWith(ROUTE_PATHS.settings)) return 'settings';
+  return pathname === ROUTE_PATHS.player ? 'player' : 'home';
 }
 
 /**
@@ -163,7 +166,7 @@ export function ShellLayout() {
   const themePalette = useThemePalette();
   const [showMore, setShowMore] = useState(false);
   // 记住设置 tab 的最后位置;从其它 tab 切回来时恢复整条栈。
-  const lastSettingsPathRef = useRef<SettingsPath>('/settings');
+  const lastSettingsPathRef = useRef<SettingsPath>(ROUTE_PATHS.settings);
   if (isSettingsPath(pathname)) lastSettingsPathRef.current = pathname;
 
   // 单 LynxView 没有原生导航栈;用页面挂载动画模拟 push/pop。
@@ -248,12 +251,12 @@ export function ShellLayout() {
 
   // 根 tab 关闭原生边缘手势,避免冻结触摸却不移动页面。
   useEffect(() => {
-    setNativeEdgeBackEnabled(pathname.startsWith('/settings/'));
+    setNativeEdgeBackEnabled(pathname.startsWith(`${ROUTE_PATHS.settings}/`));
   }, [pathname]);
 
   // iOS 左边缘跟手返回:只有设置子页响应;根 tab(首页/播放/设置)不响应。
   useEffect(() => {
-    if (!pathname.startsWith('/settings/')) return;
+    if (!pathname.startsWith(`${ROUTE_PATHS.settings}/`)) return;
     let navTimer: ReturnType<typeof setTimeout> | undefined;
     let clearTimer: ReturnType<typeof setTimeout> | undefined;
     let watchdog: ReturnType<typeof setTimeout> | undefined;
@@ -349,10 +352,10 @@ export function ShellLayout() {
 
   const activePath: TabItem['path'] =
     tabOf(pathname) === 'settings'
-      ? '/settings'
+      ? ROUTE_PATHS.settings
       : tabOf(pathname) === 'player'
-        ? '/player'
-        : '/';
+        ? ROUTE_PATHS.player
+        : ROUTE_PATHS.home;
   const rawActiveIndex = TABS.findIndex((tab) => tab.path === activePath);
   const visibleTabs =
     TABS.length > MAX_VISIBLE_SLOTS
@@ -371,19 +374,21 @@ export function ShellLayout() {
   const dark = theme === 'dark';
   const ios = isIosPlatform();
   const glass = ios || isWebPlatform();
+  // 图标颜色来自 TS 映射(见 nav-colors.ts):<svg> 的内联颜色无法走 CSS 变量,
+  // 且 current-color 在 Web 端不生效。
   const iconColor = (active: boolean): string =>
-    active ? (dark ? '#4da3ff' : '#007aff') : dark ? '#b0b7c3' : '#666666';
+    navIconColor(themePalette, theme, active);
   const stack = stackFor(pathname);
   const themeVariant = resolveThemeVariant(themePalette, theme);
   const hasMedia = useMediaPlayerPresence();
   // 设置页不显示播放胶囊;其它页面(首页/播放)显示。
-  const showMiniPlayer = hasMedia && !pathname.startsWith('/settings');
+  const showMiniPlayer = hasMedia && !pathname.startsWith(ROUTE_PATHS.settings);
 
   return (
     // 每个变体都是完整 token 集,直接切 class,不重建页面树。
     <view
       className={`shell theme-${themeVariant} scheme-${theme}${
-        pathname === '/' ? ' shell--home' : ''
+        pathname === ROUTE_PATHS.home ? ' shell--home' : ''
       }${showMiniPlayer ? ' shell--mini-player' : ''}`}
       data-testid="shell-root"
     >

@@ -12,6 +12,7 @@ import {
   saveMediaSettings,
 } from '../../core/media/settings.js';
 import { t } from '../../i18n/index.js';
+import { ROUTE_PATHS } from '../../routes.js';
 import { SettingsSubPage } from '../../shared/layouts/SettingsSubPage.js';
 import { Button } from '../../shared/ui/Button.js';
 import { Hint } from '../../shared/ui/Hint.js';
@@ -102,7 +103,7 @@ export function PlaybackSettingsPage() {
     <SettingsSubPage
       title={t('playback.title')}
       backLabel={t('playback.back')}
-      onBack={() => navigate({ to: '/settings' })}
+      onBack={() => navigate({ to: ROUTE_PATHS.settings })}
       testid="playback-settings-page"
       topbarTestid="playback-settings-topbar"
       backTestid="playback-settings-back"

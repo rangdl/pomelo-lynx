@@ -10,6 +10,7 @@ import { t } from '../../i18n/index.js';
 import { readLynxGlobal } from '../../native/native-modules.js';
 import { setClipboard } from '../../native/platform.js';
 import { isWebPlatform } from '../../native/web-platform.js';
+import { ROUTE_PATHS } from '../../routes.js';
 import { SettingsSubPage } from '../../shared/layouts/SettingsSubPage.js';
 import { ListRow } from '../../shared/ui/ListRow.js';
 import {
@@ -53,7 +54,7 @@ export function AboutPage() {
     <SettingsSubPage
       title={t('about.title')}
       backLabel={t('about.back')}
-      onBack={() => navigate({ to: '/settings' })}
+      onBack={() => navigate({ to: ROUTE_PATHS.settings })}
       testid="about-page"
       topbarTestid="about-topbar"
       backTestid="about-back"

@@ -4,6 +4,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { clientBuild } from '../../core/config/constants.js';
 import { t } from '../../i18n/index.js';
 import { isIosPlatform } from '../../native/web-platform.js';
+import { ROUTE_PATHS } from '../../routes.js';
 import {
   PageLargeTitle,
   PageTail,
@@ -70,7 +71,7 @@ export function SettingsPage() {
             label={t('settings.about')}
             detail={t('settings.aboutDetail')}
             chevron
-            onTap={() => navigate({ to: '/settings/about' })}
+            onTap={() => navigate({ to: ROUTE_PATHS.about })}
             testid="settings-row-about"
           />
         </SettingsGroup>
@@ -82,7 +83,7 @@ export function SettingsPage() {
             label={t('settings.sources')}
             detail={t('settings.sourcesDetail')}
             chevron
-            onTap={() => navigate({ to: '/settings/sources' })}
+            onTap={() => navigate({ to: ROUTE_PATHS.sources })}
             testid="settings-row-sources"
           />
           <SettingsGroupDivider />
@@ -92,7 +93,7 @@ export function SettingsPage() {
             label={t('settings.playback')}
             detail={t('settings.playbackDetail')}
             chevron
-            onTap={() => navigate({ to: '/settings/playback' })}
+            onTap={() => navigate({ to: ROUTE_PATHS.playback })}
             testid="settings-row-playback"
           />
         </SettingsGroup>
@@ -184,7 +185,7 @@ export function SettingsPage() {
               label={t('settings.themePalette')}
               detail={t('settings.themePaletteDetail')}
               accessibilityLabel={`${t('settings.themePalette')}, ${paletteLabel}`}
-              onTap={() => navigate({ to: '/settings/theme' })}
+              onTap={() => navigate({ to: ROUTE_PATHS.theme })}
               testid="settings-row-theme-palette"
               trailing={
                 <view className="theme-palette-value">
@@ -204,7 +205,7 @@ export function SettingsPage() {
               label={t('settings.developer')}
               detail={t('settings.developerDetail')}
               chevron
-              onTap={() => navigate({ to: '/settings/developer' })}
+              onTap={() => navigate({ to: ROUTE_PATHS.developer })}
               testid="settings-row-developer"
             />
           </SettingsGroup>
@@ -216,7 +217,7 @@ export function SettingsPage() {
             label={t('settings.logs')}
             detail={t('settings.logsDetail')}
             chevron
-            onTap={() => navigate({ to: '/settings/logs' })}
+            onTap={() => navigate({ to: ROUTE_PATHS.logs })}
             testid="settings-row-logs"
           />
         </SettingsGroup>

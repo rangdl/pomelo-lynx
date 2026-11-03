@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 
 import { t } from '../../i18n/index.js';
+import { ROUTE_PATHS } from '../../routes.js';
 import { SettingsSubPage } from '../../shared/layouts/SettingsSubPage.js';
 import { DebugTunnelSection } from './DebugTunnelSection.js';
 import { DevServerSection } from './DevServerSection.js';
@@ -16,7 +17,7 @@ export function DeveloperPage() {
     <SettingsSubPage
       title={t('developer.title')}
       backLabel={t('settings.title')}
-      onBack={() => navigate({ to: '/settings' })}
+      onBack={() => navigate({ to: ROUTE_PATHS.settings })}
       testid="developer-page"
       topbarTestid="developer-topbar"
       backTestid="developer-back"

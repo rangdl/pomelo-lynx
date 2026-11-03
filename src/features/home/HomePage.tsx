@@ -18,6 +18,7 @@ import {
   providerErrorMessage,
   restoreSongloft,
 } from '../../core/providers/index.js';
+import { ROUTE_PATHS } from '../../routes.js';
 import {
   PageLargeTitle,
   PageTail,
@@ -376,7 +377,7 @@ export function HomePage() {
             variant="text"
             label={connected ? '设置' : '连接'}
             stopPropagation
-            onTap={() => navigate({ to: '/settings/sources' })}
+            onTap={() => navigate({ to: ROUTE_PATHS.sources })}
             testid="home-source-settings"
           />
         </view>
@@ -404,7 +405,7 @@ export function HomePage() {
             </text>
             <Button
               label="去连接"
-              onTap={() => navigate({ to: '/settings/sources' })}
+              onTap={() => navigate({ to: ROUTE_PATHS.sources })}
               testid="home-connect"
             />
           </view>

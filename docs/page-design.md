@@ -40,6 +40,12 @@ ShellLayout(全局唯一)
     `calc(144px + env(safe-area-inset-bottom))`;不要在页面里分别写两份 spacer
 - 页面根节点必须是 `display: flex; flex-direction: column; height: 100%`
   (或 `flex: 1; min-height: 0`),滚动区用 `flex: 1; min-height: 0` 吃掉剩余高度。
+- **路径集中在一处**:`src/routes.ts` 的 `ROUTE_PATHS` 是唯一来源,
+  `router.tsx` 只用它建静态 route(不写 `component`),`ShellLayout` 的
+  `ROUTE_DEPTH` / `PAGE_COMPONENTS` / `PAGE_STACKS` 都是 `Record<AppPath, ...>`,
+  新增路径漏填会直接类型报错。
+  `SETTINGS_PATHS` 是 `Set<AppPath>`(用于 `isSettingsPath` 类型收窄),
+  `Set` 少填一项不会报错,新增设置子页时要手动补。
 - **页面栈按底部 tab 划分**:`PAGE_STACKS` 为每个 tab 维护一条祖先链;
   设置 tab 记住最后位置(`lastSettingsPathRef`),从首页切回时恢复到该子页。
   再点当前 tab 回到该 tab 的栈根。祖先页面保持挂载,所以侧滑时父页真实

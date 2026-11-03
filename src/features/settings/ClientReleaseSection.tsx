@@ -14,27 +14,11 @@ import {
   isWebPlatform,
   platformName,
 } from '../../native/web-platform.js';
+import { clientUpdateErrorText } from '../../shared/errors/error-text.js';
 import { Hint } from '../../shared/ui/Hint.js';
 import { ListRow } from '../../shared/ui/ListRow.js';
 import { SettingsGroupDivider } from '../../shared/ui/SettingsGroup.js';
 import './ClientReleaseSection.css';
-
-function clientErrorText(error: string): string {
-  const known: Record<string, string> = {
-    client_metadata_missing: '此版本未提供客户端更新信息',
-    release_unpublished: '发布尚未公开',
-    release_rate_limited: '请求过于频繁,请稍后再试',
-    metadata_failed: '无法读取发布信息',
-    metadata_too_large: '发布信息过大',
-    invalid_release: '发布信息无效',
-    invalid_update_proxy: '更新代理地址无效',
-    update_channel_unsupported: '当前通道不支持客户端更新检查',
-    update_unavailable: '当前宿主不支持更新检查',
-    open_url_failed: '无法打开链接',
-    trollstore_unavailable: '未检测到 TrollStore,请先安装或打开下载页',
-  };
-  return known[error] ?? '检查失败,请稍后再试';
-}
 
 function sizeText(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
@@ -186,7 +170,7 @@ export function ClientReleaseSection() {
 
       {error ? (
         <Hint tone="error" testid="client-release-error">
-          {clientErrorText(error)}
+          {clientUpdateErrorText(error)}
         </Hint>
       ) : null}
 

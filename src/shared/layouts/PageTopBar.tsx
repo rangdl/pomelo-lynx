@@ -1,5 +1,7 @@
 import type { ReactNode } from '@lynx-js/react';
 
+import { t } from '../../i18n/index.js';
+
 import './PageTopBar.css';
 
 interface PageTopBarProps {
@@ -34,6 +36,10 @@ export function PageTopBar({
             className="page-topbar__back"
             bindtap={onBack}
             data-testid={backTestid}
+            accessibility-element={true}
+            accessibility-label={backLabel ?? t('common.back')}
+            accessibility-traits="button"
+            accessibility-role-description="button"
           >
             <text className="page-topbar__back-text">
               {backLabel ? `‹ ${backLabel}` : '‹'}

@@ -117,3 +117,48 @@ test('ShellLayout 直接切换完整 variant class,不重建页面树', () => {
   assert.match(source, /theme-\$\{themeVariant\}/);
   assert.match(source, /scheme-\$\{theme\}/);
 });
+
+/** 读 palette 变体里的单个颜色 token,供 TS 映射对拍。 */
+function colorOf(palette, scheme, name) {
+  const body = block(PALETTES, `.theme-${palette}-${scheme}`);
+  const match = body.match(new RegExp(`${name}\\s*:\\s*([^;]+);`));
+  assert.ok(match, `.theme-${palette}-${scheme} 缺少 ${name}`);
+  return match[1].trim().toLowerCase();
+}
+
+test('底栏图标颜色 TS 映射与 palettes.css 各变体一致', () => {
+  const source = readFileSync(
+    join(ROOT, 'src/shared/theme/nav-colors.ts'),
+    'utf8',
+  );
+  // 表项形如 ['default', 'light', '#007aff', '#666666'],
+  const rows = [
+    ...source.matchAll(
+      /\[\s*'(\w+)'\s*,\s*'(light|dark)'\s*,\s*'(#[0-9a-fA-F]{6})'\s*,\s*'(#[0-9a-fA-F]{6})'\s*\]/g,
+    ),
+  ].map(([, palette, scheme, active, inactive]) => ({
+    palette,
+    scheme,
+    active,
+    inactive,
+  }));
+
+  assert.equal(
+    rows.length,
+    PALETTES_IDS.length * 2,
+    '每个 palette × scheme 都必须有底栏配色,否则切主题后图标色不同步',
+  );
+
+  for (const row of rows) {
+    assert.equal(
+      colorOf(row.palette, row.scheme, '--color-primary'),
+      row.active.toLowerCase(),
+      `${row.palette}-${row.scheme} 的选中色应与 --color-primary 一致`,
+    );
+    assert.equal(
+      colorOf(row.palette, row.scheme, '--color-on-surface-variant'),
+      row.inactive.toLowerCase(),
+      `${row.palette}-${row.scheme} 的未选中色应与 --color-on-surface-variant 一致`,
+    );
+  }
+});

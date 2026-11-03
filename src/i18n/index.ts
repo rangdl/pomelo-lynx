@@ -11,6 +11,7 @@ export type MessageKey =
   | 'nav.player'
   | 'nav.settings'
   | 'nav.more'
+  | 'common.back'
   | 'settings.title'
   | 'settings.about'
   | 'settings.group.app'
@@ -81,6 +82,7 @@ const MESSAGES: Record<Locale, Messages> = {
     'nav.player': '播放',
     'nav.settings': '设置',
     'nav.more': '更多',
+    'common.back': '返回',
     'settings.title': '设置',
     'settings.about': '关于',
     'settings.group.app': '应用',
@@ -148,6 +150,7 @@ const MESSAGES: Record<Locale, Messages> = {
     'nav.player': 'Player',
     'nav.settings': 'Settings',
     'nav.more': 'More',
+    'common.back': 'Back',
     'settings.title': 'Settings',
     'settings.about': 'About',
     'settings.group.app': 'App',

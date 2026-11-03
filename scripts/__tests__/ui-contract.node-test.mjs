@@ -134,9 +134,16 @@ test('日志入口移到设置页独立路由,关于页不再放日志', () => {
   assert.doesNotMatch(about, /about\.logs/);
   assert.match(about, /about\.client/);
   const logs = read('src/features/settings/LogsPage.tsx');
-  assert.match(logs, /navigate\(\{ to: '\/settings' \}\)/);
+  assert.match(logs, /navigate\(\{ to: ROUTE_PATHS\.settings \}\)/);
+  // 路由路径的唯一来源是 src/routes.ts;router.tsx 不再写路径字面量。
+  const routes = read('src/routes.ts');
+  assert.match(routes, /logs: '\/settings\/logs'/);
   const router = read('src/router.tsx');
-  assert.match(router, /path: '\/settings\/logs'/);
+  assert.doesNotMatch(
+    router,
+    /path: '/,
+    '路由表应由 ROUTE_PATHS 生成,不要在 router.tsx 重复写路径',
+  );
   assert.doesNotMatch(router, /settings\/about\/logs/);
 });
 
@@ -210,8 +217,8 @@ test('主题色子页覆盖四个调色板并接入设置与路由', () => {
   const settings = read('src/features/settings/SettingsPage.tsx');
   assert.match(settings, /settings-row-theme-palette/);
   assert.match(settings, /PaletteSwatches/);
-  const router = read('src/router.tsx');
-  assert.match(router, /path: '\/settings\/theme'/);
+  const routes = read('src/routes.ts');
+  assert.match(routes, /theme: '\/settings\/theme'/);
 });
 
 test('开发者页统一使用 TextField/Button,键盘避让只在共享组件里', () => {
@@ -339,10 +346,10 @@ test('播放页使用共享 UI 原语并接入第三个 tab', () => {
   assert.match(page, /runFiveSingDiagnostics/);
   assert.match(page, /player-5sing-diagnose/);
   const shell = read('src/shared/layouts/ShellLayout.tsx');
-  assert.match(shell, /path: '\/player'/);
+  assert.match(shell, /ROUTE_PATHS\.player/);
   assert.match(shell, /nav-item-player/);
-  const router = read('src/router.tsx');
-  assert.match(router, /path: '\/player'/);
+  const routes = read('src/routes.ts');
+  assert.match(routes, /player: '\/player'/);
   const i18n = read('src/i18n/index.ts');
   assert.match(i18n, /'nav.player'/);
 });
@@ -351,7 +358,7 @@ test('播放胶囊与首页音乐库保持共享原语', () => {
   const shell = read('src/shared/layouts/ShellLayout.tsx');
   assert.match(shell, /MiniPlayer/);
   assert.match(shell, /useMediaPlayerPresence/);
-  assert.match(shell, /pathname\.startsWith\('\/settings'\)/);
+  assert.match(shell, /pathname\.startsWith\(ROUTE_PATHS\.settings\)/);
   const shellCss = read('src/shared/layouts/ShellLayout.css');
   assert.match(shellCss, /shell--mini-player \.settings__tail/);
   assert.match(shellCss, /144px/);
@@ -369,4 +376,170 @@ test('播放胶囊与首页音乐库保持共享原语', () => {
   const card = read('src/shared/ui/MediaCard.tsx');
   assert.match(card, /mode="aspectFill"/);
   assert.match(card, /binderror/);
+});
+
+test('底栏图标颜色走 TS 映射,不依赖 current-color', () => {
+  const icon = read('src/shared/layouts/TabIcon.tsx');
+  assert.doesNotMatch(
+    icon,
+    /current-color=/,
+    'current-color 在 Web 端(web-elements XSvg)不生效,颜色必须写进 SVG 字符串',
+  );
+  assert.match(icon, /split\('currentColor'\)\.join\(color\)/);
+
+  const shell = read('src/shared/layouts/ShellLayout.tsx');
+  assert.match(
+    shell,
+    /navIconColor\(themePalette, theme, active\)/,
+    '底栏图标必须跟随调色板,不能写死 default 的蓝/灰',
+  );
+  assert.doesNotMatch(shell, /'#4da3ff'/);
+});
+
+test('子页返回按钮带完整无障碍属性', () => {
+  const topbar = read('src/shared/layouts/PageTopBar.tsx');
+  assert.match(topbar, /accessibility-element=\{true\}/);
+  assert.match(topbar, /accessibility-label=/);
+  assert.match(topbar, /accessibility-traits="button"/);
+  // traits 只有 iOS/Harmony 生效,Android 需要 role-description 才能念出「按钮」。
+  assert.match(topbar, /accessibility-role-description="button"/);
+});
+
+test('路由路径只在 routes.ts 定义,其它文件不写路径字面量', () => {
+  const routes = read('src/routes.ts');
+  for (const [key, path] of [
+    ['home', '/'],
+    ['player', '/player'],
+    ['settings', '/settings'],
+    ['about', '/settings/about'],
+    ['developer', '/settings/developer'],
+    ['theme', '/settings/theme'],
+    ['sources', '/settings/sources'],
+    ['playback', '/settings/playback'],
+    ['logs', '/settings/logs'],
+  ]) {
+    assert.ok(
+      routes.includes(`${key}: '${path}'`),
+      `routes.ts 缺少 ${key}: '${path}'`,
+    );
+  }
+  const router = read('src/router.tsx');
+  assert.doesNotMatch(
+    router,
+    /path: '/,
+    'router.tsx 不应再写字面量 path,应使用 ROUTE_PATHS',
+  );
+
+  // 页面层的跳转同样走 ROUTE_PATHS:否则改了 routes.ts 里的值,
+  // 这些字面量会静默指向不存在的路由(运行期回落成设置页)。
+  const walkTs = (directory, files = []) => {
+    for (const entry of readdirSync(join(ROOT, directory), {
+      withFileTypes: true,
+    })) {
+      const path = `${directory}/${entry.name}`;
+      if (entry.isDirectory()) {
+        if (entry.name !== '__tests__') walkTs(path, files);
+      } else if (/\.tsx?$/.test(entry.name)) files.push(path);
+    }
+    return files;
+  };
+  const offenders = [...walkTs('src/features'), ...walkTs('src/shared')].filter(
+    (file) => /to: '\/|to: "\//.test(read(file)),
+  );
+  assert.deepEqual(offenders, [], '这些文件仍用字面量跳转,请改用 ROUTE_PATHS');
+});
+
+test('错误码文案只有一张表,且覆盖核心与原生抛出的全部码', () => {
+  const table = read('src/shared/errors/error-text.ts');
+
+  // 页面不得各自维护一份子集字典:漏映射的码会被静默降级成「操作失败」。
+  for (const page of [
+    'src/features/settings/BundleUpdateSection.tsx',
+    'src/features/settings/ClientReleaseSection.tsx',
+    'src/features/player/PlayerPage.tsx',
+  ]) {
+    assert.doesNotMatch(
+      read(page),
+      /const known: Record<string, string>/,
+      `${page} 不应再手写错误码字典,请改用 shared/errors/error-text`,
+    );
+  }
+
+  // 从真实抛出点采集错误码,避免测试里另抄一份清单而漂移。
+  const codes = new Set();
+  const collect = (source, pattern) => {
+    for (const match of source.matchAll(pattern)) codes.add(match[1]);
+  };
+  const coreFiles = [];
+  const walk = (directory) => {
+    for (const entry of readdirSync(join(ROOT, directory), {
+      withFileTypes: true,
+    })) {
+      const path = `${directory}/${entry.name}`;
+      if (entry.isDirectory()) {
+        if (entry.name !== '__tests__') walk(path);
+      } else if (/\.tsx?$/.test(entry.name)) coreFiles.push(path);
+    }
+  };
+  walk('src/core');
+  walk('src/native');
+  for (const file of coreFiles) {
+    const source = read(file);
+    collect(source, /new Error\(\s*'([a-z][a-z0-9_]*)'/g);
+    collect(source, /error:\s*'([a-z][a-z0-9_]*)'/g);
+    collect(source, /null,\s*'([a-z][a-z0-9_]*)'/g);
+  }
+
+  // 原生侧抛出的码同样要能翻译:媒体模块在 packages/lynx-media 里,
+  // 更新链路在 host/ios 与 host/android 里(那才是这些码真正的来源)。
+  const nativeOf = (directory, extension, pattern) => {
+    const files = [];
+    const walkNative = (current) => {
+      for (const entry of readdirSync(join(ROOT, current), {
+        withFileTypes: true,
+      })) {
+        const path = `${current}/${entry.name}`;
+        if (entry.isDirectory()) walkNative(path);
+        else if (entry.name.endsWith(extension)) files.push(read(path));
+      }
+    };
+    walkNative(directory);
+    for (const source of files) collect(source, pattern);
+  };
+  nativeOf('packages/lynx-media/ios/src', '.swift', /"(player_[a-z_]+)"/g);
+  nativeOf('host/ios', '.swift', /code: "([a-z][a-z0-9_]*)"/g);
+  // Kotlin 里普通字符串字面量太多(字段名等),只取「抛错」形状的调用,
+  // 以及 `PomeloUpdateModule` 里那份合法的错误码清单。
+  nativeOf(
+    'host/android',
+    '.kt',
+    /(?:require|check|error)\([^)]*\)\s*\{\s*"([a-z][a-z0-9_]*)"/g,
+  );
+  const androidErrors = read(
+    'host/android/app/src/main/java/org/pomelo/lynx/updater/PomeloUpdateModule.kt',
+  ).match(/private val errors = setOf\(([\s\S]*?)\)/);
+  assert.ok(androidErrors, '未找到 Android 侧的合法错误码清单');
+  collect(androidErrors[1], /"([a-z][a-z0-9_]*)"/g);
+
+  // 只校验这两个命名空间:文件系统/平台/调试通道各有自己的文案归属。
+  const scoped = [...codes].filter(
+    (code) =>
+      /^(player_|five_sing_)/.test(code) ||
+      /^(release_|metadata_|update_|checksum_|incompatible_|download_|invalid_(manifest|signature|task|update|release|metadata))/.test(
+        code,
+      ) ||
+      [
+        'cancelled',
+        'insufficient_space',
+        'unknown_signing_key',
+        'rollback_unconfirmed',
+        'startup_failed',
+        'client_metadata_missing',
+      ].includes(code),
+  );
+  assert.ok(scoped.length > 30, `采集到的错误码过少: ${scoped.length}`);
+  const missing = scoped.filter(
+    (code) => !new RegExp(`^\\s*${code}:`, 'm').test(table),
+  );
+  assert.deepEqual(missing, [], `error-text.ts 缺少这些错误码: ${missing}`);
 });

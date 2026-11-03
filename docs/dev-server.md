@@ -38,23 +38,21 @@
 模拟器/真机 `xcodebuild -configuration Debug`(或 Xcode Run)即带 Devtool;
 `POMELO_DEBUG=1` 环境变量照旧控制 `isDebug` globalProp。
 
-## Android(未实现,恢复安卓构建时按此实施)
+## Android(已实现,与 iOS 对齐)
 
-Android 侧 devtool 依赖已就位(`lynx-service-devtool`,build.gradle.kts),
-缺以下三件事:
+Android 侧 devtool 依赖已就位(`lynx-service-devtool`,build.gradle.kts)。
+以下三项已实现(`DevConfig.kt` / `HostTemplateProvider.kt` / `MainActivity.kt`):
 
-1. **Devtool 门控放开**:Android 注册由 `BuildConfig.DEBUG` 门控
-   (build.gradle.kts buildTypes 注释)。改为
-   `BuildConfig.DEBUG || channel == "dev"`,channel 读 assets 的
-   `native-host.json`(dev 构建 `channel: "dev"`,tag 构建 `"stable"`,
-   由 lynx.config.ts 的 buildMetadata 决定)。
-2. **`HostTemplateProvider.kt` 加 http(s) 分支**:与 iOS 同构——uri 以
-   http(s) 开头时 `HttpURLConnection` 拉取字节流,失败回落 assets;
-   仅 `BuildConfig.DEBUG || channel=="dev"` 启用。
-3. **dev URL 注入**:CI dev 包没有设置页可配的话,可复用 intent extra
-   `--es dev_url <url>`(MainActivity 读后传给 provider);页面操作逻辑
-   与 iOS 设置页「开发者」区一致(URL 存 prefs,key 同为
-   `dev_server_url`,storage 走 SharedPreferences)。
+1. **Devtool 门控**:`DevConfig.enabled()` = `BuildConfig.DEBUG || channel == "dev"`,
+   channel 读 assets 的 `native-host.json`(dev 构建 `"dev"`,tag 构建 `"stable"`)。
+2. **`HostTemplateProvider` http(s) 分支**:uri 以 http(s) 开头且 dev 启用时用
+   `HttpURLConnection` 拉取(15s 超时、只接受 200 + 非空 + Lynx bundle 头部校验),
+   失败回落内嵌 main bundle。
+3. **dev URL 注入**:`--es dev_url <url>` 写入 `pomelo_prefs` 的 `dev_server_url`
+   (与 JS 开发者页同一个 SharedPreferences 文件/key),冷启动自动使用;
+   传空串表示清除。
+4. **globalProps 对齐**:新增 `hostBuild` / `hostChannel`,与 iOS 的
+   `CFBundleVersion` / `PomeloChannel` 语义一致。
 
 ### 网络连通性
 
@@ -63,12 +61,12 @@ Android 侧 devtool 依赖已就位(`lynx-service-devtool`,build.gradle.kts),
   `http://127.0.0.1:3000/main.lynx.bundle`,或同网段用电脑 IP。
 - iOS 真机:与电脑同网段,直接用 `pnpm dev` 打印的 IP URL。
 
-## 恢复安卓 CI
+## 安卓 CI(已恢复)
 
-`.github/workflows/build-hosts.yml` 中 `android` job 已整体注释保留,
-恢复时:取消注释、把 `release`/`prerelease` job 的 `needs: [ios]` 改回
-`needs: [android, ios]`,并确认 `assembleRelease` 的 devtool 门控按上面
-第 1 条实施。
+`.github/workflows/build-hosts.yml` 的 `android` job 已恢复:
+`assembleRelease` + `testDebugUnitTest`,产物 `pomelo-lynx-android-release.apk`
+作为 artifact 上传;`release` / `prerelease` 的 `needs` 为 `[android, ios]`,
+APK 与 IPA 一起进入 Release 资产,`client.json` 的 `assets` 同时列出两端安装包。
 
 ## 本地开发服务端口
 

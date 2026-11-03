@@ -31,6 +31,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         PomeloLog.info("lifecycle", "MainActivity onCreate")
+        applyDevIntent()
         val view: LynxView = buildLynxView()
         view.addLynxViewClient(object : LynxViewClient() {
             override fun onFirstScreen() {
@@ -72,31 +73,63 @@ class MainActivity : Activity() {
         // frame already has them (a native-module getter would answer after the
         // launch frame had painted).
         val meta = LynxLoadMeta.Builder()
-        meta.setUrl(selectedBundle())
-        meta.setGlobalProps(
-            TemplateData.fromMap(
-                mapOf(
-                    "hostName" to "pomelo-host-android",
-                    "hostVersion" to BuildConfig.VERSION_NAME,
-                    "isDebug" to BuildConfig.DEBUG,
-                ),
-            ),
-        )
+        meta.setUrl(selectedUrl())
+        meta.setGlobalProps(globalProps())
         view.loadTemplate(meta.build())
-        PomeloLog.info("launch", "loadTemplate(${selectedBundle()}) invoked")
+        PomeloLog.info("launch", "loadTemplate(${selectedUrl()}) invoked")
     }
 
     /**
-     * Bundle selection: `--ez bundle probe` at launch, `am start --ez bundle
-     * probe` on a running instance (singleTask + onNewIntent reloads).
-     * Anything else selects the main app bundle.
+     * Bundle selection: `--ez bundle_probe true` picks the probe bundle,
+     * `--es dev_url <url>` points the app at a rspeedy dev server (dev channel
+     * or debug build only), anything else selects the main app bundle.
+     *
+     * Dev URL 与开发者页共用 `pomelo_prefs` 的 `dev_server_url`;intent extra
+     * 只是把它写进去,后续冷启动自动生效(与 iOS 的 prefs 行为一致)。
      */
+    private fun selectedUrl(): String {
+        if (DevConfig.enabled(this)) {
+            DevConfig.devServerUrl(this)?.let { return it }
+        }
+        return selectedBundle()
+    }
+
     private fun selectedBundle(): String =
         if (intent?.getBooleanExtra(EXTRA_BUNDLE_PROBE, false) == true) {
             HostTemplateProvider.PROBE_BUNDLE
         } else {
             HostTemplateProvider.MAIN_BUNDLE
         }
+
+    /** `--es dev_url <url>` 写入持久化配置;空串表示清除。 */
+    private fun applyDevIntent() {
+        if (!DevConfig.enabled(this)) return
+        val raw = intent?.getStringExtra(EXTRA_DEV_URL) ?: return
+        val url = raw.trim()
+        if (url.isEmpty()) {
+            DevConfig.storeDevServerUrl(this, null)
+            PomeloLog.info("devserver", "cleared dev server url")
+            return
+        }
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            PomeloLog.warn("devserver", "ignored non-http dev url")
+            return
+        }
+        DevConfig.storeDevServerUrl(this, url)
+        PomeloLog.info("devserver", "stored dev server url")
+    }
+
+    /** 与 iOS 相同的 globalProps 字段,供 JS 侧 client-identity 对齐。 */
+    private fun globalProps(): TemplateData =
+        TemplateData.fromMap(
+            mapOf(
+                "hostName" to "pomelo-host-android",
+                "hostVersion" to BuildConfig.VERSION_NAME,
+                "hostBuild" to BuildConfig.VERSION_CODE.toString(),
+                "hostChannel" to DevConfig.channel(this),
+                "isDebug" to BuildConfig.DEBUG,
+            ),
+        )
 
     private fun buildLynxView(): LynxView {
         val builder = LynxViewBuilder()
@@ -109,18 +142,10 @@ class MainActivity : Activity() {
         setIntent(intent)
         val view = lynxView ?: return
         val meta = LynxLoadMeta.Builder()
-        meta.setUrl(selectedBundle())
-        meta.setGlobalProps(
-            TemplateData.fromMap(
-                mapOf(
-                    "hostName" to "pomelo-host-android",
-                    "hostVersion" to BuildConfig.VERSION_NAME,
-                    "isDebug" to BuildConfig.DEBUG,
-                ),
-            ),
-        )
+        meta.setUrl(selectedUrl())
+        meta.setGlobalProps(globalProps())
         view.loadTemplate(meta.build())
-        PomeloLog.info("launch", "loadTemplate(${selectedBundle()}) invoked (reload)")
+        PomeloLog.info("launch", "loadTemplate(${selectedUrl()}) invoked (reload)")
     }
 
     override fun onResume() {
@@ -141,6 +166,7 @@ class MainActivity : Activity() {
 
     companion object {
         const val EXTRA_BUNDLE_PROBE = "bundle_probe"
+        const val EXTRA_DEV_URL = "dev_url"
         const val EVENT_APP_RESUMED = "PomeloLifecycle.resumed"
     }
 }

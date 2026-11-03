@@ -66,8 +66,11 @@ function fixture(t) {
   const dist = join(base, 'dist');
   mkdirSync(directory);
   mkdirSync(dist);
-  // 安卓构建暂停:发版资产只含 iOS IPA(见 update-release-lib.mjs expected)。
-  for (const name of ['pomelo-lynx-ios-nosign.ipa'])
+  // 客户端更新要求两端安装包都在(见 update-release-lib.mjs PLATFORM_PACKAGES)。
+  for (const name of [
+    'pomelo-lynx-ios-nosign.ipa',
+    'pomelo-lynx-android-release.apk',
+  ])
     writeFileSync(join(directory, name), `package ${name}`);
   writeFileSync(join(directory, 'version.json'), JSON.stringify(metadata));
   const bundleSource = join(dist, 'main.lynx.bundle');
@@ -89,7 +92,7 @@ test('signed native bundle shares one manifest with the full package', (t) => {
   options.changes = ['新增：客户端更新检查', '修复：下载链接'];
   options.buildTag = 'dev-v0.1.0-abcdef0';
   assert.deepEqual(finalizeRelease(options), {
-    assetCount: 2,
+    assetCount: 3,
     signedUpdate: true,
   });
   const raw = readFileSync(join(options.directory, 'version.json'));
@@ -100,7 +103,7 @@ test('signed native bundle shares one manifest with the full package', (t) => {
     publicKeyRecord(keys.publicKey),
   ]);
   assert.equal(manifest.channel, 'dev');
-  assert.equal(manifest.assets.length, 2);
+  assert.equal(manifest.assets.length, 3);
   assert.equal(manifest.bundle_update.asset, BUNDLE_ASSET);
   assert.deepEqual(
     manifest.bundle_update.targets.map((t) => [t.platform, t.engine]),
@@ -126,7 +129,7 @@ test('signed native bundle shares one manifest with the full package', (t) => {
   )
     .trim()
     .split('\n');
-  assert.equal(checksums.length, 5);
+  assert.equal(checksums.length, 6);
   const client = JSON.parse(
     readFileSync(join(options.directory, 'client.json'), 'utf8'),
   );
@@ -135,19 +138,20 @@ test('signed native bundle shares one manifest with the full package', (t) => {
   assert.equal(client.display_version, 'dev-0.1.0');
   assert.equal(client.build_tag, 'dev-v0.1.0-abcdef0');
   assert.deepEqual(client.changes, ['新增：客户端更新检查', '修复：下载链接']);
-  assert.deepEqual(client.assets, [
-    {
-      platform: 'ios',
-      name: 'pomelo-lynx-ios-nosign.ipa',
-      size: statSync(join(options.directory, 'pomelo-lynx-ios-nosign.ipa'))
-        .size,
+  assert.deepEqual(
+    client.assets,
+    [
+      ['ios', 'pomelo-lynx-ios-nosign.ipa'],
+      ['android', 'pomelo-lynx-android-release.apk'],
+    ].map(([platform, name]) => ({
+      platform,
+      name,
+      size: statSync(join(options.directory, name)).size,
       sha256: createHash('sha256')
-        .update(
-          readFileSync(join(options.directory, 'pomelo-lynx-ios-nosign.ipa')),
-        )
+        .update(readFileSync(join(options.directory, name)))
         .digest('hex'),
-    },
-  ]);
+    })),
+  );
   assert.ok(
     checksums.some((line) => line.endsWith('  client.json')),
     'checksums 必须覆盖客户端更新元数据',
@@ -254,7 +258,7 @@ test('unconfigured signing emits only full packages and removes stale hot-update
   for (const publicKey of ['', keys.publicKey]) {
     assert.deepEqual(
       finalizeRelease({ ...options, privateKey: '', publicKey }),
-      { assetCount: 1, signedUpdate: false },
+      { assetCount: 2, signedUpdate: false },
     );
     assert.equal(existsSync(join(options.directory, BUNDLE_ASSET)), false);
     assert.equal(existsSync(join(options.directory, SIGNATURE_ASSET)), false);

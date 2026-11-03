@@ -21,9 +21,9 @@
 - [x] 规范版本与展示版本分离:`0.0.3` / `dev-0.0.3 (125)`
 - [x] iOS 注入 `hostVersion`、`hostBuild`、`hostChannel`;iOS 增加
       `PomeloChannel` build setting
-- [ ] **Android 注入 `hostBuild`/`hostChannel`(计划,待恢复 Android 构建)**
+- [x] **Android 注入 `hostBuild`/`hostChannel`(已实现,随 dev 构建验证)**
   - `MainActivity` 的初始/`onNewIntent` globalProps 增加字段
-  - channel 由 `BuildConfig.DEBUG` 或构建字段决定;恢复 Android CI 后再提交
+  - channel 由 `DevConfig`(assets/native-host.json)+ `BuildConfig.DEBUG` 决定
 - [x] 关于页拆成「加速设置」「客户端更新」与「Bundle 热更新」
 - [x] 新增 `client.json` 固定资产:客户端版本、构建号、IPA size/sha256、changelog
 - [x] iOS 下载合并为「打开下载地址」:代理开启走加速地址,否则走 GitHub

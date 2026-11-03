@@ -113,36 +113,36 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # Android 构建暂停(2026-10):JS bundle 产物仍由 prepare job 产出并随
-  # release/prerelease 发布(热更新 dev 通道更新源不受影响)。恢复方案与
-  # 实时开发(dev server 热加载 + devtool 门控)记录在 docs/dev-server.md。
-  # android:
-  #   name: Android APK (release)
-  #   needs: prepare
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v5
-  #     - uses: actions/download-artifact@v8
-  #       with:
-  #         name: js-bundles
-  #         path: .
-  #     - uses: actions/setup-java@v5
-  #       with:
-  #         distribution: temurin
-  #         java-version: "17"
-  #     - uses: android-actions/setup-android@v4
-  #       with:
-  #         packages: platform-tools platforms;android-34 build-tools;34.0.0
-  #     - uses: gradle/actions/setup-gradle@v5
-  #     - name: Build debug APK
-  #       working-directory: host/android
-  #       run: ./gradlew --no-daemon assembleRelease :app:testDebugUnitTest
-  #     - uses: actions/upload-artifact@v7
-  #       with:
-  #         name: pomelo-lynx-android-release
-  #         path: host/android/app/build/outputs/apk/release/app-release.apk
-  #         if-no-files-found: error
-  #         retention-days: 7
+  # Android 与 iOS 对齐(2026-11):dev 通道包同样启用 devtool 与 dev server,
+  # APK 与 IPA 一起进入 release/prerelease 资产。dev server 细节见
+  # docs/dev-server.md。
+  android:
+    name: Android APK (release)
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v8
+        with:
+          name: js-bundles
+          path: .
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools platforms;android-34 build-tools;34.0.0
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Build debug APK
+        working-directory: host/android
+        run: ./gradlew --no-daemon assembleRelease :app:testDebugUnitTest
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pomelo-lynx-android-release
+          path: host/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 7
 
   ios:
     name: iOS IPA (unsigned)
@@ -298,7 +298,7 @@ jobs:
 
   release:
     name: Release (tag builds only)
-    needs: [ios]
+    needs: [android, ios]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -311,8 +311,10 @@ jobs:
         with:
           name: pomelo-lynx-ios-nosign
           path: .
-      # 安卓构建暂停:无 pomelo-lynx-android-release 产物可下载,
-      # release 资产只含 iOS IPA + 热更新文件。恢复安卓时同步还原本段。
+      - uses: actions/download-artifact@v8
+        with:
+          name: pomelo-lynx-android-release
+          path: .
       - uses: actions/download-artifact@v8
         with:
           name: js-bundles
@@ -341,6 +343,7 @@ jobs:
 
           mkdir -p release-files
           mv pomelo-lynx-ios-nosign.ipa release-files/pomelo-lynx-ios-nosign.ipa
+          mv pomelo-lynx-android-release.apk release-files/pomelo-lynx-android-release.apk
           # version.json:与 js job 同源的构建身份(gen-native-host 同一时刻生成,
           # 保证 native-host.json 与 release 元数据完全一致——finalize 会逐字段对拍)
           cp js-bundles/.build/version.json release-files/version.json
@@ -365,6 +368,7 @@ jobs:
             --notes-file release-notes.md
           gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
             release-files/pomelo-lynx-ios-nosign.ipa \
+            release-files/pomelo-lynx-android-release.apk \
             release-files/client.json \
             release-files/version.json release-files/checksums.txt
           if [ -f release-files/version.json.sig ]; then
@@ -377,7 +381,7 @@ jobs:
   # 它同时是热更新 dev 通道的更新源(JS 侧查 releases/tags/dev)。
   prerelease:
     name: Prerelease (dev, rolling)
-    needs: [ios]
+    needs: [android, ios]
     if: ${{ startsWith(github.ref, 'refs/tags/dev-') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     permissions:
@@ -390,8 +394,10 @@ jobs:
         with:
           name: pomelo-lynx-ios-nosign
           path: .
-      # 安卓构建暂停:无 pomelo-lynx-android-release 产物可下载,
-      # dev 预发布资产只含 iOS IPA + 热更新文件。恢复安卓时同步还原本段。
+      - uses: actions/download-artifact@v8
+        with:
+          name: pomelo-lynx-android-release
+          path: .
       - uses: actions/download-artifact@v8
         with:
           name: js-bundles
@@ -437,6 +443,7 @@ jobs:
 
           mkdir -p release-files
           mv pomelo-lynx-ios-nosign.ipa release-files/pomelo-lynx-ios-nosign.ipa
+          mv pomelo-lynx-android-release.apk release-files/pomelo-lynx-android-release.apk
           cp js-bundles/.build/version.json release-files/version.json
           if [ -n "${POMELO_UPDATE_PRIVATE_KEY:-}" ]; then
             POMELO_RELEASE_CHANGES=changes.json \
@@ -473,6 +480,7 @@ jobs:
             --notes-file release-notes.md
           gh release upload dev --repo "$GITHUB_REPOSITORY" --clobber \
             release-files/pomelo-lynx-ios-nosign.ipa \
+            release-files/pomelo-lynx-android-release.apk \
             release-files/client.json \
             release-files/version.json release-files/checksums.txt
           if [ -f release-files/version.json.sig ]; then

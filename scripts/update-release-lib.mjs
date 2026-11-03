@@ -27,6 +27,15 @@ export const UPDATE_ALGORITHM = 'rsa-pkcs1v15-sha256';
 export const BUNDLE_ASSET = 'pomelo-lynx-main.lynx.bundle';
 export const SIGNATURE_ASSET = 'version.json.sig';
 export const CLIENT_ASSET = 'client.json';
+
+/**
+ * 平台安装包清单:客户端更新按 platform 选取资产。
+ * Android 与 iOS 对齐后两者都必须存在(见 docs/dev-server.md)。
+ */
+export const PLATFORM_PACKAGES = [
+  { platform: 'ios', name: 'pomelo-lynx-ios-nosign.ipa' },
+  { platform: 'android', name: 'pomelo-lynx-android-release.apk' },
+];
 export const MAX_BUNDLE_BYTES = 32 * 1024 * 1024;
 export const MAX_MANIFEST_BYTES = 128 * 1024;
 export const MAX_CLIENT_ASSET_BYTES = 64 * 1024;
@@ -241,9 +250,7 @@ export function finalizeRelease({
   const metadata = validateBuildMetadata(original, packageVersion);
   const normalizedChanges = releaseChanges(changes);
   const normalizedBuildTag = releaseBuildTag(buildTag);
-  // 安卓构建暂停(2026-10):发版资产只含 iOS IPA;恢复安卓 CI 时把
-  // 'pomelo-lynx-android.apk' 加回此清单(见 docs/dev-server.md)。
-  const expected = ['pomelo-lynx-ios-nosign.ipa'];
+  const expected = PLATFORM_PACKAGES.map((pkg) => pkg.name);
   const allowed = new Set([
     ...expected,
     'version.json',
@@ -352,9 +359,6 @@ export function finalizeRelease({
   const packageAssets = listReleaseAssets(directory).filter((asset) =>
     expected.includes(asset.name),
   );
-  const ipaName = expected[0];
-  const ipaPath = join(directory, ipaName);
-  const ipaSize = statSync(ipaPath).size;
   const displayVersion =
     metadata.channel === 'dev'
       ? `dev-${metadata.package_version}`
@@ -372,14 +376,12 @@ export function finalizeRelease({
     release_tag: metadata.release_tag,
     ...(normalizedBuildTag ? { build_tag: normalizedBuildTag } : {}),
     changes: normalizedChanges,
-    assets: [
-      {
-        platform: 'ios',
-        name: ipaName,
-        size: ipaSize,
-        sha256: hashFile(ipaPath),
-      },
-    ],
+    assets: PLATFORM_PACKAGES.map(({ platform, name }) => ({
+      platform,
+      name,
+      size: statSync(join(directory, name)).size,
+      sha256: hashFile(join(directory, name)),
+    })),
   };
   const clientRaw = Buffer.from(`${JSON.stringify(clientMetadata, null, 2)}\n`);
   if (clientRaw.length > MAX_CLIENT_ASSET_BYTES)

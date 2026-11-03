@@ -51,7 +51,9 @@ class HostApplication : Application() {
 
         LynxServiceCenter.inst().registerService(LynxImageService.getInstance())
         LynxServiceCenter.inst().registerService(LynxLogService)
-        if (BuildConfig.DEBUG) {
+        // dev 通道的 release 包同样需要 Inspector(与 iOS 对齐):本地调试包与
+        // CI 产出的 dev 包都能被 agent-lynx / e2e 工具驱动。
+        if (DevConfig.enabled(this)) {
             LynxServiceCenter.inst().registerService(LynxDevToolService.INSTANCE)
             LynxDevToolService.INSTANCE.devtoolEnvInit(this)
             LynxDevToolService.INSTANCE.lynxDebugPresetValue = true
@@ -60,8 +62,9 @@ class HostApplication : Application() {
 
     private fun initLynxEnv() {
         LynxEnv.inst().init(this, null, null, null)
-        LynxEnv.inst().enableDevtool(BuildConfig.DEBUG)
-        LynxEnv.inst().enableLynxDebug(BuildConfig.DEBUG)
+        val dev = DevConfig.enabled(this)
+        LynxEnv.inst().enableDevtool(dev)
+        LynxEnv.inst().enableLynxDebug(dev)
         // Hot-update module: JS calls `NativeModules.PomeloUpdate.*` and listens
         // for `PomeloUpdate.progress` global events (see src/core/updater/).
         LynxEnv.inst().registerModule("PomeloUpdate", PomeloUpdateModule::class.java)

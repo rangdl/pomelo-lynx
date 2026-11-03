@@ -134,13 +134,17 @@ jobs:
         with:
           packages: platform-tools platforms;android-34 build-tools;34.0.0
       - uses: gradle/actions/setup-gradle@v5
-      - name: Build debug APK
+      - name: Build release APK
         working-directory: host/android
         run: ./gradlew --no-daemon assembleRelease :app:testDebugUnitTest
+      # 暂存成固定名再上传:与 iOS IPA 一致,下载后就是发布时使用的文件名,
+      # 发布 job 不再依赖 Gradle 的 build/outputs 目录结构。
+      - name: Stage APK with release name
+        run: cp host/android/app/build/outputs/apk/release/app-release.apk pomelo-lynx-android-release.apk
       - uses: actions/upload-artifact@v7
         with:
           name: pomelo-lynx-android-release
-          path: host/android/app/build/outputs/apk/release/app-release.apk
+          path: pomelo-lynx-android-release.apk
           if-no-files-found: error
           retention-days: 7
 

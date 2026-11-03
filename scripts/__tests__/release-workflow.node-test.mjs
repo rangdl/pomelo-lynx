@@ -72,3 +72,13 @@ test('dev 构建滚动更新 dev Release,并保留稳定版隔离', () => {
   assert.match(workflow, /git tag -f dev/);
   assert.match(workflow, /gh release upload dev .*--clobber/s);
 });
+
+test('Android 与 iOS 对齐:job、产物与发布资产都在', () => {
+  assert.match(workflow, /^ {2}android:/m);
+  assert.match(workflow, /name: pomelo-lynx-android-release/);
+  // 上传前先暂存固定名,下载后可直接进 release-files。
+  assert.match(workflow, /Stage APK with release name/);
+  assert.match(workflow, /path: pomelo-lynx-android-release\.apk/);
+  assert.match(workflow, /release-files\/pomelo-lynx-android-release\.apk/);
+  assert.match(workflow, /needs: \[android, ios\]/);
+});

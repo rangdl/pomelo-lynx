@@ -364,8 +364,16 @@ test('播放胶囊与首页音乐库保持共享原语', () => {
   assert.match(shellCss, /144px/);
   const mini = read('src/shared/layouts/MiniPlayer.tsx');
   assert.match(mini, /Button/);
-  assert.match(mini, /IconBadge/);
   assert.match(mini, /stopPropagation/);
+  // 胶囊左侧是曲目封面(带失败回退),右侧是图标按钮,底部是播放进度条。
+  assert.match(mini, /mini-player__cover/);
+  assert.match(mini, /mode="aspectFill"/);
+  assert.match(mini, /mini-player__progress/);
+  assert.doesNotMatch(
+    mini,
+    /IconBadge/,
+    '胶囊不再用固定 ♪ 图标块,改为显示当前曲目封面',
+  );
   const home = read('src/features/home/HomePage.tsx');
   assert.match(home, /PageLargeTitle/);
   assert.match(home, /PageTail/);
@@ -376,6 +384,23 @@ test('播放胶囊与首页音乐库保持共享原语', () => {
   const card = read('src/shared/ui/MediaCard.tsx');
   assert.match(card, /mode="aspectFill"/);
   assert.match(card, /binderror/);
+
+  // 专辑是 provider 可选能力:首页按能力探测渲染,服务端没有就静默隐藏。
+  assert.match(home, /albumsSupported/);
+  assert.match(home, /home-albums-shelf/);
+  assert.match(home, /setCurrentAlbum/);
+
+  // 首页条目按偏好渲染:底部有自定义入口,顺序/显隐来自 shared/home。
+  assert.match(home, /useHomeSections/);
+  assert.match(home, /home-customize/);
+  assert.match(home, /visibleSections/);
+
+  const customize = read('src/features/home/HomeCustomizePage.tsx');
+  assert.match(customize, /HomeCustomizePage/);
+  // 拖动排序之外必须有按钮等价操作(读屏用户无法拖动)。
+  assert.match(customize, /icon="↑"/);
+  assert.match(customize, /icon="↓"/);
+  assert.match(customize, /bindtouchmove/);
 });
 
 test('底栏图标颜色走 TS 映射,不依赖 current-color', () => {
@@ -410,6 +435,9 @@ test('路由路径只在 routes.ts 定义,其它文件不写路径字面量', ()
   for (const [key, path] of [
     ['home', '/'],
     ['player', '/player'],
+    ['playlist', '/playlist'],
+    ['album', '/album'],
+    ['homeCustomize', '/home/customize'],
     ['settings', '/settings'],
     ['about', '/settings/about'],
     ['developer', '/settings/developer'],

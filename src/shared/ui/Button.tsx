@@ -11,6 +11,11 @@ export interface ButtonProps {
   grow?: boolean;
   /** 作为 ListRow 尾随动作时阻止点击冒泡到整行。 */
   stopPropagation?: boolean;
+  /**
+   * 纯图标按钮:显示该字形,`label` 只作无障碍名称、不渲染文字。
+   * 用于播放胶囊这类空间紧张的悬浮控件。
+   */
+  icon?: string;
   testid?: string;
 }
 
@@ -22,10 +27,12 @@ export function Button({
   disabled,
   grow,
   stopPropagation,
+  icon,
   testid,
 }: ButtonProps) {
   const classes = ['button', `button--${variant}`];
   if (grow) classes.push('button--grow');
+  if (icon) classes.push('button--icon');
   if (disabled) classes.push('button--disabled');
   return (
     <view
@@ -37,7 +44,9 @@ export function Button({
       accessibility-traits={disabled ? undefined : 'button'}
       data-testid={testid}
     >
-      <text className="button__text">{label}</text>
+      <text className={icon ? 'button__icon' : 'button__text'}>
+        {icon ?? label}
+      </text>
     </view>
   );
 }

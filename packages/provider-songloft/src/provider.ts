@@ -3,6 +3,7 @@ import {
   isSameProviderOrigin,
   type MusicProvider,
   normalizeProviderBaseUrl,
+  type ProviderAlbum,
   type ProviderCapabilities,
   ProviderError,
   ProviderHttp,
@@ -20,6 +21,7 @@ import {
 } from '@pomelo/provider-sdk';
 
 import {
+  parseAlbumPage,
   parseLyricPayload,
   parsePlaylistPage,
   parseSong,
@@ -74,6 +76,7 @@ export class SongloftProvider implements MusicProvider {
     login: true,
     search: true,
     playlists: true,
+    albums: true,
     stream: true,
     lyrics: true,
     artwork: true,
@@ -411,6 +414,46 @@ export class SongloftProvider implements MusicProvider {
     }
     const payload = await this.requireHttp().request<unknown>(
       `/playlists/${id}/songs`,
+      { query: { limit, offset } },
+    );
+    return parseSongPage(payload, limit, offset);
+  }
+
+  async albums(
+    options: ProviderPageOptions = {},
+  ): Promise<ProviderPage<ProviderAlbum>> {
+    const limit = clamp(options.limit, DEFAULT_PLAYLIST_LIMIT);
+    const offset = offsetOf(options.offset);
+    const payload = await this.requireHttp().request<unknown>('/albums', {
+      query: { limit, offset },
+    });
+    return parseAlbumPage(payload, limit, offset);
+  }
+
+  async albumArtwork(album: ProviderAlbum, size = 512): Promise<string | null> {
+    const raw = album.artwork ?? `/api/v1/albums/${album.id}/cover`;
+    const token = await this.requireAccessToken();
+    const serverUrl = this._session?.serverUrl ?? '';
+    const url = buildProviderUrl(serverUrl, raw);
+    if (!isSameProviderOrigin(serverUrl, url)) return url;
+    return buildProviderUrl(serverUrl, raw, {
+      w: size,
+      access_token: token,
+    });
+  }
+
+  async albumTracks(
+    albumId: string,
+    options: ProviderPageOptions = {},
+  ): Promise<ProviderPage<ProviderTrack>> {
+    const limit = clamp(options.limit, DEFAULT_TRACK_LIMIT);
+    const offset = offsetOf(options.offset);
+    const id = Number(albumId);
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      throw new ProviderError('provider_invalid_response', '专辑 ID 无效');
+    }
+    const payload = await this.requireHttp().request<unknown>(
+      `/albums/${id}/songs`,
       { query: { limit, offset } },
     );
     return parseSongPage(payload, limit, offset);

@@ -1,5 +1,6 @@
 import {
   type MusicProvider,
+  type ProviderAlbum,
   ProviderError,
   type ProviderFetch,
   type ProviderSession,
@@ -56,12 +57,74 @@ export function getSongloftProvider(): SongloftProvider {
   return songloft;
 }
 
+/**
+ * 批量取专辑封面,返回 `专辑 id → 封面 URL`。失败语义同 `trackArtworks`。
+ */
+export async function albumArtworks(
+  albums: readonly ProviderAlbum[],
+  size = 256,
+): Promise<Record<string, string>> {
+  const provider = getSongloftProvider();
+  if (typeof provider.albumArtwork !== 'function') return {};
+  const entries = await Promise.all(
+    albums.map(async (album) => {
+      try {
+        return [
+          album.id,
+          (await provider.albumArtwork?.(album, size)) ?? '',
+        ] as const;
+      } catch {
+        return [album.id, ''] as const;
+      }
+    }),
+  );
+  return Object.fromEntries(entries.filter(([, value]) => value));
+}
+
+/**
+ * 服务端是否支持专辑浏览。
+ *
+ * 两个条件缺一不可:Provider 声明了 `albums` 能力,且确实实现了 `albums()`。
+ * 服务端没有该接口时(404)由调用方把 `albumsSupported` 置 false,首页隐藏
+ * 专辑架——不猜测、不做客户端聚合。
+ */
+export function albumsSupported(): boolean {
+  const provider = getSongloftProvider();
+  return (
+    provider.capabilities.albums === true &&
+    typeof provider.albums === 'function'
+  );
+}
+
 export async function connectSongloft(input: {
   serverUrl: string;
   username: string;
   password: string;
 }): Promise<ProviderSession> {
   return getSongloftProvider().login(input);
+}
+
+/**
+ * 批量取曲目封面,返回 `曲目 id → 封面 URL`。
+ *
+ * 单张失败不能拖垮整页(封面是装饰性的),所以逐条 catch 成空串,
+ * 空串在返回前被过滤掉,页面侧按「没有封面」渲染占位。
+ */
+export async function trackArtworks(
+  tracks: readonly ProviderTrack[],
+  size = 256,
+): Promise<Record<string, string>> {
+  const provider = getSongloftProvider();
+  const entries = await Promise.all(
+    tracks.map(async (track) => {
+      try {
+        return [track.id, (await provider.artwork(track, size)) ?? ''] as const;
+      } catch {
+        return [track.id, ''] as const;
+      }
+    }),
+  );
+  return Object.fromEntries(entries.filter(([, value]) => value));
 }
 
 export async function restoreSongloft(): Promise<ProviderSession | null> {

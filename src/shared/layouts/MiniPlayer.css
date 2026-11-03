@@ -8,11 +8,7 @@
   max-width: 420px;
   height: 56px;
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: var(--space-2);
-  padding-left: 10px;
-  padding-right: 6px;
+  flex-direction: column;
   border-radius: 28px;
   background-color: var(--color-surface-container-high);
   border-width: 1px;
@@ -21,6 +17,35 @@
     inset 0 1px 0 var(--color-nav-highlight),
     0 6px 20px var(--color-nav-shadow);
   z-index: 89;
+}
+
+.mini-player__row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+  gap: var(--space-2);
+  padding-left: 8px;
+  padding-right: 4px;
+}
+
+.mini-player__cover {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+
+.mini-player__cover--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-surface-container);
+}
+
+.mini-player__cover-glyph {
+  font-size: var(--font-note);
+  color: var(--color-on-surface-variant);
 }
 
 .mini-player__meta {
@@ -46,4 +71,24 @@
   display: flex;
   flex-direction: row;
   align-items: center;
+  gap: var(--space-1);
+}
+
+/* 胶囊内是次要控件,不再用 Button 默认的 primary 色。 */
+.mini-player__controls .button__icon {
+  color: var(--color-on-surface);
+}
+
+.mini-player__progress {
+  height: 2px;
+  margin: 0 10px 6px;
+  border-radius: 1px;
+  background-color: var(--color-outline-variant);
+  overflow: hidden;
+}
+
+.mini-player__progress-fill {
+  height: 2px;
+  border-radius: 1px;
+  background-color: var(--color-primary);
 }

@@ -140,6 +140,23 @@ describe('SongloftProvider', () => {
       if (call.url.includes('/api/v1/playlists/3/songs')) {
         return response({ songs: [SONG], total: 1 });
       }
+      if (call.url.includes('/api/v1/albums?')) {
+        return response({
+          albums: [
+            {
+              id: 9,
+              name: '叶惠美',
+              artist: '周杰伦',
+              song_count: 4,
+              year: 2003,
+            },
+          ],
+          total: 1,
+        });
+      }
+      if (call.url.includes('/api/v1/albums/9/songs')) {
+        return response({ songs: [SONG], total: 1 });
+      }
       if (call.url.endsWith('/api/v1/songs/7/lyric')) {
         return response({ lyric: '[00:01.00]故事的小黄花' });
       }
@@ -199,6 +216,24 @@ describe('SongloftProvider', () => {
         artwork: undefined,
       },
     ]);
+
+    // 专辑:与歌单同构的映射(字段 snake_case,song_count/cover_url)。
+    const albums = await provider.albums();
+    expect(albums.items).toEqual([
+      {
+        id: '9',
+        name: '叶惠美',
+        artist: '周杰伦',
+        trackCount: 4,
+        year: 2003,
+        artwork: undefined,
+      },
+    ]);
+    const albumTracks = await provider.albumTracks('9', { limit: 200 });
+    expect(albumTracks.items[0]?.id).toBe('7');
+    const albumCover = await provider.albumArtwork({ id: '9', name: '叶惠美' });
+    expect(albumCover).toContain('/api/v1/albums/9/cover');
+    expect(albumCover).toContain('access_token=access-1');
 
     const tracks = await provider.playlistTracks('3', { limit: 200 });
     expect(tracks.items[0].id).toBe('7');

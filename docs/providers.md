@@ -39,6 +39,9 @@ getTrack(id)                 // 队列恢复/刷新后重新取曲目
 playlists({ limit, offset })
 playlistTracks(playlistId, { limit, offset })
 playlistArtwork(playlist, size?) // 歌单封面
+albums?({ limit, offset })              // 可选能力
+albumTracks?(albumId, { limit, offset }) // 可选能力
+albumArtwork?(album, size?)             // 可选能力
 stream(track): Promise<{ url, headers? }>
 lyrics(track): Promise<{ lrc?, translated?, romaji?, wordByWord? } | null>
 artwork(track, size?): Promise<string | null>
@@ -59,9 +62,19 @@ artwork(track, size?): Promise<string | null>
 | 单曲 | `GET /songs/{id}` | `Song` |
 | 歌单 | `GET /playlists?limit&offset` | `{playlists,total}` |
 | 歌单歌曲 | `GET /playlists/{id}/songs?limit&offset` | `{songs,total}` |
+| 专辑 | `GET /albums?limit&offset` | `{albums,total}` |
+| 专辑歌曲 | `GET /albums/{id}/songs?limit&offset` | `{songs,total}` |
+| 专辑封面 | `album.cover_url`（通常是 `/albums/{id}/cover`） | 图片 |
 | 播放 | `song.url`（通常是 `/songs/{id}/play`） | 音频流 |
 | 封面 | `song.cover_url`（通常是 `/songs/{id}/cover`） | 图片 |
 | 歌词 | `song.lyric_url`（通常是 `/songs/{id}/lyric`） | `{lyric,tlyric,rlyric,lxlyric}` |
+
+专辑条目字段：`id/name(或 title)/artist/song_count(或 track_count)/year(或 release_year)/cover_url`。
+
+**专辑是可选能力**：`capabilities.albums` + `albums()` 同时存在才展示。服务端没有
+该接口时首页静默隐藏专辑架(不报错、不做客户端聚合——按 `track.album` 去重只能
+覆盖已加载范围,得到的"专辑"不完整)。端点形状按歌单的约定推断,**尚未在真实
+服务端验证**;若服务端字段不同,只需调整 `parseAlbumPage`。
 
 Songloft 的 `Song` 关键字段：`id/title/artist/album/duration/cover_url/
 lyric_url/url/is_video/is_live/type/format`。

@@ -34,6 +34,21 @@
   opacity: 0.5;
 }
 
+/* 纯图标按钮:方形命中区,字形由 .button__icon 渲染。 */
+.button--icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 18px;
+  background-color: transparent;
+}
+
+.button__icon {
+  font-size: var(--font-note);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
 .button__text {
   font-size: var(--font-body);
   font-weight: 500;

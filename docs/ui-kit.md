@@ -25,6 +25,7 @@ src/shared/ui/
   Button.tsx           操作按钮
   Hint.tsx             说明/错误/警告文本
   MediaCard.tsx        音乐方形封面卡片(横向卡片架)
+  SongRow.tsx          音乐列表行(封面 + 标题/歌手 + 加入队列)
   IconBadge.tsx        设置行图标块 + tone 色板
   PaletteSwatches.tsx  主/次色点
 ```
@@ -49,10 +50,11 @@ src/shared/ui/
   歌曲列表。未连接时显示连接空状态,不把首页做成设置列表。
 - 横向卡片架:`scroll-view[scroll-orientation=horizontal]` 内放
   `width: max-content` 的 flex row;卡片固定宽度,不能依赖 flex-grow。
-- 音乐封面卡片统一使用 `MediaCard`;首页歌曲行使用 `SongRow`,不要在页面里
-  重复写封面卡片 CSS。
-- 播放胶囊统一使用 `MiniPlayer`;不要在页面里重复写悬浮播放条。Shell 负责
-  非设置页显示、尾部留白和 presence 订阅。
+- 音乐封面卡片统一使用 `MediaCard`;音乐列表行统一使用 `SongRow`
+  (首页歌曲列表、歌单/专辑详情页共用),不要在页面里重复写封面卡片/歌曲行 CSS。
+- 播放胶囊统一使用 `MiniPlayer`;不要在页面里重复写悬浮播放条。胶囊左侧显示
+  当前曲目封面、右侧是图标按钮(`Button icon`),底部是与播放进度同步的进度条。
+  图标按钮的 `label` 只作无障碍名称,不渲染文字。
 - 日志页是列表型页面例外:使用 `PageTopBar` + 自定义 `.logs` 布局,但设置区
   仍必须使用 `SettingsGroup` / `ListRow` / `SwitchRow` / `Button` / `Hint`。
 

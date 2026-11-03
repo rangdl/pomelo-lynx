@@ -1,0 +1,24 @@
+/* 每行固定高度,HomeCustomizePage 的拖动换算依赖这个数值。 */
+.home-custom__row {
+  height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.home-custom__row--dragging {
+  background-color: var(--color-surface-container-high);
+}
+
+.home-custom__trailing {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.home-custom__actions {
+  display: flex;
+  flex-direction: row;
+  padding: var(--space-2) var(--space-4);
+}

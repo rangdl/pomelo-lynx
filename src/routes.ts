@@ -9,6 +9,9 @@
 export const ROUTE_PATHS = {
   home: '/',
   player: '/player',
+  playlist: '/playlist',
+  album: '/album',
+  homeCustomize: '/home/customize',
   settings: '/settings',
   about: '/settings/about',
   developer: '/settings/developer',

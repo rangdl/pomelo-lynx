@@ -7,32 +7,6 @@
   background-color: var(--color-surface);
 }
 
-.home__subhead {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  padding: 0 var(--space-4) var(--space-2);
-}
-
-.home__source {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-}
-
-.home__source-title {
-  font-size: var(--font-body);
-  font-weight: 600;
-  color: var(--color-on-surface);
-}
-
-.home__source-detail {
-  margin-top: 2px;
-  font-size: var(--font-caption);
-  color: var(--color-on-surface-variant);
-}
-
 .home__search {
   padding: var(--space-1) var(--space-4) var(--space-2);
 }
@@ -149,4 +123,12 @@
   flex-direction: row;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-4);
+}
+
+/* 首页底部自定义入口:居中的轻量文字按钮,和内容区同宽。 */
+.home__customize {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  padding: var(--space-3) var(--space-4) var(--space-2);
 }

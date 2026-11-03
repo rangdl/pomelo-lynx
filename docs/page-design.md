@@ -36,6 +36,16 @@ ShellLayout(全局唯一)
     横向架用 `scroll-view[scroll-orientation=horizontal]` + 固定宽卡片,
     内层 row 必须 `width: max-content`;封面用 `<image mode="aspectFill">`,
     失败回退占位卡片
+  - 首页不展示 provider(音乐源)身份/统计信息,也不放"正在播放"这类
+    状态文案——播放状态由底栏上方的播放胶囊承担。
+  - 歌单卡片点击进入独立子页 `/playlist`(首页栈 `['/', '/playlist']`),
+    专辑卡片点击进入 `/album`(首页栈 `['/', '/album']`);
+    歌曲卡片/行点击直接播放;`SongRow` 与 `MediaCard` 由首页与详情页共用。
+  - 首页底部有「自定义」入口(`≡ 自定义`),进入 `/home/customize`
+    (首页栈 `['/', '/home/customize']`):每条首页条目一行,可开关显隐、
+    拖动排序,并提供上/下移按钮作为非手势等价操作(读屏用户无法拖动)。
+    条目顺序与显隐存 `PomeloStorage.prefs` 的 `home_sections`,
+    由 `src/shared/home/home-sections.ts` 归一化(未知 id 丢弃、缺失 id 补到末尾)。
   - 播放胶囊出现时 Shell 加 `.shell--mini-player`,把 `PageTail` 高度提升到
     `calc(144px + env(safe-area-inset-bottom))`;不要在页面里分别写两份 spacer
 - 页面根节点必须是 `display: flex; flex-direction: column; height: 100%`
@@ -130,8 +140,13 @@ ShellLayout(全局唯一)
 - 显示范围:首页 `/` 和播放页 `/player` 显示;`/settings*` 全部隐藏。
 - Shell 通过 `useMediaPlayerPresence()` 只订阅“是否有当前曲目”,避免 0.5s
   进度更新导致整页重渲染。
-- 胶囊主体点击进入 `/player`;播放/暂停、下一首是行内按钮,必须
-  `stopPropagation`。
+- 胶囊主体点击进入 `/player`;播放/暂停、下一首是行内**图标按钮**
+  (`Button icon`,字形渲染、`label` 只作无障碍名称),必须 `stopPropagation`。
+- 胶囊左侧是当前曲目封面(`mode="aspectFill"`,失败回退 ♪ 占位),
+  不再用固定图标块。
+- 胶囊底部是与 `position/duration` 同步的进度条;时长为 0(直播/尚未回调)
+  时整条隐藏,避免出现半截假进度。进度更新由 `MiniPlayer` 自己订阅
+  `useMediaPlayer`,不经过 Shell,避免整页重渲染。
 - 胶囊出现时由 `.shell--mini-player .settings__tail` 统一增加滚动页尾部留白。
 - 胶囊使用 `surface-container-high` / `outline-variant` / 阴影 token,
   不再新增一套玻璃实现;不要用 CSS `backdrop-filter`。

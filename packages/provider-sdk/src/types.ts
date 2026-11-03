@@ -2,6 +2,8 @@ export interface ProviderCapabilities {
   login: boolean;
   search: boolean;
   playlists: boolean;
+  /** 服务端是否提供专辑浏览;为 false 时宿主不展示专辑架。 */
+  albums: boolean;
   stream: boolean;
   lyrics: boolean;
   artwork: boolean;
@@ -44,6 +46,20 @@ export interface ProviderPlaylist {
   name: string;
   description?: string;
   trackCount?: number;
+  artwork?: string;
+}
+
+/**
+ * 专辑条目。服务端是否真的提供专辑浏览由
+ * `capabilities.albums` 与 `albums()` 是否存在共同决定。
+ */
+export interface ProviderAlbum {
+  id: string;
+  name: string;
+  artist?: string;
+  trackCount?: number;
+  /** 发行年份;未知时省略。 */
+  year?: number;
   artwork?: string;
 }
 
@@ -138,6 +154,19 @@ export interface MusicProvider {
   ): Promise<string | null>;
   playlistTracks(
     playlistId: string,
+    options?: ProviderPageOptions,
+  ): Promise<ProviderPage<ProviderTrack>>;
+
+  /**
+   * 专辑浏览。三个方法都是可选的:服务端未实现专辑时宿主隐藏专辑架,
+   * 不做降级聚合(客户端按 `track.album` 去重只能覆盖已加载范围,
+   * 得到的"专辑"不完整)。
+   */
+  albums?(options?: ProviderPageOptions): Promise<ProviderPage<ProviderAlbum>>;
+  /** 专辑封面;与歌单封面同样受图片加载器不能带 header 的限制。 */
+  albumArtwork?(album: ProviderAlbum, size?: number): Promise<string | null>;
+  albumTracks?(
+    albumId: string,
     options?: ProviderPageOptions,
   ): Promise<ProviderPage<ProviderTrack>>;
 

@@ -1,4 +1,5 @@
 import {
+  type ProviderAlbum,
   ProviderError,
   type ProviderPage,
   type ProviderPlaylist,
@@ -27,6 +28,15 @@ export interface SongloftPlaylist {
   description?: string;
   coverUrl?: string;
   trackCount: number;
+}
+
+export interface SongloftAlbum {
+  id: number;
+  name: string;
+  artist?: string;
+  coverUrl?: string;
+  trackCount: number;
+  year?: number;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -124,6 +134,42 @@ export function parsePlaylistPage(
       name: text(raw.name) ?? `歌单 ${id}`,
       description: text(raw.description),
       trackCount: number(raw.song_count) ?? 0,
+      artwork: text(raw.cover_url),
+    });
+  }
+  return {
+    items,
+    total: number(value.total) ?? items.length,
+    limit,
+    offset,
+  };
+}
+
+/**
+ * 专辑列表映射。
+ *
+ * 字段沿用 Songloft 的 snake_case 约定(与歌单一致:`song_count` / `cover_url`);
+ * 名称兼容 `name` 与 `title` 两种写法,年份兼容 `year` 与 `release_year`。
+ */
+export function parseAlbumPage(
+  value: unknown,
+  limit: number,
+  offset: number,
+): ProviderPage<ProviderAlbum> {
+  if (!isRecord(value) || !Array.isArray(value.albums)) {
+    throw new ProviderError('provider_invalid_response', '专辑列表格式异常');
+  }
+  const items: ProviderAlbum[] = [];
+  for (const raw of value.albums) {
+    if (!isRecord(raw)) continue;
+    const id = number(raw.id);
+    if (id === undefined || !Number.isSafeInteger(id) || id <= 0) continue;
+    items.push({
+      id: String(id),
+      name: text(raw.name) ?? text(raw.title) ?? `专辑 ${id}`,
+      artist: text(raw.artist),
+      trackCount: number(raw.song_count) ?? number(raw.track_count) ?? 0,
+      year: number(raw.year) ?? number(raw.release_year),
       artwork: text(raw.cover_url),
     });
   }

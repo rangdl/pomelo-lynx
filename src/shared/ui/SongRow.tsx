@@ -1,4 +1,4 @@
-import { Button } from '../../shared/ui/Button.js';
+import { Button } from './Button.js';
 import './SongRow.css';
 
 export interface SongRowProps {

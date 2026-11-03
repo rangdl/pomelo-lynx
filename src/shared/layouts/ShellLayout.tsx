@@ -11,8 +11,11 @@ import type { MainThread } from '@lynx-js/types';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 
 import { useMediaPlayerPresence } from '../../core/media/player.js';
+import { AlbumPage } from '../../features/album/AlbumPage.js';
+import { HomeCustomizePage } from '../../features/home/HomeCustomizePage.js';
 import { HomePage } from '../../features/home/HomePage.js';
 import { PlayerPage } from '../../features/player/PlayerPage.js';
+import { PlaylistPage } from '../../features/playlist/PlaylistPage.js';
 import { AboutPage } from '../../features/settings/AboutPage.js';
 import { DeveloperPage } from '../../features/settings/DeveloperPage.js';
 import { LogsPage } from '../../features/settings/LogsPage.js';
@@ -87,6 +90,9 @@ type SettingsPath = Exclude<
 const ROUTE_DEPTH: Record<AppPath, number> = {
   [ROUTE_PATHS.home]: 0,
   [ROUTE_PATHS.player]: 0,
+  [ROUTE_PATHS.playlist]: 1,
+  [ROUTE_PATHS.album]: 1,
+  [ROUTE_PATHS.homeCustomize]: 1,
   [ROUTE_PATHS.settings]: 1,
   [ROUTE_PATHS.about]: 2,
   [ROUTE_PATHS.developer]: 2,
@@ -99,6 +105,9 @@ const ROUTE_DEPTH: Record<AppPath, number> = {
 const PAGE_COMPONENTS: Record<AppPath, () => ReactNode> = {
   [ROUTE_PATHS.home]: HomePage,
   [ROUTE_PATHS.player]: PlayerPage,
+  [ROUTE_PATHS.playlist]: PlaylistPage,
+  [ROUTE_PATHS.album]: AlbumPage,
+  [ROUTE_PATHS.homeCustomize]: HomeCustomizePage,
   [ROUTE_PATHS.settings]: SettingsPage,
   [ROUTE_PATHS.about]: AboutPage,
   [ROUTE_PATHS.developer]: DeveloperPage,
@@ -112,6 +121,9 @@ const PAGE_COMPONENTS: Record<AppPath, () => ReactNode> = {
 const PAGE_STACKS: Record<AppPath, readonly AppPath[]> = {
   [ROUTE_PATHS.home]: [ROUTE_PATHS.home],
   [ROUTE_PATHS.player]: [ROUTE_PATHS.player],
+  [ROUTE_PATHS.playlist]: [ROUTE_PATHS.home, ROUTE_PATHS.playlist],
+  [ROUTE_PATHS.album]: [ROUTE_PATHS.home, ROUTE_PATHS.album],
+  [ROUTE_PATHS.homeCustomize]: [ROUTE_PATHS.home, ROUTE_PATHS.homeCustomize],
   [ROUTE_PATHS.settings]: [ROUTE_PATHS.settings],
   [ROUTE_PATHS.about]: [ROUTE_PATHS.settings, ROUTE_PATHS.about],
   [ROUTE_PATHS.developer]: [ROUTE_PATHS.settings, ROUTE_PATHS.developer],

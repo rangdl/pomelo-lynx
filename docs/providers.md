@@ -38,6 +38,7 @@ search(query, { limit, offset, sort, order, type })
 getTrack(id)                 // 队列恢复/刷新后重新取曲目
 playlists({ limit, offset })
 playlistTracks(playlistId, { limit, offset })
+playlistArtwork(playlist, size?) // 歌单封面
 stream(track): Promise<{ url, headers? }>
 lyrics(track): Promise<{ lrc?, translated?, romaji?, wordByWord? } | null>
 artwork(track, size?): Promise<string | null>
@@ -114,7 +115,8 @@ ProviderTrack
 
 
 - 未连接时引导到 `/settings/sources`；
-- 已连接时显示最近添加(`sort=added_at&order=desc`)、歌单、搜索；
+- 已连接时显示问候、搜索、最近添加/歌单横向封面卡片架、歌曲列表；
+- 最近添加用 `sort=added_at&order=desc`；歌单封面走 `playlistArtwork`；
 - 歌曲/歌单都支持「加载更多」；
 - 点歌曲播放，行尾「加入」只入队。
 

@@ -32,6 +32,10 @@ ShellLayout(全局唯一)
   - 日志列表:同样使用 `PageTail`,不要新增 `logs__tail`
   - 首页(音乐库,可滚动):使用 `PageLargeTitle` + `settings__scroll` +
     `PageTail`,不要再用旧的 `.Home { padding-bottom: ... }` 写法
+  - 首页内容:问候大标题、搜索胶囊、横向封面卡片架、歌曲列表;
+    横向架用 `scroll-view[scroll-orientation=horizontal]` + 固定宽卡片,
+    内层 row 必须 `width: max-content`;封面用 `<image mode="aspectFill">`,
+    失败回退占位卡片
   - 播放胶囊出现时 Shell 加 `.shell--mini-player`,把 `PageTail` 高度提升到
     `calc(144px + env(safe-area-inset-bottom))`;不要在页面里分别写两份 spacer
 - 页面根节点必须是 `display: flex; flex-direction: column; height: 100%`

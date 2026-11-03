@@ -38,3 +38,17 @@
 .text-field__placeholder {
   color: var(--color-on-surface-faint);
 }
+
+/* 搜索变体：首页/曲库顶部使用，仍复用同一个 input 封装。 */
+.text-field--search .text-field__frame {
+  height: 42px;
+  border-radius: 21px;
+  border-color: transparent;
+  background-color: var(--color-surface-container);
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
+}
+
+.text-field--search .text-field__frame--focused {
+  border-color: var(--color-primary);
+}

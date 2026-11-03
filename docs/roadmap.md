@@ -109,7 +109,8 @@
 - [x] 原生 401/403 检测 -> `refresh_required` -> JS Provider 刷新 ->
       `resolveRefresh` 原位续播
 - [x] 原生语义事件 `track/loaded/started/paused/waiting/ended/error/refresh_*`
-- [x] 首页音乐库:最近添加、歌单、搜索、加载更多
+- [x] 首页音乐库:问候/搜索/封面卡片架/最近添加/歌单/加载更多
+- [x] 歌单封面解析与歌曲封面行
 - [x] 分页加载(加载更多,不做滚动触底)
 - [x] 原生 `track` 事件驱动按曲目懒加载歌词
 - [x] 队列元信息持久化 + Provider 曲目闭包恢复

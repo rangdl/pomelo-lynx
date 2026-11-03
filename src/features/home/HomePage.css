@@ -1,4 +1,4 @@
-/* 首页音乐库:根 tab 页面,固定大标题 + 可滚动列表。 */
+/* 首页音乐库：问候标题 + 搜索 + 横向封面卡片架 + 歌曲列表。 */
 .home {
   display: flex;
   flex-direction: column;
@@ -7,13 +7,146 @@
   background-color: var(--color-surface);
 }
 
-.home__form {
-  padding: 10px 14px 0;
+.home__subhead {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 var(--space-4) var(--space-2);
 }
 
-.home__actions {
+.home__source {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.home__source-title {
+  font-size: var(--font-body);
+  font-weight: 600;
+  color: var(--color-on-surface);
+}
+
+.home__source-detail {
+  margin-top: 2px;
+  font-size: var(--font-caption);
+  color: var(--color-on-surface-variant);
+}
+
+.home__search {
+  padding: var(--space-1) var(--space-4) var(--space-2);
+}
+
+.home__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: var(--space-4);
+  padding: var(--space-5);
+  border-radius: var(--radius-card);
+  background-image: linear-gradient(
+    135deg,
+    var(--color-primary-container),
+    var(--color-surface-container-low)
+  );
+}
+
+.home__empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--space-3);
+  border-radius: 28px;
+  background-color: var(--color-surface-container-high);
+}
+
+.home__empty-glyph {
+  font-size: 26px;
+  color: var(--color-primary);
+}
+
+.home__empty-title {
+  font-size: var(--font-row-title);
+  font-weight: 700;
+  color: var(--color-on-surface);
+}
+
+.home__empty-detail {
+  margin-top: var(--space-1);
+  margin-bottom: var(--space-4);
+  font-size: var(--font-caption);
+  color: var(--color-on-surface-variant);
+  text-align: center;
+}
+
+.home-shelf {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-4);
+}
+
+.home-shelf__header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 var(--space-4);
+  margin-bottom: var(--space-1);
+}
+
+.home-shelf__title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-group-title);
+  font-weight: 700;
+  color: var(--color-on-surface);
+}
+
+.home-shelf__scroll {
+  width: 100%;
+  height: 188px;
+}
+
+/* 横向卡片架：row 必须按内容宽度布局，否则 Lynx 会把整行裁到视口宽。 */
+.home-shelf__row {
+  display: flex;
+  flex-direction: row;
+  width: max-content;
+  padding: 0 var(--space-4);
+  gap: var(--space-3);
+}
+
+.home__load-row {
+  display: flex;
+  flex-direction: row;
+  padding: var(--space-2) var(--space-4) 0;
+}
+
+.home-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-5);
+}
+
+.home-list__header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 var(--space-4);
+}
+
+.home-list__title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-group-title);
+  font-weight: 700;
+  color: var(--color-on-surface);
+}
+
+.home-list__actions {
   display: flex;
   flex-direction: row;
   gap: var(--space-2);
-  padding: var(--space-2) 14px var(--space-3);
+  padding: var(--space-2) var(--space-4);
 }

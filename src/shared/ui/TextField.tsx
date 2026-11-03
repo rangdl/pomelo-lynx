@@ -19,6 +19,8 @@ export interface TextFieldProps {
   password?: boolean;
   /** 数字输入：使用数字键盘。 */
   numeric?: boolean;
+  /** 搜索框：外观为圆角无边框，仅用于搜索入口。 */
+  variant?: 'default' | 'search';
   /** 外部值异步加载/重置后用它强制同步原生 input。 */
   inputKey?: string;
   testid?: string;
@@ -43,13 +45,18 @@ export function TextField({
   disabled,
   password,
   numeric,
+  variant = 'default',
   inputKey,
   testid,
   className,
 }: TextFieldProps) {
   const [focused, setFocused] = useState(false);
   return (
-    <view className={`text-field${className ? ` ${className}` : ''}`}>
+    <view
+      className={`text-field text-field--${variant}${
+        className ? ` ${className}` : ''
+      }`}
+    >
       {label ? <text className="text-field__label">{label}</text> : null}
       <view
         className={`text-field__frame${

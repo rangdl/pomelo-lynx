@@ -131,6 +131,11 @@ export interface MusicProvider {
   playlists(
     options?: ProviderPageOptions,
   ): Promise<ProviderPage<ProviderPlaylist>>;
+  /** 歌单封面；图片加载器不能设 header，通常需要查询串 token。 */
+  playlistArtwork?(
+    playlist: ProviderPlaylist,
+    size?: number,
+  ): Promise<string | null>;
   playlistTracks(
     playlistId: string,
     options?: ProviderPageOptions,

@@ -384,6 +384,21 @@ export class SongloftProvider implements MusicProvider {
     return parsePlaylistPage(payload, limit, offset);
   }
 
+  async playlistArtwork(
+    playlist: ProviderPlaylist,
+    size = 512,
+  ): Promise<string | null> {
+    const raw = playlist.artwork ?? `/api/v1/playlists/${playlist.id}/cover`;
+    const token = await this.requireAccessToken();
+    const serverUrl = this._session?.serverUrl ?? '';
+    const url = buildProviderUrl(serverUrl, raw);
+    if (!isSameProviderOrigin(serverUrl, url)) return url;
+    return buildProviderUrl(serverUrl, raw, {
+      w: size,
+      access_token: token,
+    });
+  }
+
   async playlistTracks(
     playlistId: string,
     options: ProviderPageOptions = {},

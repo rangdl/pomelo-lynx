@@ -1,0 +1,51 @@
+.song-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 8px var(--space-4);
+}
+
+.song-row__cover {
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background-color: var(--color-surface-container-high);
+}
+
+.song-row__cover--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.song-row__glyph {
+  font-size: 18px;
+  color: var(--color-on-surface-faint);
+}
+
+.song-row__content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.song-row__title {
+  font-size: var(--font-body);
+  font-weight: 500;
+  color: var(--color-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.song-row__subtitle {
+  margin-top: 2px;
+  font-size: var(--font-caption);
+  color: var(--color-on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

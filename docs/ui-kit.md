@@ -24,6 +24,7 @@ src/shared/ui/
   TextField.tsx        输入框(边框/focus/键盘避让)
   Button.tsx           操作按钮
   Hint.tsx             说明/错误/警告文本
+  MediaCard.tsx        音乐方形封面卡片(横向卡片架)
   IconBadge.tsx        设置行图标块 + tone 色板
   PaletteSwatches.tsx  主/次色点
 ```
@@ -44,8 +45,12 @@ src/shared/ui/
   - 顶部安全区 `safe-area-inset-top`
 - 根 tab 页(首页 / 播放 / 设置)使用 `PageLargeTitle` + `scroll-view` +
   `PageTail`;`SettingsLargeTitle` 保留为旧别名。
-- 首页是音乐库:未连接时给去设置页的入口,已连接时用 `SettingsGroup` /
-  `ListRow` / `Button` / `Hint` 展示最近添加、歌单、搜索和加载更多。
+- 首页是音乐库:问候大标题 + 搜索胶囊 + 最近添加/歌单横向封面卡片架 +
+  歌曲列表。未连接时显示连接空状态,不把首页做成设置列表。
+- 横向卡片架:`scroll-view[scroll-orientation=horizontal]` 内放
+  `width: max-content` 的 flex row;卡片固定宽度,不能依赖 flex-grow。
+- 音乐封面卡片统一使用 `MediaCard`;首页歌曲行使用 `SongRow`,不要在页面里
+  重复写封面卡片 CSS。
 - 播放胶囊统一使用 `MiniPlayer`;不要在页面里重复写悬浮播放条。Shell 负责
   非设置页显示、尾部留白和 presence 订阅。
 - 日志页是列表型页面例外:使用 `PageTopBar` + 自定义 `.logs` 布局,但设置区

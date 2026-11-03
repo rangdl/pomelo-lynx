@@ -364,4 +364,9 @@ test('播放胶囊与首页音乐库保持共享原语', () => {
   assert.match(home, /PageTail/);
   assert.match(home, /loadMoreSongs/);
   assert.match(home, /loadMorePlaylists/);
+  assert.match(home, /MediaCard/);
+  assert.match(home, /home-shelf__scroll/);
+  const card = read('src/shared/ui/MediaCard.tsx');
+  assert.match(card, /mode="aspectFill"/);
+  assert.match(card, /binderror/);
 });

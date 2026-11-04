@@ -7,6 +7,10 @@ import com.lynx.react.bridge.Callback
 import com.lynx.tasm.behavior.LynxContext
 import java.util.UUID
 import org.json.JSONObject
+import org.pomelo.lynx.DevBundleCache
+import org.pomelo.lynx.DevBundleFetcher
+import org.pomelo.lynx.DevConfig
+import org.pomelo.lynx.MainActivity
 import org.pomelo.lynx.log.PomeloLog
 
 /**
@@ -86,6 +90,146 @@ class PomeloHostModule(context: Context) : LynxModule(context) {
             unhandledCallback?.invoke()
         }
     }
+
+    // === dev server 热切换(对齐 iOS PomeloHostModule) ===============
+
+    /**
+     * 连接 dev server:先完整下载并校验 bundle,成功后才重建 LynxView。
+     * 失败时当前页面不动。回调参数:成功为 null,失败为错误码字符串。
+     */
+    @LynxMethod
+    fun applyDevServer(url: String, callback: Callback) {
+        val target = url.trim()
+        if (!isDevServerURL(target)) {
+            callback.invoke("devserver_invalid_url")
+            return
+        }
+        val appContext = androidContext()
+        if (!DevConfig.enabled(appContext)) {
+            callback.invoke("devserver_unsupported")
+            return
+        }
+        Thread {
+            val bytes = DevBundleFetcher.fetch(target)
+            if (bytes == null) {
+                main.post { callback.invoke("devserver_unreachable") }
+                return@Thread
+            }
+            DevBundleCache.save(appContext, target, bytes)
+            DevConfig.storeDevServerUrl(appContext, target)
+            main.post {
+                callback.invoke("")
+                activity()?.reloadLynxView()
+            }
+        }.start()
+    }
+
+    /** 断开 dev server:清配置与缓存,立即重建内嵌 bundle(无需冷启动)。 */
+    @LynxMethod
+    fun clearDevServer(callback: Callback) {
+        val appContext = androidContext()
+        DevConfig.storeDevServerUrl(appContext, null)
+        DevBundleCache.clear(appContext)
+        main.post {
+            callback.invoke("")
+            activity()?.reloadLynxView()
+        }
+    }
+
+    /** 刷新当前来源(优先已配置的 dev URL);下载失败则回报错误且不重载。 */
+    @LynxMethod
+    fun reloadBundle(callback: Callback) {
+        val appContext = androidContext()
+        val devUrl = if (DevConfig.enabled(appContext)) DevConfig.devServerUrl(appContext) else null
+        if (devUrl == null) {
+            main.post {
+                callback.invoke("")
+                activity()?.reloadLynxView()
+            }
+            return
+        }
+        Thread {
+            val bytes = DevBundleFetcher.fetch(devUrl)
+            if (bytes == null) {
+                // 保留旧缓存:本次刷新失败不该把能跑的页面弄坏。
+                main.post { callback.invoke("devserver_unreachable") }
+                return@Thread
+            }
+            DevBundleCache.save(appContext, devUrl, bytes)
+            main.post {
+                callback.invoke("")
+                activity()?.reloadLynxView()
+            }
+        }.start()
+    }
+
+    /** HEAD 探测:回调 [errorCode|null, statusCode] 数组(与 iOS 同形)。 */
+    @LynxMethod
+    fun probeDevServer(url: String, callback: Callback) {
+        val target = url.trim()
+        if (!isDevServerURL(target)) {
+            invokeProbe(callback, "devserver_invalid_url", -1)
+            return
+        }
+        Thread {
+            val (status, error) = DevBundleFetcher.probe(target)
+            invokeProbe(callback, error.ifEmpty { null }, status)
+        }.start()
+    }
+
+    private fun invokeProbe(callback: Callback, error: String?, status: Int) {
+        val params = com.lynx.react.bridge.JavaOnlyArray()
+        if (error == null) params.pushNull() else params.pushString(error)
+        params.pushInt(status)
+        main.post { callback.invoke(params) }
+    }
+
+    /** JS 侧要求 URL 指向 `.lynx.bundle`(见 src/native/platform.ts isDevServerURL)。 */
+    private fun isDevServerURL(value: String): Boolean {
+        if (!value.startsWith("http://") && !value.startsWith("https://")) return false
+        val path = value.substringBefore('?').substringBefore('#')
+        return path.endsWith(".lynx.bundle")
+    }
+
+    private fun androidContext(): Context = (mContext as LynxContext).getContext()
+
+    // === 外观(与 iOS setAppearanceMode 同签名) =====================
+
+    /**
+     * 把「跟随系统/浅色/深色」同步给系统,让系统弹窗、输入法、通知
+     * 跟随 App 主题(JS 自己渲染的页面不受影响)。
+     * 只支持 Android 12+(UiModeManager.setApplicationNightMode);
+     * 低版本静默忽略——JS 侧用 capability 探测,不依赖。
+     */
+    @LynxMethod
+    fun setAppearanceMode(mode: String) {
+        if (mode != "system" && mode != "light" && mode != "dark") return
+        if (android.os.Build.VERSION.SDK_INT < 31) return
+        main.post {
+            runCatching {
+                val manager = androidContext()
+                    .getSystemService(Context.UI_MODE_SERVICE) as android.app.UiModeManager
+                val nightMode = when (mode) {
+                    "light" -> android.app.UiModeManager.MODE_NIGHT_NO
+                    "dark" -> android.app.UiModeManager.MODE_NIGHT_YES
+                    else -> android.app.UiModeManager.MODE_NIGHT_AUTO
+                }
+                manager.setApplicationNightMode(nightMode)
+                PomeloLog.debug("appearance", "applicationNightMode=$mode")
+            }
+        }
+    }
+
+    /** Android 没有 iOS 那种边缘返回手势(系统手势由系统接管),no-op。 */
+    @LynxMethod
+    fun setEdgeBackEnabled(enabled: Boolean) {
+        // 保留方法以让两端 JS 走同一能力探测路径。
+    }
+
+    /** 当前 Activity(dev server 重载需要重建它的 LynxView)。 */
+    private fun activity(): MainActivity? = MainActivityRegistry.current
+
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
 
     /** 由 MainActivity 注入:未处理时的默认行为(通常是 moveTaskToBack/finish)。 */
     var unhandledCallback: (() -> Unit)? = null

@@ -4,8 +4,6 @@ import android.content.Context
 import com.lynx.tasm.provider.AbsTemplateProvider
 import java.io.ByteArrayOutputStream
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
 import org.pomelo.lynx.log.PomeloLog
 import org.pomelo.lynx.updater.BundleUpdates
 
@@ -93,66 +91,15 @@ class HostTemplateProvider(context: Context) : AbsTemplateProvider() {
         uri.startsWith("http://") || uri.startsWith("https://")
 
     /**
-     * Dev-server 下载:15s 超时,只接受 200 + 非空 + 合法 Lynx bundle。
-     * 200 也可能是 HTML 错误页/代理页,所以进解码器前先用头部长度校验,
-     * 否则只会得到无法定位的 10204 解码错误。失败返回 null 由调用方回落。
+     * Dev-server 下载:先看 `applyDevServer` 的缓存(已校验过),
+     * 未命中再走网络。这样"回调报成功"与"页面真的换成新 bundle"
+     * 不会因第二次网络失败而不一致。
      */
-    private fun fetchRemote(urlString: String): ByteArray? {
-        val url = try {
-            URL(urlString)
-        } catch (e: Exception) {
-            PomeloLog.error("devserver", "invalid dev URL: $urlString")
-            return null
-        }
-        if (url.protocol != "http" && url.protocol != "https") {
-            PomeloLog.error("devserver", "unsupported scheme: ${url.protocol}")
-            return null
-        }
-        var connection: HttpURLConnection? = null
-        return try {
-            connection = (url.openConnection() as HttpURLConnection).apply {
-                connectTimeout = TIMEOUT_MS
-                readTimeout = TIMEOUT_MS
-                requestMethod = "GET"
-                useCaches = false
-            }
-            val status = connection.responseCode
-            if (status != 200) {
-                PomeloLog.error("devserver", "fetch returned status $status")
-                return null
-            }
-            val bytes = connection.inputStream.use { it.readBytes() }
-            if (bytes.isEmpty()) {
-                PomeloLog.error("devserver", "fetched empty body")
-                return null
-            }
-            if (!isLynxBundle(bytes)) {
-                PomeloLog.error("devserver", "fetched data is not a lynx bundle (${bytes.size}B)")
-                return null
-            }
-            PomeloLog.info("devserver", "fetched ${bytes.size}B")
-            bytes
-        } catch (e: IOException) {
-            PomeloLog.error("devserver", "fetch failed: ${e.javaClass.simpleName}")
-            null
-        } finally {
-            connection?.disconnect()
-        }
-    }
-
-    /** Lynx bundle 头部:前 4 字节小端声明文件总长度。 */
-    private fun isLynxBundle(data: ByteArray): Boolean {
-        if (data.size < 4) return false
-        var declared = 0L
-        for (index in 0 until 4) {
-            declared = declared or ((data[index].toLong() and 0xFF) shl (8 * index))
-        }
-        return declared == data.size.toLong()
-    }
+    private fun fetchRemote(urlString: String): ByteArray? =
+        DevBundleCache.load(appContext, urlString) ?: DevBundleFetcher.fetch(urlString)
 
     companion object {
         const val MAIN_BUNDLE = "main.lynx.bundle"
         const val PROBE_BUNDLE = "probe.lynx.bundle"
-        private const val TIMEOUT_MS = 15_000
     }
 }

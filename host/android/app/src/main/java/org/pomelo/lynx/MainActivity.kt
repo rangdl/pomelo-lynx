@@ -29,14 +29,28 @@ import java.util.Locale
  */
 class MainActivity : Activity() {
     private var lynxView: LynxView? = null
+    private var rootView: FrameLayout? = null
     /** 上次推送的外观签名;值不变时不重复发事件(对齐 iOS)。 */
     private var lastAppearanceSignature: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         PomeloLog.info("lifecycle", "MainActivity onCreate")
+        MainActivityRegistry.attach(this)
         requestNotificationPermission()
         applyDevIntent()
+        val root = FrameLayout(this)
+        rootView = root
+        setContentView(root)
+        mountLynxView()
+    }
+
+    /**
+     * 构建并挂载 LynxView,然后按当前选中的来源加载模板。
+     * 抽成方法是因为 dev server 热切换/刷新需要**不冷启动**重建视图
+     * (iOS 的 applyDevServer / reloadBundle 语义)。
+     */
+    private fun mountLynxView() {
         val view: LynxView = buildLynxView()
         view.addLynxViewClient(object : LynxViewClient() {
             override fun onFirstScreen() {
@@ -69,13 +83,13 @@ class MainActivity : Activity() {
         })
         lynxView = view
 
-        val root = FrameLayout(this)
+        val root = rootView ?: return
+        root.removeAllViews()
         val match = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.MATCH_PARENT,
         )
         root.addView(view, match)
-        setContentView(root)
 
         // `LynxLoadMeta` carries globalProps *into* the load, so the very first
         // frame already has them (a native-module getter would answer after the
@@ -85,6 +99,20 @@ class MainActivity : Activity() {
         meta.setGlobalProps(globalProps())
         view.loadTemplate(meta.build())
         PomeloLog.info("launch", "loadTemplate(${selectedUrl()}) invoked")
+    }
+
+    /**
+     * 重建 LynxView(dev server 热切换 / 手动刷新)。必须在主线程调用。
+     * 重建会丢失 JS 状态,与 iOS 重建 LynxView 的行为一致。
+     */
+    fun reloadLynxView() {
+        val old = lynxView
+        lynxView = null
+        lastAppearanceSignature = null
+        old?.destroy()
+        rootView?.removeAllViews()
+        mountLynxView()
+        PomeloLog.info("devserver", "LynxView reloaded")
     }
 
     /**
@@ -236,8 +264,10 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        MainActivityRegistry.detach(this)
         lynxView?.destroy()
         lynxView = null
+        rootView = null
     }
 
     /**

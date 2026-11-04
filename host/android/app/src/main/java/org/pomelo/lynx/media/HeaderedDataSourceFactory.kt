@@ -17,13 +17,8 @@ import java.util.concurrent.TimeUnit
  */
 class HeaderedDataSourceFactory(
     context: Context,
-    private val headers: Map<String, String>,
+    headers: Map<String, String>,
 ) : androidx.media3.datasource.DataSource.Factory {
-
-    private val baseFactory = DefaultDataSource.Factory(
-        context,
-        httpDataSourceFactory,
-    )
 
     private val httpDataSourceFactory: OkHttpDataSource.Factory =
         OkHttpDataSource.Factory(
@@ -32,6 +27,11 @@ class HeaderedDataSourceFactory(
                 .readTimeout(20, TimeUnit.SECONDS)
                 .build(),
         ).setDefaultRequestProperties(headers)
+
+    private val baseFactory = DefaultDataSource.Factory(
+        context,
+        httpDataSourceFactory,
+    )
 
     override fun createDataSource(): androidx.media3.datasource.DataSource =
         baseFactory.createDataSource()

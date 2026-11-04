@@ -108,9 +108,24 @@ class PomeloPlayerModule(context: Context) : LynxModule(context) {
         if (player != null) return player
         // LynxContext.getContext() 是应用级 Context(见 PomeloStorageModule)。
         val appContext = (mContext as? LynxContext)?.getContext() ?: return null
-        val exo = ExoPlayer.Builder(appContext).build()
+        // 单例引擎:音频焦点、wakelock、MediaSession(通知/锁屏)都在里面。
+        val exo = PlaybackEngine.player(appContext)
         exo.addListener(playerListener)
         player = exo
+        // 锁屏/通知栏/耳机按键的 next/previous 回到本模块的队列逻辑。
+        PlaybackEngine.navigator = object : PlaybackEngine.QueueNavigator {
+            override fun hasNext(): Boolean = queueIndex + 1 < queue.size
+            override fun hasPrevious(): Boolean = queueIndex > 0
+            override fun skipToNext() {
+                main.post { next() }
+            }
+
+            override fun skipToPrevious() {
+                main.post { previous() }
+            }
+        }
+        // 建好 session 才有前台服务与媒体通知。
+        PlaybackEngine.session(appContext)
         return exo
     }
 

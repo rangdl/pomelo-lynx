@@ -35,6 +35,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         PomeloLog.info("lifecycle", "MainActivity onCreate")
+        requestNotificationPermission()
         applyDevIntent()
         val view: LynxView = buildLynxView()
         view.addLynxViewClient(object : LynxViewClient() {
@@ -158,6 +159,20 @@ class MainActivity : Activity() {
      */
     private fun attachHostModule() {
         PomeloHostModuleBridge.bindForActivity(this)
+    }
+
+    /**
+     * Android 13+ 需要运行时授权才能显示媒体通知。拒绝也不影响播放,
+     * 只是通知栏/锁屏看不到控制。
+     */
+    private fun requestNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT < 33) return
+        val granted = checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (granted) return
+        runCatching {
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1001)
+        }
     }
 
     override fun onNewIntent(intent: android.content.Intent?) {

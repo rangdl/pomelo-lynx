@@ -78,5 +78,8 @@ class HostApplication : Application() {
         // Platform utilities: open URL / clipboard / keep-screen-on / share.
         // See src/native/platform.ts and src/native/__tests__/platform.test.ts.
         LynxEnv.inst().registerModule("PomeloPlatform", PomeloPlatformModule::class.java)
+        // Android 返回键桥:`PomeloNavigation.backquery` 事件 +
+        // `resolveBack` 回答(见 src/native/hardware-back.ts)。
+        LynxEnv.inst().registerModule("PomeloHost", PomeloHostModule::class.java)
     }
 }

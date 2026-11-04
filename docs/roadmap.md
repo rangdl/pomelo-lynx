@@ -72,12 +72,16 @@
 
 ## 批次 3:Android 返回键 + 通用 UI 原语
 
-- [ ] **Android 返回键(计划,待恢复 Android 构建)**
-  - `MainActivity` 拦截 `onBackPressedDispatcher` / `KEYCODE_BACK`
-  - 新增 `PomeloNavigation` 模块或在 `MainActivity` 直接 `sendGlobalEvent`
-  - 顺序:覆盖层 LIFO → 子页父级 → tab 根退出;是否可返回由 JS 状态决定
-  - 无覆盖层且已在 tab 根时调用 `finish()`;iOS 无返回键,不实现
-  - 验证:`assembleDebug` + 真机返回手势/按键
+- [x] **Android 返回键(已实现,待 CI 编译与真机验证)**
+  - `MainActivity.onBackPressed` 不直接退出,改经 `PomeloHostModule`
+    发 `PomeloNavigation.backquery` 事件(带 requestId)询问 JS;
+    `moveTaskToBack` 而非 finish(后台播放/JS 状态保留)
+  - JS `src/native/hardware-back.ts`:`subscribeHardwareBack` 处理器
+    同步裁决 pop/dismiss/unhandled,回 `PomeloHost.resolveBack`;
+    ShellLayout 接管:浮层 LIFO → `parentPath` pop → unhandled
+  - 兑底:宿主 8s 超时/事件损坏/处理器抛异常都按 unhandled;
+    模块实例“最新者拥有投递权”(对齐 PomeloLogModule sink 模式)
+  - 验证:真机返回手势/按键在设置子页 pop、根 tab 退后台
 - [x] iOS 左边缘跟手返回:宿主上报 swipe 位移,JS 主线程平移页面后 pop/回弹;按 tab 保留页面栈
 - [x] 输入框键盘避让:`avoid-keyboard` + 12px spacing(待真机验证)
 - [x] 外观设置改为单条目 + 右侧锚定浮层;底栏指示器固定高度居中

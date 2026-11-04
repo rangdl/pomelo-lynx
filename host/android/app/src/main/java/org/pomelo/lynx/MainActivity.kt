@@ -42,6 +42,7 @@ class MainActivity : Activity() {
                 PomeloLog.info("launch", "FIRST SCREEN reached")
                 // insets 此时已分发,补上首帧可能为 0 的安全区。
                 pushFirstScreenAppearance()
+                attachHostModule()
             }
 
             override fun onLoadFailed(message: String?) {
@@ -151,6 +152,14 @@ class MainActivity : Activity() {
         return builder.build(this)
     }
 
+    /**
+     * 返回键桥已在 LynxView 首帧时由模块自注册接管(见 PomeloHostModuleBridge);
+     * 这里只把未处理回调指向当前 Activity(重载后新实例需要重新绑定)。
+     */
+    private fun attachHostModule() {
+        PomeloHostModuleBridge.bindForActivity(this)
+    }
+
     override fun onNewIntent(intent: android.content.Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -214,6 +223,22 @@ class MainActivity : Activity() {
         super.onDestroy()
         lynxView?.destroy()
         lynxView = null
+    }
+
+    /**
+     * 返回键:先问 JS(页面栈 pop/关闭浮层);JS 不处理或不可达时退到后台。
+     * 用 moveTaskToBack 而非 finish:音乐应用的后台播放期望退出键不杀进程,
+     * LynxView 重建会重置 JS 状态(见类头 configChanges 注释)。
+     */
+    override fun onBackPressed() {
+        val module = PomeloHostModuleBridge.current
+        if (module == null) {
+            moveTaskToBack(true)
+            return
+        }
+        module.unhandledCallback = { moveTaskToBack(true) }
+        val delivered = module.queryBack { moveTaskToBack(true) }
+        if (!delivered) moveTaskToBack(true)
     }
 
     companion object {

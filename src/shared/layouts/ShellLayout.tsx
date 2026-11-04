@@ -24,6 +24,7 @@ import { SettingsPage } from '../../features/settings/SettingsPage.js';
 import { SourcePage } from '../../features/settings/SourcePage.js';
 import { ThemePalettePage } from '../../features/settings/ThemePalettePage.js';
 import { type MessageKey, t } from '../../i18n/index.js';
+import { subscribeHardwareBack } from '../../native/hardware-back.js';
 import { subscribeNavigationSwipe } from '../../native/navigation.js';
 import { setNativeEdgeBackEnabled } from '../../native/platform.js';
 import {
@@ -177,6 +178,9 @@ export function ShellLayout() {
   const appearanceMode = useAppearanceMode();
   const themePalette = useThemePalette();
   const [showMore, setShowMore] = useState(false);
+  // 返回键裁决需要读到最新的浮层状态,而处理器闭包不随重渲染更新。
+  const showMoreRef = useRef(showMore);
+  showMoreRef.current = showMore;
   // 记住设置 tab 的最后位置;从其它 tab 切回来时恢复整条栈。
   const lastSettingsPathRef = useRef<SettingsPath>(ROUTE_PATHS.settings);
   if (isSettingsPath(pathname)) lastSettingsPathRef.current = pathname;
@@ -265,6 +269,23 @@ export function ShellLayout() {
   useEffect(() => {
     setNativeEdgeBackEnabled(pathname.startsWith(`${ROUTE_PATHS.settings}/`));
   }, [pathname]);
+
+  // Android 硬件返回键:浮层 LIFO → 页面栈 pop → unhandled(宿主退到后台)。
+  // 处理器同步裁决;pop 复用与侧滑同一条 parentPath 逻辑。
+  useEffect(() => {
+    return subscribeHardwareBack(() => {
+      if (showMoreRef.current) {
+        setShowMore(false);
+        return 'dismiss';
+      }
+      const parent = parentPath(pathname);
+      if (parent) {
+        navigate({ to: parent });
+        return 'pop';
+      }
+      return 'unhandled';
+    });
+  }, [navigate, pathname]);
 
   // iOS 左边缘跟手返回:只有设置子页响应;根 tab(首页/播放/设置)不响应。
   useEffect(() => {

@@ -127,21 +127,9 @@ object FilePickerBridge {
             answer(request.callback, "upload_read_failed", null)
             return
         }
-        val bytes = try {
-            context.contentResolver.openInputStream(uri)?.use { input ->
-                ByteArrayOutputStream().use { out ->
-                    val buffer = ByteArray(64 * 1024)
-                    var total = 0
-                    while (true) {
-                        val read = input.read(buffer)
-                        if (read <= 0) break
-                        total += read
-                        if (total > MAX_UPLOAD_BYTES) return@use null // 超限
-                        out.write(buffer, 0, read)
-                    }
-                    out.toByteArray()
-                }
-            }
+        val bytes: ByteArray?
+        try {
+            bytes = readLimited(context, uri, MAX_UPLOAD_BYTES)
         } catch (e: IOException) {
             PomeloLog.warn("upload", "read failed: ${e.javaClass.simpleName}")
             answer(request.callback, "upload_read_failed", null)
@@ -156,6 +144,28 @@ object FilePickerBridge {
             return
         }
         upload(bytes, displayName(context, uri), request)
+    }
+
+    /** 读取最多 [limit] 字节;超出返回 null(调用方按 too_large 处理)。 */
+    private fun readLimited(
+        context: android.content.Context,
+        uri: Uri,
+        limit: Int,
+    ): ByteArray? {
+        val input = context.contentResolver.openInputStream(uri) ?: return null
+        return input.use { stream ->
+            val out = ByteArrayOutputStream()
+            val buffer = ByteArray(64 * 1024)
+            var total = 0
+            while (true) {
+                val read = stream.read(buffer)
+                if (read <= 0) break
+                total += read
+                if (total > limit) return@use null
+                out.write(buffer, 0, read)
+            }
+            out.toByteArray()
+        }
     }
 
     private fun displayName(context: android.content.Context, uri: Uri): String {
@@ -200,20 +210,11 @@ object FilePickerBridge {
                     answer(request.callback, "upload_http_${response.code}", null)
                     return
                 }
-                val stream = response.body?.byteStream()
-                val text = stream?.use { input ->
-                    ByteArrayOutputStream().use { out ->
-                        val buffer = ByteArray(16 * 1024)
-                        var total = 0
-                        while (true) {
-                            val read = input.read(buffer)
-                            if (read <= 0) break
-                            total += read
-                            if (total > MAX_RESPONSE_BYTES) return@use null
-                            out.write(buffer, 0, read)
-                        }
-                        out.toByteArray().toString(Charsets.UTF_8)
-                    }
+                val body = response.body
+                val text: String? = if (body == null) {
+                    ""
+                } else {
+                    body.byteStream().use { input -> readTextLimited(input, MAX_RESPONSE_BYTES) }
                 }
                 if (text == null) {
                     answer(request.callback, "upload_response_too_large", null)
@@ -225,6 +226,21 @@ object FilePickerBridge {
             PomeloLog.warn("upload", "post failed: ${e.javaClass.simpleName}")
             answer(request.callback, "upload_failed", null)
         }
+    }
+
+    /** 读取文本响应,超过 [limit] 字节返回 null。 */
+    private fun readTextLimited(input: java.io.InputStream, limit: Int): String? {
+        val out = ByteArrayOutputStream()
+        val buffer = ByteArray(16 * 1024)
+        var total = 0
+        while (true) {
+            val read = input.read(buffer)
+            if (read <= 0) break
+            total += read
+            if (total > limit) return null
+            out.write(buffer, 0, read)
+        }
+        return out.toByteArray().toString(Charsets.UTF_8)
     }
 
     /** 统一回答:JavaOnlyArray[error|null, body|null],与 iOS NSArray 同形。 */

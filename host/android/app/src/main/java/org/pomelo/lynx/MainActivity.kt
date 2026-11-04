@@ -270,6 +270,12 @@ class MainActivity : Activity() {
         rootView = null
     }
 
+    /** 文件选择器的结果交给 FilePickerBridge(选完就上传)。 */
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        org.pomelo.lynx.platform.FilePickerBridge.onActivityResult(requestCode, resultCode, data)
+    }
+
     /**
      * 返回键:先问 JS(页面栈 pop/关闭浮层);JS 不处理或不可达时退到后台。
      * 用 moveTaskToBack 而非 finish:音乐应用的后台播放期望退出键不杀进程,

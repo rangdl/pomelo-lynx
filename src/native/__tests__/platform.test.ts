@@ -3,8 +3,10 @@ import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
 import {
   applyDevServer,
   clearDevServer,
+  hasApkInstall,
   hasDevServerControl,
   hasNativePlatform,
+  installApk,
   openTrollStoreInstall,
   openURL,
   pickAndUploadFile,
@@ -36,6 +38,12 @@ interface PlatformMock {
     fieldName: string,
     mimeType: string,
     callback: (result: unknown) => void,
+  ) => void;
+  installApk?: (
+    url: string,
+    sha256: string,
+    size: number,
+    callback: (error: unknown) => void,
   ) => void;
   applyDevServer?: (url: string, callback: (error: unknown) => void) => void;
   clearDevServer?: (callback: (error: unknown) => void) => void;
@@ -491,4 +499,64 @@ test('旧壳没有 openTrollStore 时不伪装成功', () => {
       'https://github.com/rangdl/pomelo-lynx/releases/download/dev/pomelo-lynx-ios-nosign.ipa',
     ),
   ).toBe(false);
+});
+
+test('installApk 缺方法时拒绝,且只在摘要合法时下发给原生', async () => {
+  const digest = 'a'.repeat(64);
+  globals.NativeModules = {
+    PomeloPlatform: {
+      openURL: () => {},
+      setKeepScreenOn: () => {},
+    } satisfies PlatformMock,
+  };
+  expect(hasApkInstall()).toBe(false);
+  await expect(
+    installApk('https://github.com/x.apk', digest, 1024),
+  ).rejects.toThrow('apk_install_unavailable');
+
+  const calls: unknown[][] = [];
+  globals.NativeModules = {
+    PomeloPlatform: {
+      openURL: () => {},
+      setKeepScreenOn: () => {},
+      installApk: (...args: unknown[]) => {
+        calls.push(args);
+        (args[3] as (error: unknown) => void)('');
+      },
+    } satisfies PlatformMock,
+  };
+  expect(hasApkInstall()).toBe(true);
+  // 摘要/地址不合法时不下发,避免原生拿到没有校验依据的下载。
+  await expect(
+    installApk('https://github.com/x.apk', 'deadbeef', 1024),
+  ).rejects.toThrow('apk_invalid_digest');
+  await expect(
+    installApk('ftp://github.com/x.apk', digest, 1024),
+  ).rejects.toThrow('apk_invalid_url');
+  expect(calls).toEqual([]);
+
+  await expect(
+    installApk('https://github.com/x.apk', digest, 1024),
+  ).resolves.toBeUndefined();
+  expect(calls[0]?.[0]).toBe('https://github.com/x.apk');
+  expect(calls[0]?.[1]).toBe(digest);
+  expect(calls[0]?.[2]).toBe(1024);
+});
+
+test('installApk 把原生错误码转成 rejection', async () => {
+  globals.NativeModules = {
+    PomeloPlatform: {
+      openURL: () => {},
+      setKeepScreenOn: () => {},
+      installApk: (
+        _url: string,
+        _sha256: string,
+        _size: number,
+        callback: (error: unknown) => void,
+      ) => callback('apk_download_failed'),
+    } satisfies PlatformMock,
+  };
+  await expect(
+    installApk('https://github.com/x.apk', 'b'.repeat(64), 0),
+  ).rejects.toThrow('apk_download_failed');
 });

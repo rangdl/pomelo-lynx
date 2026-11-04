@@ -18,6 +18,7 @@ import org.pomelo.lynx.log.PomeloLog
 object DevBundleFetcher {
 
     const val TIMEOUT_MS = 15_000
+    private const val PROBE_TIMEOUT_MS = 4_000
 
     /** HTTP HEAD 探测:返回 (statusCode, errorCode)。statusCode 为 -1 表示网络失败。 */
     fun probe(urlString: String): Pair<Int, String> {

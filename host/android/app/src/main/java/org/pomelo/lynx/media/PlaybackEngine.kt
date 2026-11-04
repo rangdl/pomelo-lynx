@@ -54,8 +54,6 @@ object PlaybackEngine {
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
             .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-            // 拔耳机/断开蓝牙时自动暂停,避免外放惊吓。
-            .setHandleAudioBecomingNoisy(true)
             .build()
         val exo = ExoPlayer.Builder(context.applicationContext)
             .setAudioAttributes(audioAttributes, /* handleAudioFocus = */ true)
@@ -63,6 +61,7 @@ object PlaybackEngine {
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
         exoPlayer = exo
+        registerBecomingNoisy(context.applicationContext, exo)
         PomeloLog.info("media", "ExoPlayer created (audio focus + wake mode)")
         return exo
     }
@@ -77,6 +76,14 @@ object PlaybackEngine {
             .setSessionActivity(openAppIntent(context.applicationContext))
             .build()
         mediaSession = session
+        // 显式启动绑定服务:MediaSessionService 只有被启动过才能把播放
+        // 提升为前台服务并弹媒体通知。(在应用前台时 startService 安全;
+        // 服务内部再由 media3 按需 startForeground。)
+        runCatching {
+            context.applicationContext.startService(
+                android.content.Intent(context.applicationContext, PomeloPlaybackService::class.java),
+            )
+        }
         PomeloLog.info("media", "MediaSession created")
         return session
     }
@@ -98,7 +105,34 @@ object PlaybackEngine {
     }
 
     /**
-     * 把 next/previous 从 ExoPlayer 的 Timeline 语义转成模块的队列语义。
+     * 拔耳机/断开蓝牙时暂停,避免突然外放。
+     *
+     * 为什么用广播而不是 `AudioAttributes.setHandleAudioBecomingNoisy`:
+     * 后者在各 media3 版本间的载体不稳定(1.4 的 AudioAttributes.Builder
+     * 上已不可用),广播是平台 API,行为等价且无版本风险。对齐 iOS 的
+     * `AVAudioSession` 路由变化处理。
+     */
+    private fun registerBecomingNoisy(context: Context, exo: ExoPlayer) {
+        if (noisyReceiver != null) return
+        val receiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: android.content.Intent?) {
+                if (intent?.action != android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
+                    return
+                }
+                PomeloLog.info("media", "audio becoming noisy; pausing")
+                exo.pause()
+            }
+        }
+        runCatching {
+            context.registerReceiver(
+                receiver,
+                android.content.IntentFilter(android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY),
+            )
+            noisyReceiver = receiver
+        }
+    }
+
+    private var noisyReceiver: android.content.BroadcastReceiver? = null
      *
      * 我们一次只给播放器一个 MediaItem(见模块 load()),所以 ExoPlayer 自己
      * 认为"没有下一首"。这里覆盖 hasNext/hasPrevious/seekToNext/seekToPrevious,
@@ -106,13 +140,13 @@ object PlaybackEngine {
      */
     private class QueueAwarePlayer(base: Player) : ForwardingPlayer(base) {
 
-        private fun next(): Boolean = navigator?.hasNext() == true
+        private fun queueHasNext(): Boolean = navigator?.hasNext() == true
 
-        private fun previous(): Boolean = navigator?.hasPrevious() == true
+        private fun queueHasPrevious(): Boolean = navigator?.hasPrevious() == true
 
-        override fun hasNext(): Boolean = next()
+        override fun hasNext(): Boolean = queueHasNext()
 
-        override fun hasPrevious(): Boolean = previous()
+        override fun hasPrevious(): Boolean = queueHasPrevious()
 
         override fun seekToNext() {
             navigator?.skipToNext()
@@ -133,14 +167,14 @@ object PlaybackEngine {
         /** 没有下一首/上一首时不要向通知栏暴露对应按钮。 */
         override fun getAvailableCommands(): Player.Commands {
             val builder = super.getAvailableCommands().buildUpon()
-            if (next()) {
+            if (queueHasNext()) {
                 builder.add(Player.COMMAND_SEEK_TO_NEXT)
                 builder.add(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
             } else {
                 builder.remove(Player.COMMAND_SEEK_TO_NEXT)
                 builder.remove(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
             }
-            if (previous()) {
+            if (queueHasPrevious()) {
                 builder.add(Player.COMMAND_SEEK_TO_PREVIOUS)
                 builder.add(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
             } else {

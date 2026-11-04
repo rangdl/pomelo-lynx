@@ -28,6 +28,13 @@ export interface PomeloPlatformNativeModule {
     mimeType: string,
     callback: (result: unknown) => void,
   ): void;
+  /** 下载 APK → 校验 sha256/大小 → 交系统安装器(Android 客户端更新)。 */
+  installApk?(
+    url: string,
+    sha256: string,
+    size: number,
+    callback: (error: unknown) => void,
+  ): void;
   /** dev server 热切换(仅新版 iOS 宿主提供)。 */
   applyDevServer?(url: string, callback: (error: unknown) => void): void;
   clearDevServer?(callback: (error: unknown) => void): void;
@@ -137,6 +144,49 @@ export function openTrollStoreInstall(ipaURL: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** 当前宿主是否能直接安装 APK(Android 新版宿主)。 */
+export function hasApkInstall(): boolean {
+  return typeof readPlatformModule()?.installApk === 'function';
+}
+
+/**
+ * 下载 APK 并交系统安装器。原生侧会校验 sha256 与大小后再弹安装,所以
+ * `sha256` 必须是 `client.json` 里该资产的摘要(JS 不自己下载、不自己校验)。
+ * 下载窗口比普通桥调用长得多,给 5 分钟。
+ */
+export function installApk(
+  url: string,
+  sha256: string,
+  size: number,
+): Promise<void> {
+  const install = readPlatformModule()?.installApk;
+  if (!install) return Promise.reject(new Error('apk_install_unavailable'));
+  const target = url.trim();
+  if (!isHttpURL(target)) return Promise.reject(new Error('apk_invalid_url'));
+  if (!/^[0-9a-f]{64}$/.test(sha256)) {
+    return Promise.reject(new Error('apk_invalid_digest'));
+  }
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (error: unknown) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (typeof error === 'string' && error.length > 0) {
+        reject(new Error(error));
+      } else {
+        resolve();
+      }
+    };
+    const timer = setTimeout(() => finish('apk_download_timeout'), 300_000);
+    try {
+      install(target, sha256, Number.isFinite(size) ? size : 0, finish);
+    } catch (error) {
+      finish(error instanceof Error ? error.message : 'apk_download_failed');
+    }
+  });
 }
 
 /** 把回调形状的原生方法包成带超时的 Promise;回调参数非空字符串即失败。 */

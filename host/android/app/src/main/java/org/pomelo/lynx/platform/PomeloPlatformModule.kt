@@ -16,6 +16,7 @@ import com.lynx.jsbridge.LynxModule
 import com.lynx.react.bridge.Callback
 import com.lynx.tasm.behavior.LynxContext
 import java.io.File
+import org.pomelo.lynx.MainActivityRegistry
 import org.pomelo.lynx.log.PomeloLog
 
 /**
@@ -100,6 +101,38 @@ class PomeloPlatformModule(context: Context) : LynxModule(context) {
      * 把 base64 写入 cache/share 后调起系统分享面板。文件名和 MIME 在 JS
      * 侧已校验,这里再做一次纵深防御;旧文件在每次分享前清空,避免缓存堆积。
      */
+    /**
+     * 选文件 + multipart 上传(对齐 iOS pickAndUploadFile)。
+     * 回调 [error|null, body|null],120s 窗口由 JS 侧控制。
+     */
+    @LynxMethod
+    fun pickAndUploadFile(
+        uploadUrl: String,
+        fieldName: String,
+        mimeType: String,
+        callback: Callback,
+    ) {
+        // 文件选择器必须在 Activity 上启动;拿不到就报不可用(与 iOS 一致)。
+        val host = MainActivityRegistry.current
+        FilePickerBridge.pick(host, uploadUrl, fieldName, mimeType, callback)
+    }
+
+    /**
+     * 下载 APK → 校验 sha256/大小 → 交系统安装器(Android 客户端更新闭环)。
+     * 错误码:apk_invalid_url / apk_invalid_digest / apk_download_failed /
+     * apk_unavailable / apk_installer_unavailable。成功回调空串。
+     */
+    @LynxMethod
+    fun installApk(url: String, sha256: String, size: Double, callback: Callback) {
+        ApkInstaller.downloadAndInstall(
+            appContext(),
+            url.trim(),
+            sha256.trim(),
+            size.toLong(),
+            callback,
+        )
+    }
+
     @LynxMethod
     fun shareFile(base64: String, fileName: String, mimeType: String, callback: Callback) {
         if (base64.length > MAX_BASE64_CHARS) {

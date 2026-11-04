@@ -22,4 +22,7 @@ object MainActivityRegistry {
 
     val current: MainActivity?
         get() = ref?.get()
+
+    /** Context 访问器:原生模块在 Activity 缺失时仍需要 ContentResolver。 */
+    fun context(): android.content.Context? = current
 }

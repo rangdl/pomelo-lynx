@@ -8,7 +8,12 @@ import {
 import { releasePage } from '../../core/updater/release-resolver.js';
 import { readUpdateProxy } from '../../core/updater/update-preferences.js';
 import { t } from '../../i18n/index.js';
-import { openTrollStoreInstall, openURL } from '../../native/platform.js';
+import {
+  hasApkInstall,
+  installApk,
+  openTrollStoreInstall,
+  openURL,
+} from '../../native/platform.js';
 import {
   isIosPlatform,
   isWebPlatform,
@@ -39,9 +44,12 @@ export function ClientReleaseSection() {
   const [checking, setChecking] = useState(false);
   const [check, setCheck] = useState<ClientReleaseCheck | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [installing, setInstalling] = useState(false);
   const web = isWebPlatform();
   const ios = isIosPlatform();
   const android = platformName() === 'android';
+  // 原生 APK 安装(下载+校验+系统安装器);旧壳/其它平台回退到打开下载页。
+  const apkInstall = android && hasApkInstall();
   const releaseURL =
     check?.releasePage ?? releasePage(readClientIdentity().channel);
 
@@ -66,6 +74,21 @@ export function ClientReleaseSection() {
     'background only';
     if (!url) return;
     if (!openURL(url)) setError('open_url_failed');
+  };
+
+  /** Android:下载 APK → 原生校验 sha256 → 调系统安装器。 */
+  const installForAndroid = (url: string, sha256: string, size: number) => {
+    'background only';
+    if (installing) return;
+    setInstalling(true);
+    setError(null);
+    installApk(url, sha256, size)
+      .catch((reason: unknown) => {
+        setError(
+          reason instanceof Error ? reason.message : 'apk_download_failed',
+        );
+      })
+      .finally(() => setInstalling(false));
   };
 
   if (web) return null;
@@ -137,6 +160,28 @@ export function ClientReleaseSection() {
             onTap={() => open(downloadURL)}
             testid="client-release-download"
           />
+          {apkInstall ? (
+            <>
+              <SettingsGroupDivider />
+              <ListRow
+                iconGlyph="⤓"
+                iconTone="green"
+                label={installing ? '下载中…' : '下载并安装'}
+                detail={
+                  installing
+                    ? '下载完成后会校验安装包并调起系统安装器'
+                    : '校验安装包摘要后调起系统安装器,无需浏览器'
+                }
+                chevron={!installing}
+                onTap={() => {
+                  'background only';
+                  if (!asset) return;
+                  installForAndroid(downloadURL, asset.sha256, asset.size);
+                }}
+                testid="client-release-install"
+              />
+            </>
+          ) : null}
           {ios ? (
             <>
               <SettingsGroupDivider />

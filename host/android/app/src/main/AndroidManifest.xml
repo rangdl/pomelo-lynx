@@ -10,6 +10,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <!-- Android 13+ 需要运行时授权才能显示媒体通知。 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 客户端更新:交系统安装器需要声明安装包权限(用户仍需勾选允许)。 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- `usesCleartextTraffic`: the dev/QA flow loads bundles over plain HTTP
          on the LAN (alignment collection against a laptop server). The hot

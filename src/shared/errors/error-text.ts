@@ -61,6 +61,13 @@ const UPDATE_TEXT: Record<string, string> = {
   // —— 客户端安装包更新 ——
   open_url_failed: '无法打开链接',
   trollstore_unavailable: '未检测到 TrollStore,请先安装或打开下载页',
+  apk_install_unavailable: '当前宿主不支持直接安装,请打开下载页',
+  apk_invalid_url: '安装包地址无效',
+  apk_invalid_digest: '安装包校验信息缺失',
+  apk_download_failed: '安装包下载失败',
+  apk_download_timeout: '安装包下载超时,请稍后重试',
+  apk_unavailable: '安装包不可用',
+  apk_installer_unavailable: '无法调起安装器,请允许安装未知应用后重试',
 };
 
 /** Bundle 热更新兼容性原因的对照表;非 compatible 时展示给用户。 */

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- PomeloPlatform.shareFile 的临时文件目录,与 FileProvider 的 authority
+    <!-- PomeloPlatform.shareFile 的临时文件目录,与 FileProvider 的 authority
      一起使用(见 AndroidManifest.xml)。 -->
 <paths>
     <cache-path name="share" path="share/" />
+    <!-- 客户端更新:下载并校验完的 APK 交系统安装器。 -->
+    <cache-path name="updates" path="updates/" />
 </paths>

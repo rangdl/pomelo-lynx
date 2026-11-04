@@ -1,7 +1,8 @@
 # 原生能力路线图
 
-按批次推进;Android CI job 目前处于暂停状态,Android 原生实现**先写入本计划,
-不在恢复编译验证前提交代码**。iOS 改动以 CI 的 `iOS IPA` job 编译通过为准。
+按批次推进;iOS 改动以 CI 的 `iOS IPA` job 编译通过为准，Android 改动以 CI
+的 `android` job（`assembleRelease` + 单测）为准。两端真机行为都需真机
+验收后才能勾选“验证”项。
 
 ## 批次 1:平台包收尾
 
@@ -59,11 +60,15 @@
 - [x] 安全区统一注入(`--safe-*`),ShellLayout 用宿主上报的 px 值覆盖
 - [x] iOS:`ViewController` 注入 `colorScheme`/安全区,监听 trait 与安全区变化
 - [x] 应用外观(跟随系统/浅色/深色)同步到 UIKit;首页背景改用主题 token
-- [ ] **Android(计划)**
-  - `SystemAppearance.kt`:读取 `uiMode`、字体缩放、`ANIMATOR_DURATION_SCALE`
-  - `MainActivity` 监听 `onConfigurationChanged`,通过 `sendGlobalEvent` 推送
-  - 首帧初值写入 `LynxLoadMeta` 的 globalProps
-  - 验证:`assembleDebug` + 深色/字体缩放/减少动效真机检查
+- [x] **Android SystemAppearance(已实现,待 CI 编译与真机验证)**
+  - `SystemAppearance.kt`:`uiMode` → colorScheme,`WindowInsetsCompat`
+    (systemBars + displayCutout 取 max,density 转逻辑像素)
+  - `MainActivity` 首帧 globalProps 注入外观字段与 `language`;
+    `onConfigurationChanged`(reason=trait)/`onResume`(reason=foreground)/
+    `onFirstScreen`(reason=firstScreen)推送 `PomeloAppearance.changed`,
+    值签名去重,与 iOS `pushAppearance` 同构
+  - 字体缩放/`ANIMATOR_DURATION_SCALE` 同步未做(JS 侧暂无消费方,后补)
+  - 验证:深色切换/旋转/分屏/刘海机型真机检查(CI 编译通过前不算完成)
 
 ## 批次 3:Android 返回键 + 通用 UI 原语
 
@@ -82,8 +87,8 @@
 - [x] JS `ListRow` 原语(设置/关于页复用,统一 leading/content/trailing)
 - [x] i18n 基础设施:`lynx.__globalProps.language` + 中英文核心文案
   - 首版覆盖导航、设置、关于、日志标题;开发者区/更新区文案暂留中文
-- [ ] **Android i18n 注入(计划)**:`MainActivity` 把 `Locale.getDefault()` 写入
-  `LynxLoadMeta.globalProps.language`
+- [x] **Android i18n 注入(已实现)**:`MainActivity` 把
+  `Locale.getDefault().toLanguageTag()` 写入 `LynxLoadMeta.globalProps.language`
 
 ## 原生包与 Autolink
 
@@ -146,8 +151,8 @@
 
 ## 依赖与验证边界
 
-- Android 原生:CI 的 `android` job 已注释;恢复步骤见 `docs/dev-server.md`。
-  在此之前只维护本计划,不提交无法编译的 Kotlin。
+- Android 原生:CI `android` job 已恢复(2026-11);本地容器无 Android SDK,
+  不能本地编译，改动只能以 CI 为准。
 - iOS 原生:本地 Linux 无 Xcode;每次改动运行 `pnpm run check:ios`,再以 CI
   的 `iOS IPA` job 为准。
 - 媒体 0.1.0 只做 iOS 音频 MVP;视频/缓存/歌词/Live Activity/EQ 等需要后续

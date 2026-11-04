@@ -11,6 +11,8 @@ import com.lynx.tasm.LynxViewClient
 import com.lynx.tasm.TemplateData
 import org.pomelo.lynx.log.PomeloLog
 import org.pomelo.lynx.updater.BundleUpdates
+import android.content.res.Configuration
+import java.util.Locale
 
 /**
  * Single full-screen host Activity: builds one LynxView, wires a
@@ -27,6 +29,8 @@ import org.pomelo.lynx.updater.BundleUpdates
  */
 class MainActivity : Activity() {
     private var lynxView: LynxView? = null
+    /** 上次推送的外观签名;值不变时不重复发事件(对齐 iOS)。 */
+    private var lastAppearanceSignature: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +40,8 @@ class MainActivity : Activity() {
         view.addLynxViewClient(object : LynxViewClient() {
             override fun onFirstScreen() {
                 PomeloLog.info("launch", "FIRST SCREEN reached")
+                // insets 此时已分发,补上首帧可能为 0 的安全区。
+                pushFirstScreenAppearance()
             }
 
             override fun onLoadFailed(message: String?) {
@@ -119,17 +125,25 @@ class MainActivity : Activity() {
         PomeloLog.info("devserver", "stored dev server url")
     }
 
-    /** 与 iOS 相同的 globalProps 字段,供 JS 侧 client-identity 对齐。 */
-    private fun globalProps(): TemplateData =
-        TemplateData.fromMap(
-            mapOf(
-                "hostName" to "pomelo-host-android",
-                "hostVersion" to BuildConfig.VERSION_NAME,
-                "hostBuild" to BuildConfig.VERSION_CODE.toString(),
-                "hostChannel" to DevConfig.channel(this),
-                "isDebug" to BuildConfig.DEBUG,
-            ),
+    /**
+     * 与 iOS 相同的 globalProps 字段,供 JS 侧 client-identity 对齐;
+     * 外观(colorScheme/safe*)与 language 同样与 iOS 对齐——JS 侧
+     * `readSystemAppearance` / i18n 从这里读首帧值。
+     */
+    private fun globalProps(): TemplateData {
+        val props = mutableMapOf<String, Any>(
+            "hostName" to "pomelo-host-android",
+            "hostVersion" to BuildConfig.VERSION_NAME,
+            "hostBuild" to BuildConfig.VERSION_CODE.toString(),
+            "hostChannel" to DevConfig.channel(this),
+            "isDebug" to BuildConfig.DEBUG,
+            // iOS 用 Locale.preferredLanguages.first;Android 用默认区域语言,
+            // 形状同样是 BCP-47 前缀,JS 侧按 startsWith("en") 判断。
+            "language" to Locale.getDefault().toLanguageTag(),
         )
+        props.putAll(SystemAppearance.globalPropsEntry(this))
+        return TemplateData.fromMap(props)
+    }
 
     private fun buildLynxView(): LynxView {
         val builder = LynxViewBuilder()
@@ -156,6 +170,44 @@ class MainActivity : Activity() {
         params.pushMap(com.lynx.react.bridge.JavaOnlyMap.from(emptyMap<String, Any>()))
         lynxView?.sendGlobalEvent(EVENT_APP_RESUMED, params)
         PomeloLog.info("lifecycle", "app resumed → JS")
+        // 前台重读安全区(键盘收起/分屏/旋转后 insets 已变)。
+        // reason=foreground 与 iOS 同义:允许 JS 同步 colorScheme。
+        pushAppearance("foreground", includeColorScheme = true)
+    }
+
+    /**
+     * manifest 声明了 uiMode 等配置变更不重建 Activity,深色模式切换/
+     * 旋转/分屏都会走这里;同步推给 JS(对齐 iOS traitCollectionDidChange)。
+     */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        pushAppearance("trait", includeColorScheme = true)
+    }
+
+    /**
+     * 首屏就绪后补一次非零安全区(onCreate 阶段 insets 尚未分发,globalProps
+     * 里可能是 0);reason=firstScreen 允许 JS 同步 colorScheme。
+     */
+    private fun pushFirstScreenAppearance() {
+        pushAppearance("firstScreen", includeColorScheme = true)
+    }
+
+    /**
+     * 推送外观事件;值签名不变时跳过(对齐 iOS pushAppearance)。
+     * includeColorScheme=false 时只推安全区——预留给未来“仅几何变化”的场景,
+     * 避免瞬态配置误切主题。
+     */
+    private fun pushAppearance(reason: String, includeColorScheme: Boolean = true) {
+        val view = lynxView ?: return
+        val payload = SystemAppearance.payload(this, reason).toMutableMap()
+        if (!includeColorScheme) payload.remove("colorScheme")
+        val signature = payload.entries.sortedBy { it.key }.joinToString("|") { "${it.key}=${it.value}" }
+        if (signature == lastAppearanceSignature) return
+        lastAppearanceSignature = signature
+        val params = com.lynx.react.bridge.JavaOnlyArray()
+        params.pushMap(com.lynx.react.bridge.JavaOnlyMap.from(payload))
+        view.sendGlobalEvent(SystemAppearance.EVENT, params)
+        PomeloLog.debug("appearance", "push $reason $payload")
     }
 
     override fun onDestroy() {

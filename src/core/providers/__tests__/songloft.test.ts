@@ -210,15 +210,17 @@ describe('SongloftProvider', () => {
       },
     ]);
 
-    // 专辑:分面维度映射,专辑名即身份(后端没有专辑 ID)。
+    // 专辑:后端是分面维度、没有 ID,由 provider 内部用专辑名充当 id。
+    // SDK 契约仍要求 `id`(其它后端有真实 ID),适配只发生在实现里。
     const albums = await provider.albums();
     expect(albums.items).toEqual([
       {
+        id: '叶惠美',
         name: '叶惠美',
         trackCount: 4,
         artwork: '/api/v1/songs/7/cover',
       },
-      { name: '七里香', trackCount: 3, artwork: undefined },
+      { id: '七里香', name: '七里香', trackCount: 3, artwork: undefined },
     ]);
     const facetCall = calls[calls.length - 1];
     expect(facetCall.url).toContain('/api/v1/songs/facets');
@@ -235,13 +237,16 @@ describe('SongloftProvider', () => {
 
     // 封面直接用列表给的 cover_url,不再猜 /albums/{id}/cover。
     const albumCover = await provider.albumArtwork({
+      id: '叶惠美',
       name: '叶惠美',
       artwork: '/api/v1/songs/7/cover',
     });
     expect(albumCover).toContain('/api/v1/songs/7/cover');
     expect(albumCover).toContain('access_token=access-1');
     // 没有封面时返回 null 而不是拼一个不存在的路径。
-    expect(await provider.albumArtwork({ name: '七里香' })).toBeNull();
+    expect(
+      await provider.albumArtwork({ id: '七里香', name: '七里香' }),
+    ).toBeNull();
 
     const tracks = await provider.playlistTracks('3', { limit: 200 });
     expect(tracks.items[0].id).toBe('7');

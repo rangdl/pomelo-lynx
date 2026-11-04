@@ -469,11 +469,12 @@ export function HomePage() {
           <view className="home-shelf__row">
             {albums.slice(0, SHELF_LIMIT).map((album, index) => (
               <MediaCard
-                key={album.name}
-                artwork={albumCovers[album.name]}
+                key={album.id}
+                artwork={albumCovers[album.id]}
                 title={album.name}
                 subtitle={
-                  album.trackCount ? `${album.trackCount} 首歌曲` : '专辑'
+                  album.artist ??
+                  (album.trackCount ? `${album.trackCount} 首歌曲` : '专辑')
                 }
                 onTap={() => openAlbum(album)}
                 testid={`home-album-${index}`}

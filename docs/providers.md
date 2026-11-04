@@ -39,8 +39,8 @@ getTrack(id)                 // 队列恢复/刷新后重新取曲目
 playlists({ limit, offset })
 playlistTracks(playlistId, { limit, offset })
 playlistArtwork(playlist, size?) // 歌单封面
-albums?({ limit, offset })                // 可选能力;专辑是分面维度
-albumTracks?(albumName, { limit, offset }) // 按专辑名取歌(专辑没有 ID)
+albums?({ limit, offset })               // 可选能力
+albumTracks?(albumId, { limit, offset }) // ID 语义由各 provider 定义
 albumArtwork?(album, size?)               // 可选能力
 stream(track): Promise<{ url, headers? }>
 lyrics(track): Promise<{ lrc?, translated?, romaji?, wordByWord? } | null>
@@ -71,14 +71,25 @@ artwork(track, size?): Promise<string | null>
 
 分面条目字段：`value/count/cover_url`(三者之外后端不返回任何字段)。
 
-**专辑不是资源,是分面维度**——这是最容易踩错的一点。Songloft 后端**没有**
-`/albums` 端点(参考实现 `songloft-player-lynx` 全仓无此路径);专辑的列表来自
-`/songs/facets?field=album`,详情用 `/songs?album=<专辑名>` 筛选。因此:
+**在 Songloft 里,专辑不是资源,是分面维度**——这是最容易踩错的一点。后端
+**没有** `/albums` 端点(参考实现 `songloft-player-lynx` 全仓无此路径);专辑的
+列表来自 `/songs/facets?field=album`,详情用 `/songs?album=<专辑名>` 筛选。
 
-- 专辑**没有 ID**,身份就是专辑名(`ProviderAlbum.name`),不要给它加 `id`;
-- 专辑没有 `artist`/`year` 字段,列表只给 `value/count/cover_url`;
+**但这属于本 provider 的内部适配,不是 SDK 契约。** `ProviderAlbum.id` 必须保留:
+多数曲库后端(Subsonic/Jellyfin/Plex)的专辑是真实资源、有 ID,不能因为 Songloft
+没有,就让整个 SDK 收窄。分层是:
+
+| 层 | 职责 |
+| --- | --- |
+| `provider-sdk` | 只定义通用形状:`id/name/artist?/year?/trackCount?/artwork?` |
+| `provider-songloft` | 内部把分面的 `value` 填进 `id`,并在 `albumTracks()` 里反查 |
+
+具体到 Songloft 实现:
+
+- `albums()` 用专辑名同时填 `id` 与 `name`(自然键适配,仅限本 provider);
+- 后端不返回 `artist`/`year`,这两个字段留空即可,不要伪造;
 - 不要拼 `/albums/{id}/cover` 之类的路径,封面用列表返回的 `cover_url`;
-- 同一套 `/songs/facets` 可直接支撑 artist/genre/year/decade/language/style
+- 同一套 `/songs/facets` 可支撑 artist/genre/year/decade/language/style
   六个维度,新增维度只是换 `field`。
 
 **专辑是可选能力**：`capabilities.albums` + `albums()` 同时存在才展示。服务端没有

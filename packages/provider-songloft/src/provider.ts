@@ -420,9 +420,13 @@ export class SongloftProvider implements MusicProvider {
   }
 
   /**
-   * 专辑列表。Songloft 没有 `/albums` 资源端点,专辑是曲库的分面维度:
+   * 专辑列表。
+   *
+   * Songloft 没有 `/albums` 资源端点,专辑是曲库的分面维度:
    * `GET /songs/facets?field=album` → `{ facets: [{value,count,cover_url}] }`。
-   * 每项映射成 `ProviderAlbum`,专辑名即身份。
+   * 分面没有 ID,这里**在 provider 内部**把专辑名当作自然键填进 `id`
+   * (`albumTracks()` 再用它反查)。这是本 provider 自己的适配细节,
+   * 不改动 `ProviderAlbum` 的通用契约——其它后端有真实 ID 就照常填。
    */
   async albums(
     options: ProviderPageOptions = {},
@@ -433,6 +437,7 @@ export class SongloftProvider implements MusicProvider {
       query: { field: 'album', limit, offset },
     });
     return parseFacetPage<ProviderAlbum>(payload, limit, offset, (facet) => ({
+      id: facet.value,
       name: facet.value,
       trackCount: facet.count,
       artwork: facet.coverUrl,
@@ -441,7 +446,7 @@ export class SongloftProvider implements MusicProvider {
 
   /**
    * 专辑封面。列表接口已经带上 `cover_url`,直接用它拼 token;
-   * 只有缺封面时才按歌曲封面约定回退,不猜 `/albums/{id}/cover`(该端点不存在)。
+   * 缺封面时返回 null,不猜 `/albums/{id}/cover`(该端点不存在)。
    */
   async albumArtwork(album: ProviderAlbum, size = 512): Promise<string | null> {
     const raw = album.artwork;
@@ -457,16 +462,17 @@ export class SongloftProvider implements MusicProvider {
   }
 
   /**
-   * 某专辑下的歌曲。专辑没有 ID,用 `GET /songs?album=<name>` 筛选取歌
-   * (与参考实现 `CategorySongsPage` 的 album 分面一致)。
+   * 某专辑下的歌曲。专辑没有 ID,`albumId` 实际是 `albums()` 填进去的
+   * 专辑名,这里按它筛选取歌(`GET /songs?album=<name>`)。
    */
   async albumTracks(
-    albumName: string,
+    albumId: string,
     options: ProviderPageOptions = {},
   ): Promise<ProviderPage<ProviderTrack>> {
     const limit = clamp(options.limit, DEFAULT_TRACK_LIMIT);
     const offset = offsetOf(options.offset);
-    const name = albumName.trim();
+    // albumId 在本 provider 里就是专辑名,与 `albums()` 的填充保持对称。
+    const name = albumId.trim();
     if (!name) {
       throw new ProviderError('provider_invalid_response', '专辑名不能为空');
     }

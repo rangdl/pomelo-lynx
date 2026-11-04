@@ -610,3 +610,35 @@ test('Songloft provider 只使用后端真实存在的端点,不猜资源路径'
   // 专辑详情按专辑名筛选取歌,不能再按 ID 拼路径。
   assert.match(provider, /query: \{ album: name, limit, offset \}/);
 });
+
+test('provider SDK 只做通用契约,不迁就单个后端的实现细节', () => {
+  // SDK 是所有 provider 的公约。多数曲库后端(Subsonic/Jellyfin/Plex)的
+  // 专辑是真实资源、有 ID;不能因为某一家(如 Songloft)把专辑当分面维度,
+  // 就把 id 从共享契约里删掉——那会让后续接入方被迫用专辑名当主键。
+  // 正确做法:SDK 保持通用形状,由该 provider 在内部做适配。
+  const types = read('packages/provider-sdk/src/types.ts');
+  const album = types.match(
+    /export interface ProviderAlbum \{([\s\S]*?)\n\}/,
+  )?.[1];
+  assert.ok(album, '找不到 ProviderAlbum 定义');
+  assert.match(album, /^\s*id: string;/m, 'ProviderAlbum 必须保留 id');
+  assert.match(album, /^\s*name: string;/m);
+
+  // albumTracks 的参数语义是"provider 定义的 id",不是某家的自然键。
+  const musicProvider = types.match(
+    /albumTracks\?\(([\s\S]*?)\): Promise<ProviderPage<ProviderTrack>>/,
+  )?.[1];
+  assert.ok(musicProvider, '找不到 albumTracks 声明');
+  assert.match(musicProvider, /albumId: string/);
+  assert.doesNotMatch(
+    musicProvider,
+    /albumName: string/,
+    'albumTracks 参数名不应是某个具体后端的自然键',
+  );
+  // SDK 文档里也不该出现某一家后端的端点细节。
+  assert.doesNotMatch(
+    types,
+    /\/songs\/facets|\/albums/,
+    'SDK 不应包含任何后端的具体端点',
+  );
+});

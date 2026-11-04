@@ -52,19 +52,22 @@ export interface ProviderPlaylist {
 /**
  * 专辑条目。
  *
- * Songloft 后端**没有** `/albums` 资源端点:专辑是曲库的一个分面维度,
- * 数据来自 `GET /songs/facets?field=album`,每项只有 `{ value, count, cover_url }`。
- * 因此专辑**没有 ID**,身份就是专辑名 —— 详情用 `GET /songs?album=<name>` 取歌。
- * 不要给这里加 `id`:那是按歌单契约臆想出来的,真实服务端不存在。
+ * `id` 是 **provider 作用域内**的稳定标识,形状由各 provider 自己决定:
+ * 多数曲库后端(Subsonic/Jellyfin/Plex)的专辑是真实资源、有数字或 GUID
+ * ID;若某后端没有专辑实体(如 Songloft 把专辑当作曲库的分面维度),
+ * 由该 provider 在内部选一个稳定自然键(例如专辑名)并用它填充 `id`。
+ * 这份契约不因单一后端的实现细节而收窄。
  *
  * 服务端是否真的提供专辑浏览由 `capabilities.albums` 与 `albums()` 共同决定。
  */
 export interface ProviderAlbum {
-  /** 专辑名,同时是该专辑的唯一标识(分面维度没有独立 ID)。 */
+  id: string;
   name: string;
-  /** 该专辑下的歌曲数(分面接口的 `count`);未知时省略。 */
+  artist?: string;
+  /** 该专辑下的歌曲数;未知时省略。 */
   trackCount?: number;
-  /** 封面资源路径,相对服务端或绝对 URL;列表接口直接给,不必再拼路径。 */
+  /** 发行年份;未知时省略。 */
+  year?: number;
   artwork?: string;
 }
 
@@ -166,17 +169,13 @@ export interface MusicProvider {
    * 专辑浏览。三个方法都是可选的:服务端未实现专辑时宿主隐藏专辑架,
    * 不做降级聚合(客户端按 `track.album` 去重只能覆盖已加载范围,
    * 得到的"专辑"不完整)。
-   *
-   * 实现建议:多数曲库类后端的专辑是**分面维度**而非独立资源
-   * (Songloft 走 `GET /songs/facets?field=album`),因此 `albumTracks()`
-   * 的参数是专辑名而不是 ID。
    */
   albums?(options?: ProviderPageOptions): Promise<ProviderPage<ProviderAlbum>>;
   /** 专辑封面;与歌单封面同样受图片加载器不能带 header 的限制。 */
   albumArtwork?(album: ProviderAlbum, size?: number): Promise<string | null>;
-  /** 按专辑名取该专辑下的歌曲(专辑是分面维度,没有独立 ID)。 */
+  /** 按专辑 ID 取该专辑下的歌曲;ID 的语义由各 provider 自己定义。 */
   albumTracks?(
-    albumName: string,
+    albumId: string,
     options?: ProviderPageOptions,
   ): Promise<ProviderPage<ProviderTrack>>;
 

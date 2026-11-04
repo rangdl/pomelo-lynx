@@ -58,9 +58,7 @@ export function getSongloftProvider(): SongloftProvider {
 }
 
 /**
- * 批量取专辑封面,返回 `专辑名 → 封面 URL`。失败语义同 `trackArtworks`。
- *
- * 键是专辑名而不是 ID:Songloft 的专辑是曲库分面维度,没有独立 ID。
+ * 批量取专辑封面,返回 `专辑 id → 封面 URL`。失败语义同 `trackArtworks`。
  */
 export async function albumArtworks(
   albums: readonly ProviderAlbum[],
@@ -72,11 +70,11 @@ export async function albumArtworks(
     albums.map(async (album) => {
       try {
         return [
-          album.name,
+          album.id,
           (await provider.albumArtwork?.(album, size)) ?? '',
         ] as const;
       } catch {
-        return [album.name, ''] as const;
+        return [album.id, ''] as const;
       }
     }),
   );

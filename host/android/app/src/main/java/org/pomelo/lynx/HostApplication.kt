@@ -13,6 +13,7 @@ import com.lynx.tasm.service.LynxServiceCenter
 import org.pomelo.lynx.log.LogStore
 import org.pomelo.lynx.log.PomeloLog
 import org.pomelo.lynx.log.PomeloLogModule
+import org.pomelo.lynx.media.PomeloPlayerModule
 import org.pomelo.lynx.platform.PomeloPlatformModule
 import org.pomelo.lynx.storage.PomeloStorageModule
 import org.pomelo.lynx.updater.PomeloUpdateModule
@@ -81,5 +82,8 @@ class HostApplication : Application() {
         // Android 返回键桥:`PomeloNavigation.backquery` 事件 +
         // `resolveBack` 回答(见 src/native/hardware-back.ts)。
         LynxEnv.inst().registerModule("PomeloHost", PomeloHostModule::class.java)
+        // Media3 ExoPlayer 播放器:队列/后台播放/鉴权刷新,契约与 iOS
+        // PomeloPlayerModule 对齐(见 src/native/player.ts)。
+        LynxEnv.inst().registerModule("PomeloPlayer", PomeloPlayerModule::class.java)
     }
 }

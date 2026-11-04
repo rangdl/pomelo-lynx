@@ -105,7 +105,8 @@
 - [x] `lynx-media` 迁移 + 原生歌词时序
 - [ ] 视频 Surface(`pomelo-video-view`,AVPlayerLayer)
 - [ ] MPV 后端(`PomeloLynxMedia/MPV`,接 `PomeloMediaBackend`)
-- [ ] Android 原生包(计划,等待 Android CI 恢复)
+- [x] Android 原生包(2026-11 起以宿主内包推进):storage/platform 在
+      host/app 内;media 已对齐(iOS 侧在 packages/lynx-media)。
 
 ## 音乐源 Provider(0.1.0)
 
@@ -136,7 +137,17 @@
 - [x] 第三个「播放」tab + 最小播放页
 - [ ] iOS 真机播放/seek/切 tab 后继续播放验证
 - [x] 后台播放/锁屏控制(iOS 实现,待真机验证)
-- [ ] Android ExoPlayer(后续)
+- [x] **Android ExoPlayer(已实现,待 CI 编译与真机验证)**
+  - `PomeloPlayerModule.kt`(Media3 1.4.1):load/play/pause/seek/stop/
+    getState/setQueue/next/previous/setLyrics/clearLyrics/
+    setNowPlayingOverride/clearNowPlayingOverride/setRate/setVolume/
+    getCapabilities/setEngine/resolveRefresh,18 方法与 iOS 契约对齐
+  - `HeaderedDataSourceFactory`:鉴权头(Songloft)经 OkHttp DataSource
+  - 401/403 → refresh_required → resolveRefresh 原位续播;
+    0.5s tick 推 state/lyric;队列自动下一首;WAKE_LOCK 后台播放
+  - 锁屏 MediaMetadata(歌词行按 mode 替换字段);MediaSessionService
+    遥控(锁屏按钮)未接,待后续批次
+  - 验证:真机播放/后台/锁屏/刷新链路
 - [x] 原生队列/上一首/下一首/结束自动下一首(锁屏与后台可用)
 - [x] 队列项元数据(标题/歌手/专辑/封面),锁屏显示
 - [x] 队列末尾/下一首插入与移出,删除当前曲目自动切换或停止

@@ -106,6 +106,15 @@ dependencies {
     implementation("org.lynxsdk.lynx:lynx-service-devtool:4.0.0")
     implementation("org.lynxsdk.lynx:debug-router:0.0.20")
 
+    // Media3 ExoPlayer: backs `NativeModules.PomeloPlayer` (audio playback,
+    // queue, background playback, lock-screen metadata). Mirrors the iOS
+    // PomeloPlayerModule contract (packages/lynx-media/ios/src).
+    implementation("androidx.media3:media3-exoplayer:1.4.1")
+    implementation("androidx.media3:media3-session:1.4.1")
+    implementation("androidx.media3:media3-common:1.4.1")
+    implementation("androidx.media3:media3-datasource:1.4.1")
+    implementation("androidx.media3:media3-datasource-okhttp:1.4.1")
+
     // JVM unit tests for the updater state machine (BundleUpdateStoreTest).
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20180813")

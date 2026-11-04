@@ -3,6 +3,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 后台音频:切 tab/退到后台时 ExoPlayer 继续播(对齐 iOS 后台播放)。 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!-- `usesCleartextTraffic`: the dev/QA flow loads bundles over plain HTTP
          on the LAN (alignment collection against a laptop server). The hot

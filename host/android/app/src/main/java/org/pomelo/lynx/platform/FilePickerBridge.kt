@@ -15,6 +15,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.pomelo.lynx.MainActivity
+import org.pomelo.lynx.MainActivityRegistry
 import org.pomelo.lynx.log.PomeloLog
 
 /**

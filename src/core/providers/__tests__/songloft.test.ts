@@ -140,22 +140,15 @@ describe('SongloftProvider', () => {
       if (call.url.includes('/api/v1/playlists/3/songs')) {
         return response({ songs: [SONG], total: 1 });
       }
-      if (call.url.includes('/api/v1/albums?')) {
+      // 专辑是曲库分面维度,不是 /albums 资源端点(真实后端不存在该路径)。
+      if (call.url.includes('/api/v1/songs/facets')) {
         return response({
-          albums: [
-            {
-              id: 9,
-              name: '叶惠美',
-              artist: '周杰伦',
-              song_count: 4,
-              year: 2003,
-            },
+          facets: [
+            { value: '叶惠美', count: 4, cover_url: '/api/v1/songs/7/cover' },
+            { value: '七里香', count: 3 },
           ],
-          total: 1,
+          total: 2,
         });
-      }
-      if (call.url.includes('/api/v1/albums/9/songs')) {
-        return response({ songs: [SONG], total: 1 });
       }
       if (call.url.endsWith('/api/v1/songs/7/lyric')) {
         return response({ lyric: '[00:01.00]故事的小黄花' });
@@ -217,23 +210,38 @@ describe('SongloftProvider', () => {
       },
     ]);
 
-    // 专辑:与歌单同构的映射(字段 snake_case,song_count/cover_url)。
+    // 专辑:分面维度映射,专辑名即身份(后端没有专辑 ID)。
     const albums = await provider.albums();
     expect(albums.items).toEqual([
       {
-        id: '9',
         name: '叶惠美',
-        artist: '周杰伦',
         trackCount: 4,
-        year: 2003,
-        artwork: undefined,
+        artwork: '/api/v1/songs/7/cover',
       },
+      { name: '七里香', trackCount: 3, artwork: undefined },
     ]);
-    const albumTracks = await provider.albumTracks('9', { limit: 200 });
+    const facetCall = calls[calls.length - 1];
+    expect(facetCall.url).toContain('/api/v1/songs/facets');
+    expect(facetCall.url).toContain('field=album');
+
+    // 专辑详情按专辑名筛选取歌,不再拼 /albums/{id}/songs。
+    const albumTracks = await provider.albumTracks('叶惠美', { limit: 200 });
     expect(albumTracks.items[0]?.id).toBe('7');
-    const albumCover = await provider.albumArtwork({ id: '9', name: '叶惠美' });
-    expect(albumCover).toContain('/api/v1/albums/9/cover');
+    const albumTracksCall = calls[calls.length - 1];
+    expect(albumTracksCall.url).toContain('/api/v1/songs?');
+    expect(albumTracksCall.url).toContain(
+      `album=${encodeURIComponent('叶惠美')}`,
+    );
+
+    // 封面直接用列表给的 cover_url,不再猜 /albums/{id}/cover。
+    const albumCover = await provider.albumArtwork({
+      name: '叶惠美',
+      artwork: '/api/v1/songs/7/cover',
+    });
+    expect(albumCover).toContain('/api/v1/songs/7/cover');
     expect(albumCover).toContain('access_token=access-1');
+    // 没有封面时返回 null 而不是拼一个不存在的路径。
+    expect(await provider.albumArtwork({ name: '七里香' })).toBeNull();
 
     const tracks = await provider.playlistTracks('3', { limit: 200 });
     expect(tracks.items[0].id).toBe('7');

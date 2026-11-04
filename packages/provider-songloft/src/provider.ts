@@ -21,7 +21,7 @@ import {
 } from '@pomelo/provider-sdk';
 
 import {
-  parseAlbumPage,
+  parseFacetPage,
   parseLyricPayload,
   parsePlaylistPage,
   parseSong,
@@ -419,19 +419,33 @@ export class SongloftProvider implements MusicProvider {
     return parseSongPage(payload, limit, offset);
   }
 
+  /**
+   * 专辑列表。Songloft 没有 `/albums` 资源端点,专辑是曲库的分面维度:
+   * `GET /songs/facets?field=album` → `{ facets: [{value,count,cover_url}] }`。
+   * 每项映射成 `ProviderAlbum`,专辑名即身份。
+   */
   async albums(
     options: ProviderPageOptions = {},
   ): Promise<ProviderPage<ProviderAlbum>> {
     const limit = clamp(options.limit, DEFAULT_PLAYLIST_LIMIT);
     const offset = offsetOf(options.offset);
-    const payload = await this.requireHttp().request<unknown>('/albums', {
-      query: { limit, offset },
+    const payload = await this.requireHttp().request<unknown>('/songs/facets', {
+      query: { field: 'album', limit, offset },
     });
-    return parseAlbumPage(payload, limit, offset);
+    return parseFacetPage<ProviderAlbum>(payload, limit, offset, (facet) => ({
+      name: facet.value,
+      trackCount: facet.count,
+      artwork: facet.coverUrl,
+    }));
   }
 
+  /**
+   * 专辑封面。列表接口已经带上 `cover_url`,直接用它拼 token;
+   * 只有缺封面时才按歌曲封面约定回退,不猜 `/albums/{id}/cover`(该端点不存在)。
+   */
   async albumArtwork(album: ProviderAlbum, size = 512): Promise<string | null> {
-    const raw = album.artwork ?? `/api/v1/albums/${album.id}/cover`;
+    const raw = album.artwork;
+    if (!raw) return null;
     const token = await this.requireAccessToken();
     const serverUrl = this._session?.serverUrl ?? '';
     const url = buildProviderUrl(serverUrl, raw);
@@ -442,20 +456,23 @@ export class SongloftProvider implements MusicProvider {
     });
   }
 
+  /**
+   * 某专辑下的歌曲。专辑没有 ID,用 `GET /songs?album=<name>` 筛选取歌
+   * (与参考实现 `CategorySongsPage` 的 album 分面一致)。
+   */
   async albumTracks(
-    albumId: string,
+    albumName: string,
     options: ProviderPageOptions = {},
   ): Promise<ProviderPage<ProviderTrack>> {
     const limit = clamp(options.limit, DEFAULT_TRACK_LIMIT);
     const offset = offsetOf(options.offset);
-    const id = Number(albumId);
-    if (!Number.isSafeInteger(id) || id <= 0) {
-      throw new ProviderError('provider_invalid_response', '专辑 ID 无效');
+    const name = albumName.trim();
+    if (!name) {
+      throw new ProviderError('provider_invalid_response', '专辑名不能为空');
     }
-    const payload = await this.requireHttp().request<unknown>(
-      `/albums/${id}/songs`,
-      { query: { limit, offset } },
-    );
+    const payload = await this.requireHttp().request<unknown>('/songs', {
+      query: { album: name, limit, offset },
+    });
     return parseSongPage(payload, limit, offset);
   }
 

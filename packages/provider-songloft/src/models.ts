@@ -1,5 +1,4 @@
 import {
-  type ProviderAlbum,
   ProviderError,
   type ProviderPage,
   type ProviderPlaylist,
@@ -30,13 +29,16 @@ export interface SongloftPlaylist {
   trackCount: number;
 }
 
-export interface SongloftAlbum {
-  id: number;
-  name: string;
-  artist?: string;
+/**
+ * Songloft 曲库分面条目(`GET /songs/facets?field=…` 的 `facets[]`)。
+ *
+ * 后端只返回这三个字段:值、计数、代表封面。专辑/歌手/流派/年代等都是
+ * 同一个形状的不同 `field`,所以这里用一套类型覆盖全部维度。
+ */
+export interface SongloftFacet {
+  value: string;
+  count: number;
   coverUrl?: string;
-  trackCount: number;
-  year?: number;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -146,32 +148,32 @@ export function parsePlaylistPage(
 }
 
 /**
- * 专辑列表映射。
+ * 曲库分面列表映射(专辑/歌手/流派…共用)。
  *
- * 字段沿用 Songloft 的 snake_case 约定(与歌单一致:`song_count` / `cover_url`);
- * 名称兼容 `name` 与 `title` 两种写法,年份兼容 `year` 与 `release_year`。
+ * 形状来自后端 `GET /songs/facets?field=<dim>`:`{ facets: [{ value, count,
+ * cover_url }], total }`。**专辑没有 ID**,`value`(专辑名)就是身份,
+ * 空值(后端"未知专辑"桶)直接丢弃,否则会渲染出点不进去的空专辑卡。
  */
-export function parseAlbumPage(
+export function parseFacetPage<T>(
   value: unknown,
   limit: number,
   offset: number,
-): ProviderPage<ProviderAlbum> {
-  if (!isRecord(value) || !Array.isArray(value.albums)) {
-    throw new ProviderError('provider_invalid_response', '专辑列表格式异常');
+  toItem: (facet: SongloftFacet) => T | null,
+): ProviderPage<T> {
+  if (!isRecord(value) || !Array.isArray(value.facets)) {
+    throw new ProviderError('provider_invalid_response', '分面列表格式异常');
   }
-  const items: ProviderAlbum[] = [];
-  for (const raw of value.albums) {
+  const items: T[] = [];
+  for (const raw of value.facets) {
     if (!isRecord(raw)) continue;
-    const id = number(raw.id);
-    if (id === undefined || !Number.isSafeInteger(id) || id <= 0) continue;
-    items.push({
-      id: String(id),
-      name: text(raw.name) ?? text(raw.title) ?? `专辑 ${id}`,
-      artist: text(raw.artist),
-      trackCount: number(raw.song_count) ?? number(raw.track_count) ?? 0,
-      year: number(raw.year) ?? number(raw.release_year),
-      artwork: text(raw.cover_url),
+    const name = text(raw.value);
+    if (!name) continue;
+    const item = toItem({
+      value: name,
+      count: number(raw.count) ?? 0,
+      coverUrl: text(raw.cover_url),
     });
+    if (item !== null) items.push(item);
   }
   return {
     items,

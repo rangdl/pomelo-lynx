@@ -583,3 +583,30 @@ test('错误码文案只有一张表,且覆盖核心与原生抛出的全部码'
   );
   assert.deepEqual(missing, [], `error-text.ts 缺少这些错误码: ${missing}`);
 });
+
+test('Songloft provider 只使用后端真实存在的端点,不猜资源路径', () => {
+  // 真实后端(参考实现 songloft-player-lynx)的歌曲相关端点只有:
+  //   /songs  /songs/facets  /songs/ids  /songs/{id}  /songs/stats
+  // 以及 /playlists、认证若干。专辑、歌手、流派等都是 /songs/facets 的
+  // 分面维度，**没有** /albums 资源端点。此前按歌单契约臆想出的
+  // /albums、/albums/{id}/songs、/api/v1/albums/{id}/cover 在真实服务端
+  // 一律 404,且被首页的 fail-soft 静默隐藏,功能形同不存在却无人察觉。
+  const provider = read('packages/provider-songloft/src/provider.ts');
+  const requests = [
+    ...provider.matchAll(/request<unknown>\(\s*([`'"][^`'"]*[`'"])/g),
+  ].map((m) => m[1]);
+
+  const bogus = requests.filter((path) => /\/albums/.test(path));
+  assert.deepEqual(
+    bogus,
+    [],
+    `后端没有 /albums 端点;专辑应走 /songs/facets?field=album。实际请求: ${bogus}`,
+  );
+  assert.ok(
+    requests.includes("'/songs/facets'"),
+    '专辑列表必须请求 /songs/facets',
+  );
+  assert.match(provider, /field: 'album'/);
+  // 专辑详情按专辑名筛选取歌,不能再按 ID 拼路径。
+  assert.match(provider, /query: \{ album: name, limit, offset \}/);
+});

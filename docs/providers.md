@@ -39,9 +39,9 @@ getTrack(id)                 // 队列恢复/刷新后重新取曲目
 playlists({ limit, offset })
 playlistTracks(playlistId, { limit, offset })
 playlistArtwork(playlist, size?) // 歌单封面
-albums?({ limit, offset })              // 可选能力
-albumTracks?(albumId, { limit, offset }) // 可选能力
-albumArtwork?(album, size?)             // 可选能力
+albums?({ limit, offset })                // 可选能力;专辑是分面维度
+albumTracks?(albumName, { limit, offset }) // 按专辑名取歌(专辑没有 ID)
+albumArtwork?(album, size?)               // 可选能力
 stream(track): Promise<{ url, headers? }>
 lyrics(track): Promise<{ lrc?, translated?, romaji?, wordByWord? } | null>
 artwork(track, size?): Promise<string | null>
@@ -62,19 +62,29 @@ artwork(track, size?): Promise<string | null>
 | 单曲 | `GET /songs/{id}` | `Song` |
 | 歌单 | `GET /playlists?limit&offset` | `{playlists,total}` |
 | 歌单歌曲 | `GET /playlists/{id}/songs?limit&offset` | `{songs,total}` |
-| 专辑 | `GET /albums?limit&offset` | `{albums,total}` |
-| 专辑歌曲 | `GET /albums/{id}/songs?limit&offset` | `{songs,total}` |
-| 专辑封面 | `album.cover_url`（通常是 `/albums/{id}/cover`） | 图片 |
+| 分面（专辑/歌手/流派/年代…） | `GET /songs/facets?field=album&keyword&limit&offset` | `{facets,total}` |
+| 分面下歌曲 | `GET /songs?album=<专辑名>&limit&offset` | `{songs,total}` |
+| 分面封面 | facet 的 `cover_url`（列表已直接返回） | 图片 |
 | 播放 | `song.url`（通常是 `/songs/{id}/play`） | 音频流 |
 | 封面 | `song.cover_url`（通常是 `/songs/{id}/cover`） | 图片 |
 | 歌词 | `song.lyric_url`（通常是 `/songs/{id}/lyric`） | `{lyric,tlyric,rlyric,lxlyric}` |
 
-专辑条目字段：`id/name(或 title)/artist/song_count(或 track_count)/year(或 release_year)/cover_url`。
+分面条目字段：`value/count/cover_url`(三者之外后端不返回任何字段)。
+
+**专辑不是资源,是分面维度**——这是最容易踩错的一点。Songloft 后端**没有**
+`/albums` 端点(参考实现 `songloft-player-lynx` 全仓无此路径);专辑的列表来自
+`/songs/facets?field=album`,详情用 `/songs?album=<专辑名>` 筛选。因此:
+
+- 专辑**没有 ID**,身份就是专辑名(`ProviderAlbum.name`),不要给它加 `id`;
+- 专辑没有 `artist`/`year` 字段,列表只给 `value/count/cover_url`;
+- 不要拼 `/albums/{id}/cover` 之类的路径,封面用列表返回的 `cover_url`;
+- 同一套 `/songs/facets` 可直接支撑 artist/genre/year/decade/language/style
+  六个维度,新增维度只是换 `field`。
 
 **专辑是可选能力**：`capabilities.albums` + `albums()` 同时存在才展示。服务端没有
 该接口时首页静默隐藏专辑架(不报错、不做客户端聚合——按 `track.album` 去重只能
-覆盖已加载范围,得到的"专辑"不完整)。端点形状按歌单的约定推断,**尚未在真实
-服务端验证**;若服务端字段不同,只需调整 `parseAlbumPage`。
+覆盖已加载范围,得到的"专辑"不完整)。`scripts/__tests__/ui-contract.node-test.mjs`
+有守护断言,禁止 provider 再请求 `/albums*`。
 
 Songloft 的 `Song` 关键字段：`id/title/artist/album/duration/cover_url/
 lyric_url/url/is_video/is_live/type/format`。

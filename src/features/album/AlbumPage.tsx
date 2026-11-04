@@ -53,7 +53,7 @@ export function AlbumPage() {
         if (typeof provider.albumTracks !== 'function') {
           throw new Error('当前音乐源不支持专辑浏览');
         }
-        const page = await provider.albumTracks(album.id, {
+        const page = await provider.albumTracks(album.name, {
           limit: currentMediaSettings().pageSize,
           offset: 0,
         });
@@ -79,7 +79,7 @@ export function AlbumPage() {
     setBusy('more');
     setError('');
     try {
-      const page = await getSongloftProvider().albumTracks?.(album.id, {
+      const page = await getSongloftProvider().albumTracks?.(album.name, {
         limit: currentMediaSettings().pageSize,
         offset: tracks.length,
       });
@@ -177,9 +177,7 @@ export function AlbumPage() {
       ) : (
         <>
           <Hint tone="caption">
-            {[album.artist, album.year ? `${album.year} 年` : '']
-              .filter(Boolean)
-              .join(' · ') || '未知歌手'}
+            {album.trackCount ? `专辑 · ${album.trackCount} 首歌曲` : '专辑'}
           </Hint>
           {loading ? <Hint tone="caption">正在加载专辑…</Hint> : null}
           {error ? (

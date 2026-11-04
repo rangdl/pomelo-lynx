@@ -31,7 +31,11 @@ import {
   readSystemAppearance,
   subscribeSystemAppearance,
 } from '../../native/system-appearance.js';
-import { isIosPlatform, isWebPlatform } from '../../native/web-platform.js';
+import {
+  isAndroidPlatform,
+  isIosPlatform,
+  isWebPlatform,
+} from '../../native/web-platform.js';
 import { type AppPath, ROUTE_PATHS } from '../../routes.js';
 import {
   resolveTheme,
@@ -406,7 +410,11 @@ export function ShellLayout() {
   const theme = resolveTheme(appearanceMode, appearance.colorScheme);
   const dark = theme === 'dark';
   const ios = isIosPlatform();
-  const glass = ios || isWebPlatform();
+  const android = isAndroidPlatform();
+  // 三端都尝试真模糊:iOS 用 XElement/BlurView,Android 用
+  // xelement-blur-view(Web 由 web-core 映射为 x-blur-view)。
+  // 元素不可用时只是没模糊,下面的半透明 tint 兼作兜底。
+  const glass = ios || android || isWebPlatform();
   // 图标颜色来自 TS 映射(见 nav-colors.ts):<svg> 的内联颜色无法走 CSS 变量,
   // 且 current-color 在 Web 端不生效。
   const iconColor = (active: boolean): string =>

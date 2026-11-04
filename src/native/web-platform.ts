@@ -36,3 +36,8 @@ export function isWebPlatform(): boolean {
 export function isIosPlatform(): boolean {
   return platformName() === 'ios';
 }
+
+/** 是否 Android 宿主。底栏模糊与客户端安装等能力据此分支。 */
+export function isAndroidPlatform(): boolean {
+  return platformName() === 'android';
+}

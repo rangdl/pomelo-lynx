@@ -106,6 +106,10 @@ dependencies {
     implementation("org.lynxsdk.lynx:lynx-service-devtool:4.0.0")
     implementation("org.lynxsdk.lynx:debug-router:0.0.20")
 
+    // XElement blur-view:底栏真背景模糊(与 iOS XElement/BlurView 对齐)。
+    // 未注册时该元素不渲染模糊,ShellLayout 的半透明 tint 兼作兜底。
+    implementation("org.lynxsdk.lynx:xelement-blur-view:4.0.0")
+
     // Media3 ExoPlayer: backs `NativeModules.PomeloPlayer` (audio playback,
     // queue, background playback, lock-screen metadata). Mirrors the iOS
     // PomeloPlayerModule contract (packages/lynx-media/ios/src).

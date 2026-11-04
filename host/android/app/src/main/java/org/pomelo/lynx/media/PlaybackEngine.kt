@@ -133,6 +133,9 @@ object PlaybackEngine {
     }
 
     private var noisyReceiver: android.content.BroadcastReceiver? = null
+
+    /**
+     * 把 next/previous 从 ExoPlayer 的 Timeline 语义转成模块的队列语义。
      *
      * 我们一次只给播放器一个 MediaItem(见模块 load()),所以 ExoPlayer 自己
      * 认为"没有下一首"。这里覆盖 hasNext/hasPrevious/seekToNext/seekToPrevious,

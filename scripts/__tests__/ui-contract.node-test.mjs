@@ -57,6 +57,18 @@ test('外观下拉是右侧锚定的绝对定位浮层', () => {
   );
 });
 
+test('滚动容器建立 stacking context,内部 z-index 子元素才会跟随滚动', () => {
+  // Lynx 中带 z-index 的子元素会被提升为独立合成层,坐标变换不含父容器的
+  // 滚动偏移,表现是浮层在页面滚动时“定住不动”。滚动容器必须自己带
+  // position + z-index 建立 stacking context 才能抵消。
+  const css = read('src/shared/layouts/SettingsScaffold.css');
+  const scroll = css.match(/\.settings__scroll \{([\s\S]*?)\n\}/)?.[1] ?? '';
+  assert.match(scroll, /flex: 1;/);
+  assert.match(scroll, /min-height: 0;/);
+  assert.match(scroll, /position: relative;/);
+  assert.match(scroll, /z-index: 0;/);
+});
+
 test('开关统一使用 Switch/SwitchRow,不再在业务区复制 CSS', () => {
   const section = read('src/features/settings/BundleUpdateSection.tsx');
   assert.match(section, /SwitchRow/);

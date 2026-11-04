@@ -50,6 +50,12 @@ ShellLayout(全局唯一)
     `calc(144px + env(safe-area-inset-bottom))`;不要在页面里分别写两份 spacer
 - 页面根节点必须是 `display: flex; flex-direction: column; height: 100%`
   (或 `flex: 1; min-height: 0`),滚动区用 `flex: 1; min-height: 0` 吃掉剩余高度。
+- **滚动容器必须自己建立 stacking context**(`position: relative; z-index: 0`)。
+  Lynx 会把带 `z-index` 的子元素提升为独立合成层,该层的坐标变换不含父容器的
+  滚动偏移,表现为浮层在页面滚动时"定住不动"(设置页外观下拉曾踩过)。
+  共享类 `.settings__scroll` 已带这一对属性,新增滚动容器照抄;
+  见 `lynx-api-docs/lynx-vs-web/css-differences.md`「z-index 与合成层」,
+  `scripts/__tests__/ui-contract.node-test.mjs` 有对应断言。
 - **路径集中在一处**:`src/routes.ts` 的 `ROUTE_PATHS` 是唯一来源,
   `router.tsx` 只用它建静态 route(不写 `component`),`ShellLayout` 的
   `ROUTE_DEPTH` / `PAGE_COMPONENTS` / `PAGE_STACKS` 都是 `Record<AppPath, ...>`,

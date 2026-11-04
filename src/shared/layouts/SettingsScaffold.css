@@ -6,10 +6,16 @@
   background-color: var(--color-surface);
 }
 
-/* 页面内容滚动区:内容可能超过一屏,必须滚动而不是被浮动底栏裁掉。 */
+/* 页面内容滚动区:内容可能超过一屏,必须滚动而不是被浮动底栏裁掉。
+   position + z-index:0 在滚动容器上建立 stacking context:否则内部带
+   z-index 的子元素(如设置页外观分组的下拉浮层)会被 Lynx 提升为独立
+   合成层,坐标变换不含父容器的滚动偏移,滚动时表现为“定住不动”。
+   见 lynx-api-docs/css-differences.md「z-index 与合成层」。 */
 .settings__scroll {
   flex: 1;
   min-height: 0;
+  position: relative;
+  z-index: 0;
 }
 
 .settings__tail {

@@ -8,12 +8,11 @@
 
 - [x] JS `pickAndUploadFile` facade(能力探测、参数校验、回调 Promise 化)
 - [x] iOS `pickAndUploadFile`(`UIDocumentPicker` + multipart/form-data 上传)
-- [ ] **Android `pickAndUploadFile`(计划,待恢复 Android 构建)**
-  - 新增 `FilePickerActivity`(或 `ActivityResultLauncher`),通过
-    `ACTION_OPEN_DOCUMENT` 选择文件,结果经单例回调交回 `PomeloPlatformModule`
-  - 读取 `content://` URI 时使用现有 `FileProvider`/ContentResolver,限制 32 MiB
-  - 用 OkHttp 构造 multipart `POST`;复用宿主 TLS 策略
-  - 验证:`cd host/android && ./gradlew --no-daemon assembleDebug` + 真机选择/上传/取消
+- [x] **Android `pickAndUploadFile`(已实现,待真机验证)**
+  - `FilePickerBridge`:`ACTION_OPEN_DOCUMENT` + 单例 pending 请求,
+    结果经 `MainActivity.onActivityResult` 转交;32 MiB 读入上限
+  - OkHttp multipart `POST`;错误码/参数正则/`[error, body]` 回调形状与 iOS 一致
+  - 新请求覆盖旧请求按 `upload_cancelled` 回调,JS 不会悬挂
 - [x] 原生日志分享:现有 `PomeloLog.shareRecent` 已覆盖文本日志分享;
   原生日志 zip 快路径暂不做(pomelo 没有后端日志,收益不足)
 
@@ -35,10 +34,13 @@
 - [x] CI 支持 `v*` 正式 tag 与 `dev-v*` dev tag;master/dev 分支 push 不自动构建
 - [x] changelog 从 conventional commit 生成,同时用于 GitHub Release 和 App
 - [x] 移除 Release 上传里的 `|| true`,失败不再被吞
-- [ ] **Android APK 客户端更新(计划,待恢复 Android 构建)**
-  - `client.json.assets` 增加 android 资产;下载后走 PackageInstaller
-  - 需要 APK 签名/摘要校验后再提示安装
-- [ ] **iOS 真机验证**:关于页加速设置、单一下载入口、changelog 展示
+- [x] **Android APK 客户端更新(已实现,待真机验证)**
+  - `ApkInstaller`:下载 → 校验 size 与 sha256(取自 `client.json`)→
+    FileProvider content:// 交系统安装器;任一不符即删文件并报错(fail-closed)
+  - 设置页 Android 分支新增「下载并安装」入口;旧壳自动回退打开下载页
+  - `REQUEST_INSTALL_PACKAGES` 已声明,用户仍需在系统里允许安装未知应用
+- [x] **iOS 真机验证**(用户 2026-11 确认通过):关于页加速设置、
+      单一下载入口、changelog 展示
   - 本地 Linux 无法编译 iOS;iOS 编译与行为以 CI `iOS IPA` job 为准
 
 ## 批次 1c:UI 框架收敛
@@ -50,7 +52,7 @@
 - [x] 非颜色设计 token(`layout-tokens.css`)
 - [x] 主题色卡片与 swatch 复用
 - [x] `docs/ui-kit.md` + UI 契约测试,禁止 feature 内重新手写
-- [ ] iOS 真机视觉回归:开发者页、日志设置、主题色卡片
+- [x] iOS 真机视觉回归(用户 2026-11 确认通过):开发者页、日志设置、主题色卡片
   - 本地 Linux 无法验证;iOS 以 CI IPA / dev server 为准
 
 ## 批次 2:系统外观 / 安全区 / 深色模式
@@ -128,26 +130,30 @@
 - [x] 播放设置:队列上限(20–500)与每页歌曲数(10–200)
 - [ ] Navidrome/Subsonic Provider
 - [ ] External Bundle 动态 Provider
-- [ ] iOS 真机验证 Songloft 播放、封面、歌词与 token 过期刷新
+- [x] iOS 真机验证 Songloft 播放、封面、歌词与 token 过期刷新
+      (用户 2026-11 确认通过)
 
 ## 媒体 MVP(0.1.0)
 
 - [x] iOS `PomeloPlayer` 原生模块(load/play/pause/seek/stop/getState)
 - [x] JS native facade + 单例播放器 store
 - [x] 第三个「播放」tab + 最小播放页
-- [ ] iOS 真机播放/seek/切 tab 后继续播放验证
+- [x] iOS 真机播放/seek/切 tab 后继续播放(用户 2026-11 确认通过)
 - [x] 后台播放/锁屏控制(iOS 实现,待真机验证)
-- [x] **Android ExoPlayer(已实现,待 CI 编译与真机验证)**
+- [x] **Android ExoPlayer(已实现,CI 编译通过,待真机验证)**
   - `PomeloPlayerModule.kt`(Media3 1.4.1):load/play/pause/seek/stop/
     getState/setQueue/next/previous/setLyrics/clearLyrics/
     setNowPlayingOverride/clearNowPlayingOverride/setRate/setVolume/
     getCapabilities/setEngine/resolveRefresh,18 方法与 iOS 契约对齐
   - `HeaderedDataSourceFactory`:鉴权头(Songloft)经 OkHttp DataSource
   - 401/403 → refresh_required → resolveRefresh 原位续播;
-    0.5s tick 推 state/lyric;队列自动下一首;WAKE_LOCK 后台播放
-  - 锁屏 MediaMetadata(歌词行按 mode 替换字段);MediaSessionService
-    遥控(锁屏按钮)未接,待后续批次
-  - 验证:真机播放/后台/锁屏/刷新链路
+    0.5s tick 推 state/lyric;队列自动下一首
+  - 音频焦点:PlaybackEngine 单例 `setAudioAttributes(handleAudioFocus)`;
+    拔耳机/断蓝牙经 ACTION_AUDIO_BECOMING_NOISY 暂停
+  - 后台播放 + 锁屏遥控:`MediaSessionService` 前台服务 + MediaSession,
+    ForwardingPlayer 把 next/previous 转成模块队列语义;
+    通知点击回到宿主 Activity
+  - 验证:真机播放/来电打断/息屏播放/锁屏与耳机按键
 - [x] 原生队列/上一首/下一首/结束自动下一首(锁屏与后台可用)
 - [x] 队列项元数据(标题/歌手/专辑/封面),锁屏显示
 - [x] 队列末尾/下一首插入与移出,删除当前曲目自动切换或停止
@@ -161,8 +167,12 @@
 - [x] iOS 连接/刷新先下载并校验 bundle,成功后才重建 LynxView,无需冷启动
 - [x] 冷启动失败回退内嵌 bundle 时保留 `dev_server_url`,开发者页可重试
 - [x] 开发者页每 3 秒 `HEAD` 探测;服务器恢复后自动重新下载并重载
-- [ ] **Android(计划,待恢复 Android 构建)**:对应 `PomeloPlatform`
-      热切换方法 + `HostTemplateProvider` http(s) 分支;复用同一套 JS 页面
+- [x] **Android dev server 热切换(已实现,待真机验证)**
+  - `PomeloHostModule` 提供 applyDevServer / clearDevServer /
+    reloadBundle / probeDevServer(签名与回调形状同 iOS)
+  - `DevBundleFetcher` 统一下载/HEAD 探测 + Lynx 头校验;
+    `DevBundleCache` 以 URL 指纹缓存,provider 优先读缓存
+  - `MainActivity.reloadLynxView()` 不冷启动重建 LynxView
 
 ## 依赖与验证边界
 
@@ -182,12 +192,11 @@
 - [x] Web:web-core 将 `blur-view` 映射为 `x-blur-view`;ShellLayout 在 Web
       渲染 `<blur-view>`。已验证 `backdrop-filter: blur(24px)` 生效
       (web-shell 的别名保留,web-core 以后不映射时兜底)
-- [ ] **Android(计划,待恢复 Android 构建)**
-  - `host/android/app/build.gradle.kts` 增加
-    `implementation("org.lynxsdk.lynx:xelement-blur-view:4.0.0")`
-  - ShellLayout 在 Android 也渲染 `<blur-view>`,并用
-    `android-capture-target` 指定底栏背景源
-  - 验证:`assembleDebug` + 真机滚动页面上方的模糊/性能
+- [x] **Android blur-view(已实现,待真机验证)**
+  - 依赖 `org.lynxsdk.lynx:xelement-blur-view:4.0.0`;
+    ShellLayout 三端统一渲染 `<blur-view>`(Android 不带 iOS 专用 blur-effect)
+  - 元素不可用时半透明 tint 兜底,不会白屏
+  - 验证:真机滚动页面上方的模糊强度与性能
 - [ ] **可选:折射透镜(对齐 songloft 的液态玻璃)**
   - iOS 26(计划):`SongloftTabGlassUI` 的 `UIGlassEffect` 路径;需要 iOS 26 设备/SDK 验收
   - Android:`TabGlassRefraction` 的 `RenderNode` + `RuntimeShader`(AGSL)

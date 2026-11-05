@@ -34,6 +34,7 @@
     "@pomelo/lynx-media": "workspace:*",
     "@pomelo/lynx-platform": "workspace:*",
     "@pomelo/lynx-storage": "workspace:*",
+    "@pomelo/provider-fnmusic": "workspace:*",
     "@pomelo/provider-sdk": "workspace:*",
     "@pomelo/provider-songloft": "workspace:*",
     "@pomelo/provider-subsonic": "workspace:*",

@@ -34,6 +34,9 @@ importers:
       '@pomelo/lynx-storage':
         specifier: workspace:*
         version: link:packages/lynx-storage
+      '@pomelo/provider-fnmusic':
+        specifier: workspace:*
+        version: link:packages/provider-fnmusic
       '@pomelo/provider-sdk':
         specifier: workspace:*
         version: link:packages/provider-sdk
@@ -128,6 +131,12 @@ importers:
       '@lynx-js/react':
         specifier: '*'
         version: 0.128.0(@lynx-js/types@4.3.0)(@types/react@19.3.0)
+
+  packages/provider-fnmusic:
+    dependencies:
+      '@pomelo/provider-sdk':
+        specifier: workspace:*
+        version: link:../provider-sdk
 
   packages/provider-sdk: {}
 

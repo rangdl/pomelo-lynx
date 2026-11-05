@@ -672,3 +672,40 @@ test('Subsonic provider 只用可分页的端点,并遵守协议约定', () => {
   assert.match(provider, /const API_VERSION = '1\.16\.1'/);
   assert.match(provider, /f: 'json'/);
 });
+
+test('飞牛 provider 遵守实测协议(签名/信封/字段形状)', () => {
+  // 飞牛没有公开接口文档,契约全部来自实测(songloft-player-lynx 的
+  // FnMusicEngine.kt 与 fnos_music_ext 拦截代理)。以下几条都是"按 REST
+  // 惯例猜会猜错"的地方,必须锁住:
+  const provider = read('packages/provider-fnmusic/src/provider.ts');
+  const models = read('packages/provider-fnmusic/src/models.ts');
+
+  // 1) 登录密码必须 sha256,不能发明文
+  assert.match(provider, /password: sha256Hex\(password\)/);
+  // 2) 每个请求都要带 authx 签名
+  assert.match(provider, /authx: buildAuthx\(/);
+  // 3) 登录态走 Cookie music-token
+  assert.match(provider, /Cookie: `music-token=/);
+  // 4) 信封 code 的 0 和 200 都是成功
+  assert.match(models, /code !== 0 && code !== 200/);
+  // 5) 401 与 120001 才算登录失效
+  assert.match(models, /code === 401 \|\| code === 120001/);
+  // 6) duration 是毫秒,必须换算成秒
+  assert.match(models, /Math\.round\(durationMs \/ 100\) \/ 10/);
+  // 7) 接口前缀
+  assert.match(models, /FN_MUSIC_API_PREFIX = '\/music\/api\/v1'/);
+  // 8) 专辑从曲目列表聚合(飞牛没有独立专辑端点)
+  assert.match(provider, /request\('\/track\/list'|call\('\/track\/list'/);
+  assert.doesNotMatch(
+    provider,
+    /call\('\/album/,
+    '飞牛没有独立专辑端点,专辑只能从曲目列表聚合',
+  );
+});
+
+test('fnmusic 的 sha256 实现有 Node crypto 对拍测试', () => {
+  // 手写 hash 属高风险实现,必须有与 Node crypto 的对拍测试保护。
+  const test = read('packages/provider-fnmusic/src/__tests__/sha256.test.ts');
+  assert.match(test, /createHash\('sha256'\)/);
+  assert.match(test, /sha256Hex\(value\)/);
+});

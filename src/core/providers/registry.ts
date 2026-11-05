@@ -1,3 +1,4 @@
+import { FnMusicProvider } from '@pomelo/provider-fnmusic';
 import {
   type MusicProvider,
   ProviderError,
@@ -96,6 +97,13 @@ export const PROVIDERS: readonly ProviderDescriptor[] = [
         displayName: 'Subsonic',
         sessionKey: 'pomelo.provider.subsonic.session.v1',
       }),
+  },
+  {
+    id: 'fnmusic',
+    displayName: '飞牛音乐',
+    serverHint: '例如 http://192.168.1.10:5666',
+    supportsApiKey: false,
+    create: () => new FnMusicProvider(runtimeRuntime()),
   },
 ];
 

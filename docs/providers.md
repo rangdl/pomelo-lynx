@@ -98,6 +98,69 @@ u=用户名  s=随机盐(≥6位)  t=md5(password + salt)  v=1.16.1  c=Pomelo  f
 因为差异,`capabilities.video` 统一为 `false`——不能因为 Subsonic 官方支持就
 在两端开出行为不一致的入口。
 
+## 2.2 飞牛音乐(FN Music)
+
+飞牛**没有公开接口文档**,契约全部来自实测(参考实现 `FnMusicEngine.kt` 与
+`fnos_music_ext` 拦截代理)。以下每条都是"按 REST 惯例猜会猜错"的地方。
+
+### 认证(与其它 provider 都不同)
+
+```text
+POST /music/api/v1/user/password-login
+body: { deviceId, password: sha256(明文密码), username }
+  -> data.userToken
+后续请求:Cookie: music-token=<userToken>
+```
+
+- 密码必须**先 sha256 再发**,不能发明文
+- `deviceId` 首次生成后必须持久化(换掉会被当新设备)
+- `401` / `120001` 表示登录失效
+
+### 每请求签名
+
+```text
+sign  = md5(PREFIX_path_nonce_ts_md5(data)_KEY)
+authx = nonce=..&timestamp=..&sign=..      <- 请求头
+```
+
+- GET 的 `data` 是**排序后的查询串**,POST 是原始 body
+- 签名含时间戳,**每个请求都必须重算**,不能缓存
+- PREFIX / KEY 是客户端内置常量,不是用户凭据
+
+### 响应信封
+
+```json
+{ "code": 0, "msg": "ok", "data": ... }
+```
+
+- **`code` 的 0 和 200 都是成功**(不同端点混用)
+- `401` / `120001` 才是登录失效
+- 列表在 `data.list`(兼容 `items`/`tracks`/`records`),总数 `data.total`
+
+### 字段形状(易错)
+
+- `artists` 是**对象数组** `[{name, guid}]`,不是字符串
+- `album` 是**对象** `{name, guid, coverId}`,不是字符串
+- `audioSpec.duration` 是**毫秒**,宿主契约是秒,必须除以 1000
+- 分页是 `page`(从 **1** 开始)+ `size`,不是 offset/limit
+
+### 端点
+
+| 能力 | 端点 |
+| --- | --- |
+| 登录 | `POST /user/password-login` |
+| 搜索 | `GET /search/track?keyword&page&size` |
+| 曲目列表 | `GET /track/list?page&size&sort` |
+| 曲目元数据 | `GET /track/metadata?guid` |
+| 歌单列表 | `GET /playlist/list?page&size` |
+| 歌单曲目 | `GET /track/playlist-detail/list?guid&page&size` |
+| 歌词 | `GET /lyric/list?guid` |
+| 播放 | `GET /track/stream?guid`(需 authx + Cookie) |
+| 封面 | `GET /static/cover?coverId&size` |
+
+**飞牛没有独立专辑端点**:专辑只是曲目上的 `album` 对象,provider 内部从曲目
+列表按 `album.guid` 聚合去重。适配留在 provider 内部,不动 SDK 契约。
+
 ## 3. Songloft API 映射
 
 基础路径 `/api/v1`，无统一响应信封：
@@ -209,7 +272,8 @@ ProviderTrack
 
 ## 7. 当前限制
 
-- 已接入 Songloft、Navidrome、Subsonic（后两者共用一套 Subsonic REST 实现）。
+- 已接入 Songloft、Navidrome、Subsonic（后两者共用一套 Subsonic REST 实现）、
+  飞牛音乐。
 - 音乐源在「设置 → 音乐源」选择，选择持久化在 prefs 的 `active_provider`。
 - 首页/音乐源页使用「加载更多」分页，不做滚动触底自动加载。
 - 队列恢复依赖 Provider `getTrack`；非 Provider 裸 URL 恢复后没有刷新闭包。

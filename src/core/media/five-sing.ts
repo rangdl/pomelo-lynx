@@ -1,5 +1,5 @@
+import { md5Hex } from '@pomelo/provider-sdk';
 import { readLynxGlobal } from '../../native/native-modules.js';
-import { md5Hex } from './md5.js';
 import type { MediaTrack } from './player.js';
 
 /**

@@ -7,14 +7,18 @@ import {
   loadMediaSettings,
 } from '../../core/media/settings.js';
 import {
-  connectSongloft,
-  disconnectSongloft,
+  connectProvider,
+  currentProvider,
+  disconnectProvider,
   enqueueProviderTracks,
   getSongloftProvider,
+  initProviderSelection,
+  listProviders,
   playProviderTrack,
   playProviderTracks,
   providerErrorMessage,
   restoreSongloft,
+  switchProvider,
 } from '../../core/providers/index.js';
 import { t } from '../../i18n/index.js';
 import { ROUTE_PATHS } from '../../routes.js';
@@ -26,17 +30,23 @@ import {
   SettingsGroup,
   SettingsGroupDivider,
 } from '../../shared/ui/SettingsGroup.js';
+import { SwitchRow } from '../../shared/ui/SwitchRow.js';
 import { TextField } from '../../shared/ui/TextField.js';
 import './SourcePage.css';
 
 const PLAYLIST_LIMIT = 50;
 
 /**
- * 音乐源设置页：Songloft 登录、歌单浏览、搜索和入队。
- * 服务器地址/用户名随会话保存在 secure 存储；密码只用于登录，不落盘。
+ * 音乐源设置页：选择服务商、登录、歌单浏览、搜索和入队。
+ *
+ * 支持 Songloft / Navidrome / Subsonic。后两者共用 Subsonic REST 实现,
+ * 差别只在显示名和是否允许用 API Key 登录。服务器地址/用户名随会话保存在
+ * secure 存储；密码只用于登录,不落盘。
  */
 export function SourcePage() {
   const navigate = useNavigate();
+  const [providerId, setProviderId] = useState(() => currentProvider().id);
+  const [useApiKey, setUseApiKey] = useState(false);
   const [serverUrl, setServerUrl] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -59,6 +69,10 @@ export function SourcePage() {
     void (async () => {
       try {
         await loadMediaSettings();
+        // 先读持久化的"当前源",再恢复它的会话。
+        await initProviderSelection();
+        if (!alive) return;
+        setProviderId(currentProvider().id);
         const session = await restoreSongloft();
         if (!alive) return;
         if (!session) {
@@ -91,10 +105,11 @@ export function SourcePage() {
     setError('');
     setNotice('');
     try {
-      const session = await connectSongloft({
+      const session = await connectProvider({
         serverUrl,
-        username,
+        username: useApiKey ? '' : username,
         password,
+        extras: useApiKey ? { authMode: 'apiKey' } : undefined,
       });
       setConnected(true);
       setPassword('');
@@ -124,7 +139,7 @@ export function SourcePage() {
     setError('');
     setNotice('');
     try {
-      await disconnectSongloft();
+      await disconnectProvider();
     } catch (cause) {
       setError(providerErrorMessage(cause));
     } finally {
@@ -315,7 +330,48 @@ export function SourcePage() {
       topbarTestid="sources-topbar"
       backTestid="sources-back"
     >
-      <SettingsGroup title="Songloft">
+      <SettingsGroup title="服务商">
+        {listProviders().map((option, index) => (
+          <view key={option.id}>
+            {index > 0 ? <SettingsGroupDivider /> : null}
+            <ListRow
+              iconGlyph="●"
+              iconTone={providerId === option.id ? 'green' : 'gray'}
+              label={option.displayName}
+              detail={option.serverHint}
+              value={providerId === option.id ? '已选择' : undefined}
+              onTap={
+                connected || busy !== ''
+                  ? undefined
+                  : () => {
+                      'background only';
+                      void (async () => {
+                        setBusy('switch');
+                        setError('');
+                        try {
+                          await switchProvider(option.id);
+                          setProviderId(option.id);
+                          setUseApiKey(false);
+                          setServerUrl('');
+                          setUsername('');
+                          setPassword('');
+                          setFormKey((value) => value + 1);
+                          setNotice(`已切换到 ${option.displayName}`);
+                        } catch (cause) {
+                          setError(providerErrorMessage(cause));
+                        } finally {
+                          setBusy('');
+                        }
+                      })();
+                    }
+              }
+              testid={`sources-provider-${option.id}`}
+            />
+          </view>
+        ))}
+      </SettingsGroup>
+
+      <SettingsGroup title={currentProvider().displayName}>
         <ListRow
           iconGlyph="●"
           iconTone={connected ? 'green' : 'gray'}
@@ -336,27 +392,43 @@ export function SourcePage() {
             label="服务器地址"
             value={serverUrl}
             onChange={setServerUrl}
-            placeholder="http://192.168.1.10:58091"
-            hint="填写完整地址；可带反向代理路径，不要填 /api/v1"
+            placeholder={currentProvider().serverHint}
+            hint="填写完整地址；可带反向代理路径，不要填 /api"
             disabled={busy !== '' || restoring}
             inputKey={`sources-server-${formKey}`}
             testid="sources-server-input"
           />
+          {currentProvider().supportsApiKey ? (
+            <SwitchRow
+              label="使用 API Key 登录"
+              detail="Navidrome 可跳过密码，直接用 API Key"
+              checked={useApiKey}
+              onChange={setUseApiKey}
+              disabled={busy !== '' || restoring || connected}
+              testid="sources-api-key-toggle"
+            />
+          ) : null}
+          {useApiKey ? null : (
+            <TextField
+              label="用户名"
+              value={username}
+              onChange={setUsername}
+              hint={`与 ${currentProvider().displayName} 网页端登录账号一致`}
+              disabled={busy !== '' || restoring}
+              inputKey={`sources-user-${formKey}`}
+              testid="sources-user-input"
+            />
+          )}
           <TextField
-            label="用户名"
-            value={username}
-            onChange={setUsername}
-            hint="与 Songloft 网页端登录账号一致"
-            disabled={busy !== '' || restoring}
-            inputKey={`sources-user-${formKey}`}
-            testid="sources-user-input"
-          />
-          <TextField
-            label="密码"
+            label={useApiKey ? 'API Key' : '密码'}
             value={password}
             onChange={setPassword}
-            password
-            hint="只用于换取 token，不会保存密码"
+            password={!useApiKey}
+            hint={
+              useApiKey
+                ? '在服务端设置里生成，只保存在本机安全存储'
+                : '只用于换取 token，不会保存密码'
+            }
             disabled={busy !== '' || restoring || connected}
             inputKey={`sources-password-${formKey}`}
             testid="sources-password-input"
@@ -371,7 +443,8 @@ export function SourcePage() {
               restoring ||
               connected ||
               !serverUrl.trim() ||
-              !username.trim() ||
+              // API Key 模式不需要用户名(服务端按 key 识别账号)
+              (!useApiKey && !username.trim()) ||
               !password
             }
             onTap={connect}

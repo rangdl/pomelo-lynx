@@ -642,3 +642,33 @@ test('provider SDK 只做通用契约,不迁就单个后端的实现细节', () 
     'SDK 不应包含任何后端的具体端点',
   );
 });
+
+test('Subsonic provider 只用可分页的端点,并遵守协议约定', () => {
+  // 依据 Subsonic 官方 REST v1.16.1 规范与 Navidrome 官方兼容性表：
+  // - getArtists 只接受 musicFolderId，**没有** size/offset，无法分页；
+  // - 专辑分页必须用 getAlbumList2（size/offset，max 500）；
+  // - 认证盐必须每条请求重新生成，不能复用（t = md5(password + salt)）；
+  // - Navidrome 未实现 getPlaylists 的 username 参数。
+  const provider = read('packages/provider-subsonic/src/provider.ts');
+
+  assert.match(
+    provider,
+    /request\('getAlbumList2'/,
+    '专辑列表必须走 getAlbumList2（唯一支持分页的专辑端点）',
+  );
+  assert.doesNotMatch(
+    provider,
+    /request\('getArtists'/,
+    'getArtists 不支持 size/offset，不能用于分页浏览',
+  );
+  assert.match(provider, /request\('search3'/);
+  // 歌词优先 OpenSubsonic 扩展
+  assert.match(provider, /getLyricsBySongId/);
+  assert.match(provider, /request\('getLyrics'/);
+  // 盐必须每次请求现算：authQuery 内调用 randomSalt，而不是会话级缓存
+  assert.match(provider, /const salt = randomSalt\(\)/);
+
+  // 协议固定参数
+  assert.match(provider, /const API_VERSION = '1\.16\.1'/);
+  assert.match(provider, /f: 'json'/);
+});

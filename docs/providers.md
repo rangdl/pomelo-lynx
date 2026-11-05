@@ -50,6 +50,54 @@ artwork(track, size?): Promise<string | null>
 `ProviderTrack` 只暴露展示字段和可选的 `resource`（stream/artwork/lyrics
 定位符）。服务端专有字段不进入播放页。
 
+## 2.1 Subsonic / Navidrome
+
+两者共用 `@pomelo/provider-subsonic` 一套实现——Navidrome 官方声明兼容
+Subsonic REST API v1.16.1,所以同一个类即可,差别只在显示名和是否支持 API Key。
+
+**只走 `/rest`,不用 Navidrome 原生 `/api`。** 原生接口没有官方文档(第三方
+文档是抓包整理的),且 0.55 版本重构过;`/rest` 才是跨 Subsonic 生态的稳定契约。
+
+| 能力 | 端点 | 说明 |
+| --- | --- | --- |
+| 连通/登录校验 | `ping` | 最轻的探针 |
+| 搜索 | `search3` | 只取 `songCount`,专辑/艺人走各自列表 |
+| 专辑列表 | `getAlbumList2` | **唯一支持 `size`/`offset` 的专辑端点** |
+| 专辑曲目 | `getAlbum` | 一次返回全部,本地分页 |
+| 歌单 | `getPlaylists` / `getPlaylist` | 不传 `username`(Navidrome 未实现) |
+| 单曲 | `getSong` | 队列恢复用 |
+| 播放 | `stream` | 认证在查询串 |
+| 封面 | `getCoverArt` | 认证在查询串(图片加载器不能设 header) |
+| 歌词 | `getLyricsBySongId` → `getLyrics` | 前者是 OpenSubsonic 扩展,带时间轴 |
+
+### 认证(官方规范)
+
+```
+u=用户名  s=随机盐(≥6位)  t=md5(password + salt)  v=1.16.1  c=Pomelo  f=json
+```
+
+- **盐必须每条请求重新生成**,不能会话级缓存
+- 官方测试向量:`md5("sesame" + "c19b2d") = 26719a1196d2a940705a59634eb18eab`,
+  已写成单测
+- `apiKey=` 是 Navidrome 扩展,不在 Subsonic 官方文档里,按可选能力处理
+- 错误是信封内的**数字码**(40=密码错、50=无权限、70=找不到),HTTP 常为 200,
+  必须解信封判断
+
+### 两家不可忽略的差异
+
+| | Subsonic | Navidrome |
+| --- | --- | --- |
+| `getArtists` 分页 | ❌ 只接受 `musicFolderId` | ❌ 同左 |
+| 按目录浏览 | ✅ `getIndexes`/`getMusicDirectory` | ⚠️ 仅模拟树,无真实目录 |
+| 视频 | ✅ `getVideos`/`hls` | ❌ 明确不实现 |
+| 艺人/专辑简介 | ✅ | ⚠️ 依赖 Last.fm 集成 |
+| 搜索语法 | Lucene 风格 | ⚠️ 仅简单自动补全 |
+| ID | 字符串 schema,部分实现用数字 | **始终字符串**(MD5/UUID) |
+| 播放计数 | `stream` 即计 | 必须 `scrobble?submission=true` |
+
+因为差异,`capabilities.video` 统一为 `false`——不能因为 Subsonic 官方支持就
+在两端开出行为不一致的入口。
+
 ## 3. Songloft API 映射
 
 基础路径 `/api/v1`，无统一响应信封：
@@ -161,7 +209,8 @@ ProviderTrack
 
 ## 7. 当前限制
 
-- 只实现 Songloft；Navidrome/Subsonic 尚未接入。
+- 已接入 Songloft、Navidrome、Subsonic（后两者共用一套 Subsonic REST 实现）。
+- 音乐源在「设置 → 音乐源」选择，选择持久化在 prefs 的 `active_provider`。
 - 首页/音乐源页使用「加载更多」分页，不做滚动触底自动加载。
 - 队列恢复依赖 Provider `getTrack`；非 Provider 裸 URL 恢复后没有刷新闭包。
 - 持久化队列存放在 secure，原样保存 URL、headers、artwork；冷启动恢复后

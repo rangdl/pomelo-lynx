@@ -95,12 +95,23 @@ export interface ProviderSession {
   refreshToken?: string;
   /** 毫秒时间戳；0/省略表示未知。 */
   expiresAt?: number;
+  /**
+   * provider 私有的会话数据(Emby 的 userId/deviceId、Subsonic 的盐策略等),
+   * 原样持久化到 secure 存储。SDK 不解释这些值,只在 restore 时交回 provider。
+   */
+  credentials?: Record<string, string>;
 }
 
 export interface ProviderLoginInput {
   serverUrl: string;
   username: string;
   password: string;
+  /**
+   * provider 私有的额外登录输入(Emby 的 deviceId、飞牛的访问码等)。
+   * SDK 只知道"可能有额外字段",不知道具体是谁的——各 provider 自己校验。
+   * 不要往里塞通用字段(serverUrl/username/password 已有独立位置)。
+   */
+  extras?: Record<string, string>;
 }
 
 export interface ProviderSecureStore {

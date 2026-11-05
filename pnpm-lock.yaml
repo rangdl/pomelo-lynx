@@ -40,6 +40,9 @@ importers:
       '@pomelo/provider-songloft':
         specifier: workspace:*
         version: link:packages/provider-songloft
+      '@pomelo/provider-subsonic':
+        specifier: workspace:*
+        version: link:packages/provider-subsonic
       '@tanstack/react-router':
         specifier: ^1.170.46
         version: 1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -129,6 +132,12 @@ importers:
   packages/provider-sdk: {}
 
   packages/provider-songloft:
+    dependencies:
+      '@pomelo/provider-sdk':
+        specifier: workspace:*
+        version: link:../provider-sdk
+
+  packages/provider-subsonic:
     dependencies:
       '@pomelo/provider-sdk':
         specifier: workspace:*

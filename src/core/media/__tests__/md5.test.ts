@@ -1,9 +1,7 @@
 import { createHash } from 'node:crypto';
-
+import { md5Hex } from '@pomelo/provider-sdk';
 import { describe, expect, test } from '@rstest/core';
-
 import { fiveSingSignature } from '../five-sing.js';
-import { md5Hex } from '../md5.js';
 
 describe('md5Hex', () => {
   test('与 Node crypto 的结果一致', () => {

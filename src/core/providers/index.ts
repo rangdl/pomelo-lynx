@@ -2,13 +2,10 @@ import {
   type MusicProvider,
   type ProviderAlbum,
   ProviderError,
-  type ProviderFetch,
   type ProviderSession,
   type ProviderTrack,
 } from '@pomelo/provider-sdk';
-import { SongloftProvider } from '@pomelo/provider-songloft';
 
-import { readLynxGlobal } from '../../native/native-modules.js';
 import {
   appendMediaTracks,
   clearMediaQueue,
@@ -18,43 +15,55 @@ import {
   playMediaTrack,
   setMediaTrackHydrator,
 } from '../media/player.js';
-import { getPomeloStorage } from '../storage/index.js';
+import {
+  activeProviderDescriptor,
+  getActiveProvider,
+  getProvider,
+  loadActiveProviderId,
+  PROVIDERS,
+  type ProviderDescriptor,
+  restoreAnyProvider,
+  setActiveProviderId,
+} from './registry.js';
 
 /**
  * 宿主侧 Provider 门面。
  *
  * 凭据只通过 secure 存储持久化；UI 和播放器看不到 access/refresh token，
  * 只拿到 ProviderTrack 与解析后的 MediaTrack。
+ *
+ * 具体用哪个源由 `./registry.ts` 决定(Songloft / Navidrome / Subsonic)。
+ * 这里的函数都作用于"当前选中的源",不再写死单个实现。
  */
 
-let songloft: SongloftProvider | null = null;
 let restorePromise: Promise<ProviderSession | null> | null = null;
 
-function runtimeFetch(): ProviderFetch {
-  const lynx = readLynxGlobal();
-  if (typeof lynx?.fetch === 'function') {
-    return lynx.fetch.bind(lynx) as ProviderFetch;
-  }
-  if (typeof fetch === 'function') return fetch;
-  return () =>
-    Promise.reject(
-      new ProviderError('provider_network', '当前环境不支持网络请求'),
-    );
+/**
+ * 当前音乐源实例。
+ *
+ * 名字保留 `getSongloftProvider` 是因为调用点很多;语义已经是"当前源",
+ * 新代码请用 `getActiveProvider()`。
+ */
+export function getSongloftProvider(): MusicProvider {
+  return getActiveProvider();
 }
 
-export function getSongloftProvider(): SongloftProvider {
-  if (!songloft) {
-    const storage = getPomeloStorage();
-    songloft = new SongloftProvider({
-      fetch: runtimeFetch(),
-      secure: {
-        get: (key) => storage.secure.get(key),
-        set: (key, value) => storage.secure.set(key, value),
-        remove: (key) => storage.secure.remove(key),
-      },
-    });
-  }
-  return songloft;
+/** 当前源描述(名称、是否支持 API Key、地址提示)。 */
+export function currentProvider(): ProviderDescriptor {
+  return activeProviderDescriptor();
+}
+
+/** 启动时读一次持久化的选择,之后同步取用。 */
+export async function initProviderSelection(): Promise<void> {
+  await loadActiveProviderId();
+}
+
+export function listProviders(): readonly ProviderDescriptor[] {
+  return PROVIDERS;
+}
+
+export async function switchProvider(id: string): Promise<void> {
+  await setActiveProviderId(id);
 }
 
 /**
@@ -96,12 +105,38 @@ export function albumsSupported(): boolean {
   );
 }
 
+/**
+ * 连接当前选中的音乐源。
+ *
+ * `extras` 只放 provider 私有字段(例如 Navidrome 的 `authMode: 'apiKey'`);
+ * 通用字段仍是 serverUrl/username/password。
+ */
+export async function connectProvider(input: {
+  serverUrl: string;
+  username: string;
+  password: string;
+  extras?: Record<string, string>;
+}): Promise<ProviderSession> {
+  const session = await getActiveProvider().login(input);
+  restorePromise = null;
+  return session;
+}
+
+/** 兼容旧调用点:连接到当前选中的源(默认 Songloft)。 */
 export async function connectSongloft(input: {
   serverUrl: string;
   username: string;
   password: string;
+  extras?: Record<string, string>;
 }): Promise<ProviderSession> {
-  return getSongloftProvider().login(input);
+  return connectProvider(input);
+}
+
+/** 断开当前源,并停止播放、清空队列(队列曲目已不可用)。 */
+export async function disconnectProvider(): Promise<void> {
+  await getActiveProvider().logout();
+  clearMediaQueue();
+  await clearPersistedMediaQueue();
 }
 
 /**
@@ -129,20 +164,25 @@ export async function trackArtworks(
 
 export async function restoreSongloft(): Promise<ProviderSession | null> {
   if (!restorePromise) {
-    restorePromise = getSongloftProvider()
-      .restore()
-      .finally(() => {
-        restorePromise = null;
-      });
+    restorePromise = restoreAnyProvider().finally(() => {
+      restorePromise = null;
+    });
   }
   return restorePromise;
 }
 
-/** 队列恢复后按需恢复会话；已有 refresh token 时不会重新登录。 */
-async function ensureSongloftReady(): Promise<SongloftProvider> {
-  const provider = getSongloftProvider();
+/**
+ * 队列恢复后按需恢复会话；已有 refresh token 时不会重新登录。
+ *
+ * 队列里的曲目带 `providerId`,优先按它恢复——用户切换过源之后,
+ * 旧队列里的歌仍应能播放。
+ */
+async function ensureProviderReady(
+  providerId?: string,
+): Promise<MusicProvider> {
+  const provider = providerId ? getProvider(providerId) : getActiveProvider();
   if (provider.session) return provider;
-  const session = await restoreSongloft();
+  const session = await provider.restore();
   if (!session) {
     throw new ProviderError('provider_auth_required', '请先连接音乐服务器');
   }
@@ -287,12 +327,14 @@ export async function enqueueProviderTracks(
  */
 export function rehydrateProviderTrack(track: MediaTrack): MediaTrack {
   if (!track.providerId || !track.providerTrackId) return track;
-  if (track.providerId !== 'songloft') return track;
+  // 只处理已注册的源;未知 providerId(例如降级版本写入的)原样返回。
+  if (!PROVIDERS.some((entry) => entry.id === track.providerId)) return track;
+  const providerId = track.providerId;
   const trackId = track.providerTrackId;
   return {
     ...track,
     resolve: async () => {
-      const provider = await ensureSongloftReady();
+      const provider = await ensureProviderReady(providerId);
       const source = await provider.getTrack?.(trackId);
       if (!source) {
         throw new ProviderError('provider_not_found', '曲目不存在');
@@ -308,7 +350,7 @@ export function rehydrateProviderTrack(track: MediaTrack): MediaTrack {
       return { url: next.url, headers: next.headers, artwork };
     },
     lyrics: async () => {
-      const provider = await ensureSongloftReady();
+      const provider = await ensureProviderReady(providerId);
       const source = await provider.getTrack?.(trackId);
       if (!source) return null;
       const value = await provider.lyrics(source);

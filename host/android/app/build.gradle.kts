@@ -80,13 +80,13 @@ dependencies {
 
     // ---- Lynx SDK (coordinates copied from songloft-player-lynx, itself from
     // the official integrating-lynx-demo-projects KotlinEmptyProject) ----
-    implementation("org.lynxsdk.lynx:lynx:4.0.0")
-    implementation("org.lynxsdk.lynx:lynx-jssdk:4.0.0")
-    implementation("org.lynxsdk.lynx:lynx-trace:4.0.0")
-    implementation("org.lynxsdk.lynx:primjs:4.0.0")
+    implementation("org.lynxsdk.lynx:lynx:4.2.0")
+    implementation("org.lynxsdk.lynx:lynx-jssdk:4.2.0")
+    implementation("org.lynxsdk.lynx:lynx-trace:4.2.0")
+    implementation("org.lynxsdk.lynx:primjs:4.2.1")
 
     // image-service (backs `<image>`); Fresco backs the image-service.
-    implementation("org.lynxsdk.lynx:lynx-service-image:4.0.0")
+    implementation("org.lynxsdk.lynx:lynx-service-image:4.2.0")
     implementation("com.facebook.fresco:fresco:2.3.0")
     implementation("com.facebook.fresco:animated-gif:2.3.0")
     implementation("com.facebook.fresco:animated-webp:2.3.0")
@@ -94,21 +94,21 @@ dependencies {
     implementation("com.facebook.fresco:animated-base:2.3.0")
 
     // log-service
-    implementation("org.lynxsdk.lynx:lynx-service-log:4.0.0")
+    implementation("org.lynxsdk.lynx:lynx-service-log:4.2.0")
 
     // http-service (backs the bare global `fetch`)
-    implementation("org.lynxsdk.lynx:lynx-service-http:4.0.0")
+    implementation("org.lynxsdk.lynx:lynx-service-http:4.2.0")
     implementation("com.squareup.okhttp3:okhttp:4.9.0")
 
     // devtool-service: Lynx Inspector Protocol (WebSocket) — what makes this
     // host usable with `agent-lynx` and the e2e/alignment tooling, exactly like
     // LynxExplorer. debug-router is its transport.
-    implementation("org.lynxsdk.lynx:lynx-service-devtool:4.0.0")
+    implementation("org.lynxsdk.lynx:lynx-service-devtool:4.2.0")
     implementation("org.lynxsdk.lynx:debug-router:0.0.20")
 
     // XElement blur-view:底栏真背景模糊(与 iOS XElement/BlurView 对齐)。
     // 未注册时该元素不渲染模糊,ShellLayout 的半透明 tint 兼作兜底。
-    implementation("org.lynxsdk.lynx:xelement-blur-view:4.0.0")
+    implementation("org.lynxsdk.lynx:xelement-blur-view:4.2.0")
 
     // Media3 ExoPlayer: backs `NativeModules.PomeloPlayer` (audio playback,
     // queue, background playback, lock-screen metadata). Mirrors the iOS
@@ -126,9 +126,9 @@ dependencies {
     // XElement family. The probe page uses plain view/text/image/scroller, but
     // `<svg>`/`<input>` are cheap to include so the app page can grow without
     // an APK change.
-    implementation("org.lynxsdk.lynx:xelement:4.0.0")
-    implementation("org.lynxsdk.lynx:xelement-input:4.0.0")
-    implementation("org.lynxsdk.lynx:xelement-svg:4.0.0")
+    implementation("org.lynxsdk.lynx:xelement:4.2.0")
+    implementation("org.lynxsdk.lynx:xelement-input:4.2.0")
+    implementation("org.lynxsdk.lynx:xelement-svg:4.2.0")
     // 0.1.1 omits x86_64: SVG elements stay blank on that ABI.
     implementation("org.lynxsdk.lynx:servalsvg:0.2.4")
 

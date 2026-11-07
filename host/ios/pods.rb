@@ -21,7 +21,7 @@ module PomeloPods
     #      the reference app pairs XElement 4.1.0 with Lynx 4.1.0.
     # 4.1.0 is the same major/minor as Android's `org.lynxsdk.lynx:*:4.0.0`,
     # i.e. the same engine line and bundle-format compatibility.
-    pod 'Lynx', '4.1.0', :subspecs => ['Framework'], :modular_headers => true
+    pod 'Lynx', '4.2.0', :subspecs => ['Framework'], :modular_headers => true
 
     # `Lynx/Framework` depends on `LynxBase/Framework` and `LynxServiceAPI`
     # **without any version constraint**, so an unpinned resolve cheerfully
@@ -29,13 +29,13 @@ module PomeloPods
     # Lynx's own release — nightlies of the base layer under a stable engine is
     # exactly the kind of mismatch that produces unreproducible device-only
     # breakage.
-    pod 'LynxBase', '4.1.0', :subspecs => ['Framework'], :modular_headers => true
-    pod 'LynxServiceAPI', '4.1.0', :modular_headers => true
+    pod 'LynxBase', '4.2.0', :subspecs => ['Framework'], :modular_headers => true
+    pod 'LynxServiceAPI', '4.2.0', :modular_headers => true
 
-    # JS engine. The reference app pairs Lynx 4.1.0 with PrimJS 4.1.1
+    # JS engine. The reference app pairs Lynx 4.2.0 with PrimJS 4.2.1
     # (Lynx's `Framework` subspec pins `PrimJS/quickjs` to that exact
     # version, so PrimJS must move with the engine).
-    pod 'PrimJS', '4.1.1', :subspecs => ['quickjs', 'napi'], :modular_headers => true
+    pod 'PrimJS', '4.2.1', :subspecs => ['quickjs', 'napi'], :modular_headers => true
 
     # ---- Host services -----------------------------------------------------
     #   Image → `<image>` (backed by SDWebImage on iOS / Fresco on Android)
@@ -51,7 +51,7 @@ module PomeloPods
     # requirement, so the SDK implementation is enough.
     subspecs = ['Http', 'Image', 'Log']
     subspecs += ['Devtool'] if devtools
-    pod 'LynxService', '4.1.0', :subspecs => subspecs
+    pod 'LynxService', '4.2.0', :subspecs => subspecs
 
     # ---- DevTool debug socket (dev channel only) ---------------------------
     #   Official integrate-lynx-devtool guide requires DebugRouter with the
@@ -81,7 +81,7 @@ module PomeloPods
     # registry lives in the framework as a whole, and picking a single
     # subspec is not a documented configuration — the reference app is the
     # only configuration verified to render `<input>` on device.
-    pod 'XElement', '4.1.0'
+    pod 'XElement', '4.2.0'
 
     # LynxService/Image dependencies (versions pinned by the podspec itself).
     pod 'SDWebImage', '5.15.5'

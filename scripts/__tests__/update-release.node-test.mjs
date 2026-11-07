@@ -108,8 +108,8 @@ test('signed native bundle shares one manifest with the full package', (t) => {
   assert.deepEqual(
     manifest.bundle_update.targets.map((t) => [t.platform, t.engine]),
     [
-      ['android', '4.0.0'],
-      ['ios', '4.1.0'],
+      ['android', '4.2.0'],
+      ['ios', '4.2.0'],
     ],
   );
   assert.ok(
@@ -228,11 +228,11 @@ test('contract preparation rejects SDK drift and invalid bridge/schema ranges', 
     mkdirSync(join(project, folder), { recursive: true });
   writeFileSync(
     join(project, 'host/android/app/build.gradle.kts'),
-    'implementation("org.lynxsdk.lynx:lynx:4.0.0")',
+    'implementation("org.lynxsdk.lynx:lynx:4.2.0")',
   );
   writeFileSync(
     join(project, 'host/ios/release/Podfile.lock'),
-    '  - Lynx (4.1.0):',
+    '  - Lynx (4.2.0):',
   );
   const save = (value) =>
     writeFileSync(
@@ -251,7 +251,6 @@ test('contract preparation rejects SDK drift and invalid bridge/schema ranges', 
     assert.throws(() => loadNativeContract(project));
   }
 });
-
 test('unconfigured signing emits only full packages and removes stale hot-update assets', (t) => {
   const options = fixture(t);
   finalizeRelease(options);
@@ -277,7 +276,7 @@ test('signed publishing refuses a missing or changed immutable host/key contract
     { ...options.nativeHost, channel: 'stable' },
     {
       ...options.nativeHost,
-      engines: { ...options.nativeHost.engines, ios: '4.0.0' },
+      engines: { ...options.nativeHost.engines, ios: '4.1.0' },
     },
     { ...options.nativeHost, trusted_keys: [] },
   ])

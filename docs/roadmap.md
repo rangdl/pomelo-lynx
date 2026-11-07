@@ -176,6 +176,12 @@
 
 ## 依赖与验证边界
 
+- **Lynx 引擎 4.2.0(2026-11 升级,原 Android 4.0.0 / iOS 4.1.0)**:
+  Android 13 个 maven 坐标(primjs 4.2.1)与 iOS pods.rb
+  (Lynx/LynxBase/LynxServiceAPI/LynxService/XElement 4.2.0 + PrimJS 4.2.1)
+  成组升级,`updates/native-contract.json` engines 双端 4.2.0
+  (gen-native-host 强制对拍)。iOS Podfile.lock 已删除待 CI 重新生成,
+  新 lock 从 artifact 取回提交后才恢复 `--deployment`。
 - Android 原生:CI `android` job 已恢复(2026-11);本地容器无 Android SDK,
   不能本地编译，改动只能以 CI 为准。
 - iOS 原生:本地 Linux 无 Xcode;每次改动运行 `pnpm run check:ios`,再以 CI
